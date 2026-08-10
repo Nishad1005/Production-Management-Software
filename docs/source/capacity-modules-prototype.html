@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Capacity Flagging — Working Modules</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#E9EDF1;--sheet:#fff;--ink:#16202E;--mid:#5C6B7A;--faint:#8996A4;
+ --rule:#C9D3DC;--rule-soft:#DFE6EC;--blue:#2C4A6E;--flag:#C4462E;--clear:#1F6B4D;--amber:#B07D1A}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);
+ font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:14px;line-height:1.55}
+.wrap{max-width:1000px;margin:0 auto;padding:32px 24px 80px}
+header{border-bottom:2px solid var(--ink);padding-bottom:18px;margin-bottom:32px;
+ display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap}
+h1{font-family:'Archivo',sans-serif;font-weight:800;letter-spacing:-.025em;
+ font-size:clamp(26px,4.4vw,40px);line-height:1;margin:0}
+.ref{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);text-align:right}
+.panel{background:var(--sheet);border:1.5px solid var(--ink);margin-bottom:34px}
+.bar{background:var(--ink);color:#fff;padding:10px 18px;display:flex;
+ justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.bar b{font-family:'Archivo',sans-serif;font-size:13px;font-weight:600;letter-spacing:.02em}
+.bar span{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:#93A6B8}
+.body{padding:22px}
+.intro{font-size:13px;color:var(--mid);margin:0 0 20px;max-width:70ch;line-height:1.6}
+.lab{font-size:10.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--faint);margin:22px 0 9px}
+.lab:first-child{margin-top:0}
+.frow,.fhead{display:grid;grid-template-columns:46px 1fr 1fr;gap:10px;align-items:center}
+.frow{margin-bottom:8px}
+.fhead{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin-bottom:7px}
+input{font-family:'IBM Plex Mono',monospace;font-size:13px;padding:7px 9px;border:1px solid var(--rule);
+ background:#fff;color:var(--ink);border-radius:2px;width:100%}
+input:focus-visible{outline:2px solid var(--blue);outline-offset:1px;border-color:var(--blue)}
+label{font-size:11px;color:var(--mid);display:block}
+.trio{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
+.met{border:1px solid var(--rule);padding:12px 14px}
+.met i{font-size:10.5px;font-style:normal;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+.met b{display:block;font-family:'Archivo',sans-serif;font-size:27px;font-weight:700;letter-spacing:-.02em;line-height:1.15;margin-top:2px}
+.grow{display:grid;grid-template-columns:112px 1fr;margin-bottom:4px;align-items:center}
+.glab{font-size:11px;color:var(--mid);text-align:right;padding-right:12px;line-height:1.25}
+.gcells{display:grid;gap:1px}
+.cell{height:17px;border-radius:1px}
+.legend{display:flex;gap:18px;flex-wrap:wrap;margin-top:16px;font-size:11px;color:var(--mid)}
+.legend i{width:11px;height:11px;border-radius:1px;display:inline-block;margin-right:6px;vertical-align:-1px}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{text-align:left;font-weight:600;color:var(--blue);padding:8px 12px 8px 0;border-bottom:1.5px solid var(--ink);
+ font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}
+td{padding:10px 12px 10px 0;border-bottom:1px solid var(--rule-soft)}
+td.n,th.n{text-align:right;padding-right:0}
+tr:last-child td{border-bottom:0}
+.tag{display:inline-block;font-size:10px;letter-spacing:.05em;text-transform:uppercase;
+ padding:2px 6px;border:1px solid currentColor;border-radius:2px;font-weight:600}
+.t-flag{color:var(--flag)}.t-ok{color:var(--clear)}
+.dt input{width:66px;text-align:right}
+footer{font-size:10.5px;letter-spacing:.08em;color:var(--faint);text-transform:uppercase;
+ border-top:1px solid var(--rule);padding-top:16px}
+@media (max-width:720px){.trio{grid-template-columns:1fr}.grow{grid-template-columns:86px 1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>Capacity flagging &mdash; working modules</h1>
+  <div class="ref">ACG/UM/CAP/01<br>Rev A &middot; illustrative data</div>
+</header>
+
+<div class="panel">
+  <div class="bar"><b>Module 1 &middot; Department load flagger</b><span>Back-scheduling</span></div>
+  <div class="body">
+    <p class="intro">Each order is scheduled backwards from its container stuffing date to every
+    department&rsquo;s own deadline, then daily loads are summed and compared against capacity.
+    Change any quantity or date to recalculate.</p>
+    <div class="fhead"><span>Order</span><span>Quantity</span><span>Stuffing date</span></div>
+    <div class="frow"><span>A</span><input type="number" id="q0" value="100" min="10" step="10" aria-label="Order A quantity"><input type="date" id="d0" value="2026-08-01" aria-label="Order A stuffing date"></div>
+    <div class="frow"><span>B</span><input type="number" id="q1" value="500" min="10" step="10" aria-label="Order B quantity"><input type="date" id="d1" value="2026-08-10" aria-label="Order B stuffing date"></div>
+    <div class="frow"><span>C</span><input type="number" id="q2" value="250" min="10" step="10" aria-label="Order C quantity"><input type="date" id="d2" value="2026-08-20" aria-label="Order C stuffing date"></div>
+    <div class="trio" style="margin-top:22px">
+      <div class="met"><i>Flagged days</i><b id="m1">&mdash;</b></div>
+      <div class="met"><i>Pieces over capacity</i><b id="m2">&mdash;</b></div>
+      <div class="met"><i>Idle working days</i><b id="m3">&mdash;</b></div>
+    </div>
+    <div id="grid"></div>
+    <p id="range" style="font-size:11px;color:var(--faint);margin:10px 0 0"></p>
+    <div class="legend">
+      <span><i style="background:#1F6B4D;opacity:.45"></i>Part loaded</span>
+      <span><i style="background:#1F6B4D"></i>At capacity</span>
+      <span><i style="background:#C4462E"></i>Over capacity</span>
+      <span><i style="border:1px dashed #C9D3DC"></i>Closed</span>
+    </div>
+    <p class="lab">Flagged days</p>
+    <div class="tw" id="flags"></div>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="bar"><b>Module 2 &middot; Overtime and headcount</b><span>Person-hour conversion</span></div>
+  <div class="body">
+    <p class="intro">The eight-hour day converts a shortfall in pieces into a shortfall in
+    person-hours: capacity &divide; (headcount &times; hours) gives units per person-hour.
+    Where required overtime exceeds the ceiling, the balance is reported as people.</p>
+    <p class="lab">Shift rules</p>
+    <div class="trio">
+      <div><label>Production hrs/day<input type="number" id="nh" value="8" min="1" max="12" step="0.5"></label></div>
+      <div><label>Max OT hrs/person<input type="number" id="ot" value="3" min="0" max="6" step="0.5"></label></div>
+      <div><label>OT efficiency %<input type="number" id="oe" value="85" min="50" max="100" step="5"></label></div>
+    </div>
+    <p class="lab">Departments</p>
+    <div class="tw"><table class="dt">
+      <tr><th>Department</th><th class="n">D-minus</th><th class="n">Capacity</th><th class="n">Headcount</th><th class="n">Units/person-hr</th></tr>
+      <tbody id="dtb"></tbody></table></div>
+    <div class="trio" style="margin-top:22px">
+      <div class="met"><i>Flagged days</i><b id="n1">&mdash;</b></div>
+      <div class="met"><i>Covered by OT alone</i><b id="n2">&mdash;</b></div>
+      <div class="met"><i>Peak extra people</i><b id="n3">&mdash;</b></div>
+    </div>
+    <div class="tw" id="otout"></div>
+  </div>
+</div>
+
+<footer>Reports load against capacity &mdash; takes no view on overtime, hiring or ship dates</footer>
+</div>
+
+<script>
+(function(){
+  var DEPTS=[{n:'Wood',dm:60,cap:40,hc:10},{n:'Fabric cutting',dm:50,cap:60,hc:6},
+             {n:'Stitching',dm:40,cap:30,hc:12},{n:'Assembly',dm:25,cap:50,hc:10}];
+  function pd(s){var p=String(s).split('-');return new Date(+p[0],+p[1]-1,+p[2]);}
+  function key(d){var m=d.getMonth()+1,y=d.getDate();
+    return d.getFullYear()+'-'+(m<10?'0':'')+m+'-'+(y<10?'0':'')+y;}
+  function fmt(d){return d.toLocaleDateString('en-GB',{day:'numeric',month:'short'});}
+  function el(i){return document.getElementById(i);}
+  function back(due,qty,cap){
+    var n=Math.ceil(qty/cap),out=[],d=new Date(due),D=[];
+    while(d.getDay()===0){d.setDate(d.getDate()-1);}
+    while(D.length<n){if(d.getDay()!==0){D.push(new Date(d));}d.setDate(d.getDate()-1);}
+    for(var i=0;i<n;i++){out.push({date:D[i],qty:i===n-1?qty-cap*(n-1):cap});}
+    return out;
+  }
+  function orders(){return [0,1,2].map(function(i){
+    return {id:'ABC'[i],qty:+el('q'+i).value||0,ship:pd(el('d'+i).value)};});}
+  function loadFor(dp,os){
+    var m={};
+    os.forEach(function(o){
+      if(!o.qty||isNaN(o.ship.getTime())){return;}
+      var due=new Date(o.ship); due.setDate(due.getDate()-dp.dm);
+      back(due,o.qty,dp.cap).forEach(function(s){
+        var k=key(s.date);
+        if(!m[k]){m[k]={q:0,s:[]};}
+        m[k].q+=s.qty; if(m[k].s.indexOf(o.id)<0){m[k].s.push(o.id);}
+      });
+    });
+    return m;
+  }
+  function runGrid(){
+    var os=orders(),all=[],loads={};
+    DEPTS.forEach(function(dp){
+      loads[dp.n]=loadFor(dp,os);
+      Object.keys(loads[dp.n]).forEach(function(k){all.push(pd(k));});
+    });
+    if(!all.length){return;}
+    var lo=new Date(Math.min.apply(null,all)),hi=new Date(Math.max.apply(null,all)),cols=[];
+    for(var d=new Date(lo);d<=hi;d.setDate(d.getDate()+1)){cols.push(new Date(d));}
+    var rows='',flag=0,over=0,idle=0,fl='';
+    DEPTS.forEach(function(dp){
+      var cells='';
+      cols.forEach(function(d){
+        var k=key(d),e=loads[dp.n][k],st,t;
+        if(d.getDay()===0){st='background:transparent;border:1px dashed #C9D3DC';t=fmt(d)+' — closed';}
+        else if(e){
+          var r=e.q/dp.cap;
+          if(r>1){flag++;over+=e.q-dp.cap;st='background:#C4462E';}
+          else{st='background:#1F6B4D;opacity:'+Math.max(.4,r).toFixed(2);}
+          t=fmt(d)+' — '+e.q+' of '+dp.cap+' (order '+e.s.join(', ')+')';
+        } else {idle++;st='background:transparent;border:1px solid #DFE6EC';t=fmt(d)+' — no load';}
+        cells+='<div class="cell" style="'+st+'" title="'+t+'"></div>';
+      });
+      rows+='<div class="grow"><div class="glab">'+dp.n+'<br>D-'+dp.dm+' · '+dp.cap+'/day</div>'+
+            '<div class="gcells" style="grid-template-columns:repeat('+cols.length+',1fr)">'+cells+'</div></div>';
+      Object.keys(loads[dp.n]).sort().forEach(function(k){
+        var v=loads[dp.n][k];
+        if(v.q>dp.cap){
+          fl+='<tr><td>'+dp.n+'</td><td>'+fmt(pd(k))+'</td><td class="n">'+v.q+' / '+dp.cap+
+              '</td><td class="n" style="color:#C4462E">+'+(v.q-dp.cap)+'</td><td class="n">'+v.s.join(', ')+'</td></tr>';
+        }
+      });
+    });
+    el('grid').innerHTML=rows;
+    el('range').textContent=fmt(lo)+' to '+fmt(hi)+' · '+cols.length+' days · hover a cell for detail';
+    el('m1').textContent=flag; el('m2').textContent=Math.round(over); el('m3').textContent=idle;
+    el('flags').innerHTML=fl?'<table><tr><th>Department</th><th>Date</th><th class="n">Load</th><th class="n">Over</th><th class="n">Orders</th></tr>'+fl+'</table>'
+      :'<p style="font-size:12px;color:#5C6B7A">No days over capacity.</p>';
+  }
+  DEPTS.forEach(function(dp,i){
+    el('dtb').insertAdjacentHTML('beforeend',
+      '<tr><td>'+dp.n+'</td><td class="n">D-'+dp.dm+'</td><td class="n">'+dp.cap+
+      '</td><td class="n"><input type="number" id="h'+i+'" value="'+dp.hc+'" min="1" aria-label="'+dp.n+' headcount"></td>'+
+      '<td class="n" id="u'+i+'">—</td></tr>');
+  });
+  function runOT(){
+    var nh=+el('nh').value||8,cap0=+el('ot').value,eff=(+el('oe').value||85)/100,os=orders();
+    var rows='',flags=0,otOnly=0,peak=0;
+    DEPTS.forEach(function(dp,i){
+      var hc=+el('h'+i).value||1,uph=dp.cap/(hc*nh);
+      el('u'+i).textContent=uph.toFixed(3);
+      var m=loadFor(dp,os);
+      Object.keys(m).sort().forEach(function(k){
+        var v=m[k]; if(v.q<=dp.cap){return;}
+        flags++;
+        var S=v.q-dp.cap,otPer=S/(uph*eff)/hc,heads=Math.ceil(S/(uph*nh)),status;
+        if(otPer<=cap0){otOnly++;status='<span class="tag t-ok">Within OT</span>';}
+        else{
+          var extra=Math.ceil((S-hc*cap0*uph*eff)/(uph*nh));
+          if(extra>peak){peak=extra;}
+          status='<span class="tag t-flag">OT capped · +'+extra+'</span>';
+        }
+        rows+='<tr><td>'+dp.n+'</td><td>'+fmt(pd(k))+'</td><td class="n">'+v.q+' / '+dp.cap+
+              '</td><td class="n" style="color:#C4462E">+'+S+'</td><td class="n">'+otPer.toFixed(1)+' h</td>'+
+              '<td class="n">'+heads+'</td><td class="n">'+status+'</td></tr>';
+      });
+    });
+    el('n1').textContent=flags;
+    el('n2').textContent=flags?otOnly+' of '+flags:'—';
+    el('n3').textContent=peak||'0';
+    el('otout').innerHTML=rows?'<table><tr><th>Department</th><th>Date</th><th class="n">Load</th><th class="n">Short</th>'+
+      '<th class="n">OT/person</th><th class="n">People instead</th><th class="n">Status</th></tr>'+rows+'</table>'
+      :'<p style="font-size:12px;color:#5C6B7A">No days over capacity.</p>';
+  }
+  function all(){runGrid();runOT();}
+  ['q0','q1','q2','d0','d1','d2'].forEach(function(id){
+    el(id).addEventListener('input',all); el(id).addEventListener('change',all);});
+  ['nh','ot','oe','h0','h1','h2','h3'].forEach(function(id){
+    el(id).addEventListener('input',runOT); el(id).addEventListener('change',runOT);});
+  all();
+})();
+</script>
+</body>
+</html>

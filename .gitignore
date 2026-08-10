@@ -1,0 +1,40 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Environment — the anon key is public, but the service role key is not.
+# Nothing matching .env* is ever committed.
+.env
+.env.*
+!.env.example
+
+# Supabase CLI local state
+supabase/.temp
+supabase/.branches
+
+# Generated
+src/lib/database.types.ts
+
+# Claude Code — shared project config is committed, per-machine state is not
+.claude/settings.local.json
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

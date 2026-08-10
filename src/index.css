@@ -1,0 +1,34 @@
+@import 'tailwindcss';
+
+/*
+ * Kram's palette is carried over from the Rev B specification document and the
+ * capacity-flagging prototype, so screens and paperwork read as one system.
+ * Load states use the same three colours everywhere: clear, amber, flag.
+ */
+@theme {
+  --color-paper: #e9edf1;
+  --color-sheet: #ffffff;
+  --color-ink: #16202e;
+  --color-mid: #5c6b7a;
+  --color-faint: #8996a4;
+  --color-rule: #c9d3dc;
+  --color-rule-soft: #dfe6ec;
+  --color-blue: #2c4a6e;
+  --color-flag: #c4462e;
+  --color-clear: #1f6b4d;
+  --color-amber: #b07d1a;
+
+  --font-sans: 'Archivo', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+}
