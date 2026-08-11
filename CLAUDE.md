@@ -45,9 +45,17 @@ everything.
 
 ## Verifying
 
-- `npm test` — 53 tests against a real native Postgres, booted per run.
-- `npm run screenshot` — drives all six screens plus four interactions in
-  headless Chromium and fails on any console error.
+- `npm test` — 77 tests against a real native Postgres, booted per run.
+- `npm run screenshot` — drives every screen and interaction in headless
+  Chromium and fails on any console error.
+- `npm run verify:live [email password]` — access control against the live
+  Supabase project, as real requests.
+
+**Run `verify:live` after any migration touching privileges, policies or
+functions.** The local suite cannot catch what it catches: every policy was
+green when a probe found the entire function API callable by anyone holding the
+anon key. Local Postgres and Supabase differ in exactly that way — one arrives
+with permissive defaults the other does not.
 
 **Run the browser check before claiming a UI change works.** Three defects have
 been found this way that a green build was perfectly happy with, all of them
