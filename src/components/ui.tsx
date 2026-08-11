@@ -73,7 +73,8 @@ export function Th({
   children,
   align = 'left',
 }: {
-  children: ReactNode
+  // Optional: an action column has a header cell but no heading.
+  children?: ReactNode
   align?: 'left' | 'right'
 }) {
   return (

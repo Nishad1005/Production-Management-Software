@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { HashRouter, NavLink, Route, Routes } from 'react-router'
+import { clearWriteError, onWriteError } from '@/lib/queryClient'
 import { getDatabase } from '@/lib/database'
 import { CommandCentre } from '@/routes/CommandCentre'
 import { Heatmap } from '@/routes/Heatmap'
@@ -71,6 +72,37 @@ function Boot({ children }: { children: React.ReactNode }) {
   )
 }
 
+/**
+ * A save that fails quietly leaves the old value on screen and the user
+ * believing it worked. Every write failure lands here, whatever triggered it.
+ */
+function WriteErrorBanner() {
+  const [message, setMessage] = useState<string | null>(null)
+  useEffect(() => onWriteError(setMessage), [])
+  if (!message) return null
+
+  return (
+    <div className="border-flag bg-sheet border-b-2">
+      <div className="mx-auto flex max-w-[1400px] items-start justify-between gap-4 px-6 py-3">
+        <div>
+          <p className="text-flag font-sans text-[13px] font-semibold">
+            That change was not saved
+          </p>
+          <p className="text-mid mt-0.5 text-[11.5px]">{message}</p>
+        </div>
+        <button
+          type="button"
+          onClick={clearWriteError}
+          className="text-faint hover:text-ink text-[16px] leading-none"
+          aria-label="Dismiss"
+        >
+          ×
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-full">
@@ -135,6 +167,8 @@ function Shell({ children }: { children: React.ReactNode }) {
           </nav>
         </div>
       </header>
+
+      <WriteErrorBanner />
 
       <main className="mx-auto max-w-[1400px] px-6 py-8">{children}</main>
 

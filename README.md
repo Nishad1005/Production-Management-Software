@@ -43,8 +43,13 @@ runs as the owner, so policies exist but are never enforced. That is what
 | 3–10 | WIP, manpower, material, quality, machines, cost, command centre, predictive | Not started |
 
 Screens: command centre, load heatmap, schedule, order book, order acceptance
-check, masters. Masters are read-only so far; editing them is next, along with
-drag-to-reschedule on the Gantt.
+check, masters.
+
+Editable: the D-minus matrix, component rates, department yield, route order and
+headcount, holidays, orders and shipment lines. Tasks are rescheduled by
+dragging a bar on the schedule, which asks for a reason and writes a pin that
+every later run honours. Any change re-runs the schedule, so its effect is
+visible immediately rather than waiting for someone to remember to recompute.
 
 ## Commands
 

@@ -1,17 +1,36 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useCurrentRun, useGantt, type GanttRow } from '@/data/planning'
-import { Empty, Panel, Tag } from '@/components/ui'
-import { BREACH_EXPLAINER, BREACH_LABEL, formatDateLong, formatNumber, inputClass } from '@/components/format'
+import { useCreatePin, usePins, useReleasePin } from '@/data/mutations'
+import { Empty, Field, Panel, Table, Tag, Td, Th } from '@/components/ui'
+import {
+  BREACH_EXPLAINER,
+  BREACH_LABEL,
+  formatDateLong,
+  formatNumber,
+  inputClass,
+} from '@/components/format'
+import { Modal, ModalActions } from '@/components/edit'
 
 const MS_PER_DAY = 86_400_000
 const day = (iso: string) => Date.parse(`${iso}T00:00:00Z`) / MS_PER_DAY
+const iso = (dayNumber: number) =>
+  new Date(dayNumber * MS_PER_DAY).toISOString().slice(0, 10)
+
+type Scale = { from: number; to: number; span: number }
 
 export function Gantt() {
   const run = useCurrentRun()
   const gantt = useGantt(run.data?.id)
+  const pins = usePins()
+  const releasePin = useReleasePin()
+
   const [department, setDepartment] = useState('')
   const [customer, setCustomer] = useState('')
   const [onlyBreaches, setOnlyBreaches] = useState(false)
+  const [proposed, setProposed] = useState<{
+    task: GanttRow
+    startDate: string
+  } | null>(null)
 
   const options = useMemo(() => {
     const rows = gantt.data ?? []
@@ -29,17 +48,18 @@ export function Gantt() {
     return out
   }, [gantt.data, department, customer, onlyBreaches])
 
-  const scale = useMemo(() => {
+  const scale = useMemo<Scale | null>(() => {
     const dated = rows.filter((r) => r.start_date && r.end_date)
     if (!dated.length) return null
     const from = Math.min(...dated.map((r) => day(r.start_date!)))
     const to = Math.max(
-      ...dated.map((r) => Math.max(day(r.end_date!), day(r.due_date ?? r.end_date!))),
+      ...dated.map((r) =>
+        Math.max(day(r.end_date!), day(r.due_date ?? r.end_date!)),
+      ),
     )
     return { from, to, span: Math.max(1, to - from) }
   }, [rows])
 
-  // Grouped by shipment line, since that is the unit anyone thinks in.
   const groups = useMemo(() => {
     const map = new Map<string, { header: GanttRow; tasks: GanttRow[] }>()
     for (const row of rows) {
@@ -57,11 +77,12 @@ export function Gantt() {
         title="Schedule"
         meta={`${rows.length} tasks${rows.length !== (gantt.data?.length ?? 0) ? ` of ${gantt.data?.length}` : ''}`}
       >
-        <p className="text-mid mb-4 max-w-[80ch] text-[12px]">
+        <p className="text-mid mb-4 max-w-[85ch] text-[12px]">
           Each bar is one component in one department, running from its start
-          date to the day it must be finished. The marker is the department's
-          own deadline. With hundreds of live orders this is always filtered —
-          rendering the whole book helps nobody.
+          date to the day it must be finished; the marker is the department's own
+          deadline. <strong>Drag a bar</strong> to reschedule it — you will be
+          asked why, and every later run will honour it. With hundreds of live
+          orders this is always filtered; rendering the whole book helps nobody.
         </p>
 
         <div className="mb-5 flex flex-wrap items-end gap-3">
@@ -130,7 +151,21 @@ export function Gantt() {
                     .slice()
                     .sort((a, b) => a.route_position - b.route_position)
                     .map((task) => (
-                      <Bar key={task.task_id} task={task} scale={scale} />
+                      <Bar
+                        key={task.task_id}
+                        task={task}
+                        scale={scale}
+                        onPropose={(startDate) =>
+                          setProposed({ task, startDate })
+                        }
+                        onRelease={() =>
+                          releasePin.mutate({
+                            shipmentLineId: task.shipment_line_id,
+                            departmentCode: task.department_code,
+                            componentCode: task.component_code,
+                          })
+                        }
+                      />
                     ))}
                 </div>
               </div>
@@ -138,6 +173,65 @@ export function Gantt() {
           </div>
         )}
       </Panel>
+
+      {pins.data?.length ? (
+        <Panel title="Manual pins" meta={`${pins.data.length} active`}>
+          <p className="text-mid mb-3 max-w-[80ch] text-[12px]">
+            A planner who moves a task has made a decision the engine cannot see
+            the reasons for. Every run schedules around these and reports any
+            breach they cause, rather than quietly undoing them.
+          </p>
+          <Table>
+            <thead>
+              <tr>
+                <Th>Order</Th>
+                <Th>Department</Th>
+                <Th>Component</Th>
+                <Th>Starts</Th>
+                <Th>Reason</Th>
+                <Th />
+              </tr>
+            </thead>
+            <tbody>
+              {pins.data.map((p) => (
+                <tr key={p.id}>
+                  <Td>
+                    {p.erp_order_no}
+                    <span className="text-faint"> line {p.line_no}</span>
+                  </Td>
+                  <Td>{p.department_code}</Td>
+                  <Td>{p.component_code}</Td>
+                  <Td>{formatDateLong(p.pinned_start_date)}</Td>
+                  <Td className="text-mid">{p.reason}</Td>
+                  <Td align="right">
+                    <button
+                      type="button"
+                      className="text-faint hover:text-flag text-[11px]"
+                      onClick={() =>
+                        releasePin.mutate({
+                          shipmentLineId: p.shipment_line_id,
+                          departmentCode: p.department_code,
+                          componentCode: p.component_code,
+                        })
+                      }
+                    >
+                      Release
+                    </button>
+                  </Td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        </Panel>
+      ) : null}
+
+      {proposed ? (
+        <PinDialog
+          task={proposed.task}
+          startDate={proposed.startDate}
+          onClose={() => setProposed(null)}
+        />
+      ) : null}
     </div>
   )
 }
@@ -145,12 +239,23 @@ export function Gantt() {
 function Bar({
   task,
   scale,
+  onPropose,
+  onRelease,
 }: {
   task: GanttRow
-  scale: { from: number; to: number; span: number }
+  scale: Scale
+  onPropose: (startDate: string) => void
+  onRelease: () => void
 }) {
+  const track = useRef<HTMLDivElement>(null)
+  const [dragDays, setDragDays] = useState<number | null>(null)
+
   const hasDates = Boolean(task.start_date && task.end_date)
-  const left = hasDates ? ((day(task.start_date!) - scale.from) / scale.span) * 100 : 0
+  const shift = dragDays ?? 0
+
+  const left = hasDates
+    ? ((day(task.start_date!) + shift - scale.from) / scale.span) * 100
+    : 0
   const width = hasDates
     ? Math.max(
         0.6,
@@ -167,25 +272,68 @@ function Bar({
       ? 'bg-blue'
       : 'bg-clear'
 
+  /**
+   * Dragging works in whole days rather than pixels: the planner is choosing a
+   * date, and letting the bar settle between two of them would be a lie about
+   * the precision on offer.
+   */
+  function startDrag(e: React.PointerEvent) {
+    if (!hasDates || !track.current) return
+    // Text selection is prevented by `select-none` on the row rather than by
+    // preventDefault here: preventing the default on pointerdown also
+    // suppresses the pointermove stream this drag depends on.
+    const width = track.current.getBoundingClientRect().width
+    const pxPerDay = width / scale.span
+    const originX = e.clientX
+    e.currentTarget.setPointerCapture(e.pointerId)
+
+    const move = (ev: PointerEvent) =>
+      setDragDays(Math.round((ev.clientX - originX) / pxPerDay))
+
+    const up = (ev: PointerEvent) => {
+      window.removeEventListener('pointermove', move)
+      window.removeEventListener('pointerup', up)
+      const days = Math.round((ev.clientX - originX) / pxPerDay)
+      setDragDays(null)
+      if (days !== 0) onPropose(iso(day(task.start_date!) + days))
+    }
+
+    window.addEventListener('pointermove', move)
+    window.addEventListener('pointerup', up)
+  }
+
   return (
-    <div className="grid grid-cols-[190px_1fr] items-center gap-3">
+    <div className="grid grid-cols-[190px_1fr] items-center gap-3 select-none">
       <div className="flex items-center gap-1.5 text-[11.5px]">
         <span className="w-16 font-semibold">{task.department_code}</span>
         <span className="text-mid truncate">{task.component_code}</span>
-        {task.is_pinned ? <Tag tone="blue">Pin</Tag> : null}
+        {task.is_pinned ? (
+          <button
+            type="button"
+            onClick={onRelease}
+            title="Release this pin"
+            className="shrink-0"
+          >
+            <Tag tone="blue">Pin ×</Tag>
+          </button>
+        ) : null}
       </div>
 
-      <div className="relative h-[18px]">
-        <div className="bg-rule-soft absolute inset-x-0 top-1/2 h-px" />
+      <div ref={track} className="relative h-[18px]">
+        <div className="bg-rule-soft pointer-events-none absolute inset-x-0 top-1/2 h-px" />
         {hasDates ? (
           <div
-            className={`absolute top-1/2 h-[11px] -translate-y-1/2 rounded-[1px] ${tone}`}
+            onPointerDown={startDrag}
+            data-testid="gantt-bar"
+            className={`absolute top-1/2 h-[11px] -translate-y-1/2 cursor-grab touch-none rounded-[1px] active:cursor-grabbing ${tone} ${
+              dragDays !== null ? 'ring-ink opacity-80 ring-2' : ''
+            }`}
             style={{ left: `${left}%`, width: `${width}%` }}
             title={`${task.component_code}: ${formatDateLong(task.start_date)} → ${formatDateLong(task.end_date)} · ${formatNumber(task.qty_required, 0)} units${
               task.breach_reason
                 ? ` · ${BREACH_EXPLAINER[task.breach_reason] ?? task.breach_reason}`
                 : ''
-            }`}
+            } — drag to reschedule`}
           />
         ) : (
           <span className="text-flag absolute top-1/2 left-0 -translate-y-1/2 bg-white pr-2 text-[11px]">
@@ -193,18 +341,117 @@ function Bar({
           </span>
         )}
         {duePos !== null ? (
+          // pointer-events-none matters: this marker is one pixel wide and
+          // frequently lands inside the bar it belongs to. Without it, the
+          // deadline line swallows the drag and the bar simply refuses to move
+          // — for exactly the tasks whose dates most need adjusting.
           <div
-            className="bg-ink absolute inset-y-0 w-px"
+            className="bg-ink pointer-events-none absolute inset-y-0 w-px"
             style={{ left: `${duePos}%` }}
             title={`Due ${formatDateLong(task.due_date)}`}
           />
         ) : null}
-        {!task.is_feasible && task.breach_reason ? (
-          <span className="text-flag absolute top-1/2 right-0 -translate-y-1/2 bg-white pl-2 text-[10px] tracking-[0.05em] uppercase">
+        {dragDays !== null && dragDays !== 0 ? (
+          <span className="text-blue pointer-events-none absolute top-1/2 right-0 -translate-y-1/2 bg-white pl-2 text-[10.5px] font-semibold">
+            {dragDays > 0 ? '+' : ''}
+            {dragDays} days
+          </span>
+        ) : !task.is_feasible && task.breach_reason ? (
+          <span className="text-flag pointer-events-none absolute top-1/2 right-0 -translate-y-1/2 bg-white pl-2 text-[10px] tracking-[0.05em] uppercase">
             {BREACH_LABEL[task.breach_reason] ?? task.breach_reason}
           </span>
         ) : null}
       </div>
     </div>
+  )
+}
+
+function PinDialog({
+  task,
+  startDate,
+  onClose,
+}: {
+  task: GanttRow
+  startDate: string
+  onClose: () => void
+}) {
+  const createPin = useCreatePin()
+  const [reason, setReason] = useState('')
+
+  const moved = day(startDate) - day(task.start_date!)
+
+  return (
+    <Modal
+      title="Pin this task"
+      subtitle={`${task.department_code} · ${task.component_code}`}
+      onClose={onClose}
+    >
+      <form
+        onSubmit={(e) => {
+          e.preventDefault()
+          createPin.mutate(
+            {
+              shipmentLineId: task.shipment_line_id,
+              departmentCode: task.department_code,
+              componentCode: task.component_code,
+              startDate,
+              reason: reason.trim(),
+            },
+            { onSuccess: onClose },
+          )
+        }}
+      >
+        <dl className="border-rule-soft grid grid-cols-[130px_1fr] gap-y-1 border-b pb-4 text-[12.5px]">
+          <dt className="text-faint">Order</dt>
+          <dd>
+            {task.erp_order_no} line {task.line_no} — {task.customer_name}
+          </dd>
+          <dt className="text-faint">Was starting</dt>
+          <dd>{formatDateLong(task.start_date)}</dd>
+          <dt className="text-faint">Now starting</dt>
+          <dd className="font-semibold">
+            {formatDateLong(startDate)}{' '}
+            <span className="text-mid font-normal">
+              ({moved > 0 ? '+' : ''}
+              {moved} days)
+            </span>
+          </dd>
+          <dt className="text-faint">Must finish by</dt>
+          <dd>{formatDateLong(task.due_date)}</dd>
+        </dl>
+
+        <div className="mt-4">
+          <Field label="Why (required)">
+            <input
+              className={inputClass}
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="Line free after the Nordic run"
+              required
+              autoFocus
+            />
+          </Field>
+        </div>
+
+        <p className="text-mid mt-3 max-w-[65ch] text-[11.5px]">
+          The reason is required because a pin without one is indistinguishable
+          from a mistake six weeks later. Every later run honours this date and
+          schedules around it; if it pushes the work past the deadline, that is
+          reported rather than corrected.
+        </p>
+
+        {createPin.isError ? (
+          <p className="text-flag mt-3 text-[11.5px]">
+            {String(createPin.error)}
+          </p>
+        ) : null}
+
+        <ModalActions
+          onCancel={onClose}
+          submitLabel="Pin it"
+          busy={createPin.isPending}
+        />
+      </form>
+    </Modal>
   )
 }

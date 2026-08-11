@@ -197,6 +197,7 @@ export function useCellDetail(
 
 export type GanttRow = {
   task_id: string
+  shipment_line_id: string
   erp_order_no: string
   customer_name: string
   confidence: string
@@ -223,7 +224,8 @@ export function useGantt(runId: string | undefined) {
     queryKey: ['gantt', runId],
     queryFn: () =>
       query<GanttRow>(
-        `select task_id, erp_order_no, customer_name, confidence, line_no,
+        `select task_id, shipment_line_id, erp_order_no, customer_name,
+                confidence, line_no,
                 line_qty::float8, stuffing_date::text, container_ref,
                 department_code, route_position::int, component_code,
                 due_date::text, start_date::text, end_date::text,
