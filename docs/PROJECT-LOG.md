@@ -1,0 +1,287 @@
+# Kram — project log
+
+The running record of what this is, what has been decided and why, what bit us,
+and what is still open. **Read this first** when picking the project up after a
+gap. Update it whenever a decision is made, a defect is found, or something
+changes state — the value is entirely in it being current.
+
+Companion documents: [GUIDE.md](GUIDE.md) is how to *use* the software;
+[../README.md](../README.md) is how to run and build it.
+
+---
+
+## 1. What this is
+
+**Kram** (क्रम — *sequence*), production planning & control for **U&M Designs**,
+built by **Data Brilliance Business Solutions LLP**.
+
+| | |
+|---|---|
+| Specification | `DBBS/UM/KRAM/01` Rev B, 10 Aug 2026, status *For review* |
+| Repository | `github.com/Nishad1005/Production-Management-Software` |
+| Client domain | Export upholstered furniture — lounge chairs, sofas |
+| Shipping | Containerised, 20ft / 40ft HQ, CNF terms |
+| Client ERP | Panipuri — file export only, no API, no database access |
+
+Kram schedules every open order **backwards** from its container stuffing date,
+through a configurable department route, at **component** granularity, and flags
+the days a department is asked to produce more than it can — *before* the date
+is committed to the customer.
+
+It does not decide. It reports load against capacity, shortfall in hours and
+people, and the slack in the same window. Whether to run overtime, add people,
+resequence or talk to the customer stays a production decision resting on
+material, cash and customer relationships the system cannot see.
+
+### Source material (archived in `docs/source/`)
+
+| File | What it gives us |
+|---|---|
+| `concept-deck.pptx` | 19 slides. Client objectives, MD dashboard KPIs, 5-row Scope of Work, "Immediate Followups". |
+| `capacity-modules-prototype.html` | **Working vanilla-JS implementation** of backward scheduling and the OT/headcount conversion. The reference the SQL engine is diffed against. |
+| `um-item-master.csv` | 3,328 rows. Real SKU coding (`UNMPL/SKU/25-26/nnn`) and category tree. |
+| `costing-sheet.xlsx` | Real BOM cost structure — wood, plywood, metal, spring, foam, fabric, packing, labour, CNF. |
+| `item-code-definitions.xls` | Not yet parsed. |
+
+---
+
+## 2. Current state
+
+| Phase | Scope | State |
+|---|---|---|
+| 0 | Masters, shifts, roles, RLS, working-day calendar | **Done** |
+| 1 | Order book schema | **Done**. ERP import UI **outstanding** (blocked, §6) |
+| 2 | Scheduling engine, planning outputs, acceptance check | **Done** |
+| 3–10 | WIP, manpower, material, quality, machines, cost, command centre, predictive | Not started |
+
+**Client**: six screens, all reading from database views. Editable: D-minus
+matrix, component rates, department yield/route/headcount, holidays, orders,
+shipment lines, and pins by dragging a schedule bar.
+
+**Runs offline.** PGlite (Postgres 18 compiled to WASM) applies every migration
+unmodified in the browser, so the demo runs the real engine with no backend.
+`npm run build` produces a static folder.
+
+**Not yet online.** Supabase CLI config exists (`project_id = "kram"`), but no
+project has been created and no migration has been pushed. Deliberate — the
+offline draft is being shown first.
+
+---
+
+## 3. Stack and environment
+
+React 19 · TypeScript 6 · Vite 8 · Tailwind 4 · TanStack Query · react-router 8
+· PGlite 0.5.4 (browser) · embedded-postgres 18.4 (tests) · Playwright (browser
+verification) · Supabase CLI 2.113.
+
+**The machine had none of the usual toolchain.** No Node, no Homebrew, no
+Docker. Node v24.19.0 was installed via nvm (user-local, no sudo). `~/.zshrc`
+loads nvm for interactive shells; `~/.zshenv` puts node on `PATH` for
+non-interactive ones.
+
+Docker's absence drove two decisions that turned out well on their own merits:
+tests use a downloaded native Postgres binary rather than a container, and the
+demo uses PGlite rather than a local Supabase stack.
+
+`xlsx` is installed **from SheetJS's own CDN**, not npm. npm's `xlsx` is frozen
+at 0.18.5 with two open CVEs; patched builds are only distributed by SheetJS
+directly.
+
+---
+
+## 4. Decisions, and why
+
+The *why* is the part worth keeping. Anything here that looks like an arbitrary
+choice usually isn't.
+
+**All logic lives in SQL.** The engine and every planning view are Postgres
+functions and views. The same SQL runs in PGlite in the browser and on Supabase.
+Nothing is reimplemented in TypeScript, so there is only one implementation of
+the arithmetic to be wrong.
+
+**The working-day calendar is pre-numbered.** `working_days` gives every working
+day a dense sequence number, so "roll back N working days" is an indexed integer
+subtraction rather than a walk. With ~40,000 tasks this is the difference
+between seconds and minutes.
+
+**Cumulative capacity instead of iteration.** With `cum(d)` the capacity up to
+and including day `d`, the days a task occupies are exactly those `d <= due`
+where `cum(d) > cum(due) - qty_required`, and the quantity on each is
+`least(cap(d), qty_required - (cum(due) - cum(d)))`. That fills every day to
+capacity and leaves the remainder on the earliest, with no loop anywhere.
+
+**Calendar lookups return null outside the horizon.** `prev_working_day` used to
+snap a too-late date to the last working day in the calendar. A date that snaps
+is years wrong and looks entirely normal. Found by a test; now returns null so
+it fails visibly.
+
+**Utilisation is additive; units are not.** `component_rates.units_per_day` is
+what a department makes in a day *doing nothing else*. Legs and covers cannot be
+added — different things — but the fractions of a day they consume can. Every
+view aggregates the ratio; over 1.0 is the flag.
+→ **This is the convention PPC must enter real rates against.** Entering per-day
+figures instead of dedicated ones makes a department demand three days of work
+every day and look like the bottleneck when it isn't. It bit the seed data
+first; a test caught it.
+
+**`schedule_tasks` has no shift column** — a deviation from spec §11's table.
+Days-needed is computed against capacity summed across active shifts, so a
+per-shift task would have no meaningful duration of its own. The shift split
+lives on `schedule_daily_load`, where it is real. *Flag this at spec review.*
+
+**Runs are immutable.** Each run writes a new `schedule_runs` row and never
+mutates an old one, so any past plan can be recovered and compared against what
+happened. A partial unique index enforces exactly one `is_current`.
+
+**Pins are honoured and reported, never undone.** A planner who drags a task has
+made a decision the engine cannot see the reasons for. The reason is mandatory —
+a pin without one is indistinguishable from a mistake six weeks later. Releasing
+sets `is_active = false`; it never deletes.
+
+**A blank D-minus blocks scheduling.** `article_dept_dminus.is_complete` is false
+until a value is entered, and adding a department auto-seeds blank rows by
+trigger. A silent zero would produce an impossible schedule that looks entirely
+normal.
+
+**Overlapping capacity overrides are refused** by a GiST exclusion constraint at
+the same specificity. Two overlapping overrides would leave the engine silently
+picking one. A department-wide and a component-specific override *may* overlap —
+different specificity — and `resolve_capacity()` prefers the more specific.
+
+**Order quantity reconciliation is a view, not a constraint.** Shipment lines
+summing to the order total is surfaced as a warning; a hard trigger would block a
+merchandiser entering the first of three phases, which is normal.
+
+**RLS from the start, not retrofitted.** All twelve spec roles declared. Policy
+helpers are `SECURITY DEFINER` with a pinned `search_path`, so a policy on one
+table can consult `user_roles` without recursing through its own policy.
+
+**Department-level costing only** (spec §10, when Phase 8 arrives). Per-order
+labour costing needs every worker to log which order they touched — a discipline
+shop floors reliably fail to sustain, and the point at which systems like this
+get abandoned.
+
+---
+
+## 5. Gotchas — things that cost time
+
+Keep adding to this. Each one was a real dead end.
+
+| Symptom | Cause and fix |
+|---|---|
+| `extension "btree_gist" is not available` in PGlite | It ships as a contrib import: `import { btree_gist } from '@electric-sql/pglite/contrib/btree_gist'` and pass via `extensions`. |
+| `.slice is not a function` on a date | The driver returns `timestamptz` as a **Date**, `numeric` as a **string**. Cast in SQL: `::text`, `::float8`. |
+| `could not determine data type of parameter $3` | A parameter used only in `$3 is not null` has nothing to infer from. Cast it: `$3::integer`. |
+| A save silently does nothing | react-query swallows mutation errors. Fixed globally with a `MutationCache` `onError` and a banner — never rely on a call site remembering. |
+| Gantt bar refuses to drag | The 1px deadline marker sat on top of it. All decorations are now `pointer-events-none`. Took three wrong guesses; `document.elementFromPoint` gave the answer in one. |
+| Dragging selects the row text | Use `select-none` on the row. **Not** `preventDefault` on pointerdown — that also suppresses the `pointermove` stream the drag depends on. |
+| Tests deadlock | Files ran in parallel against one database, contending on the same master rows. `fileParallelism: false`. |
+| `command not found: node` in a tool shell | The shell was started before `~/.zshenv` existed and does not reload it. Prefix commands with `export PATH="$HOME/.nvm/versions/node/v24.19.0/bin:$PATH"`. |
+| npm warns about uncovered install scripts | npm 11 gates them. `npm approve-scripts <pkg>`, then reinstall. Needed for `esbuild`, `fsevents`, `@embedded-postgres/darwin-arm64`. |
+
+---
+
+## 6. Open items and blockers
+
+**Blocked on the client or on U&M:**
+
+1. **The Rev B specification is not in the repo.** It reached the build truncated
+   at ~50k characters, cutting off the tail of §19 and **all of §20 Open items**.
+   Saving a truncated copy would ship an incomplete reference document, so
+   nothing was saved. → Save the source document to
+   `docs/kram-spec-rev-b.html` and reconcile §20 against this log.
+2. **No real Panipuri export sample.** The import module is otherwise ready to
+   build but would be built against an assumed column layout. **Longest-lead item
+   on the critical path** — worth requesting now.
+3. **The route is placeholder data.** Four departments from the prototype, not
+   U&M's real seven, and every rate is invented. The arithmetic is right; the
+   numbers are illustrative. Needs a working session with PPC, which is also the
+   moment to explain the dedicated-rate convention (§4).
+
+**Decisions the client owes us:**
+
+4. **Per-employee vs aggregate attendance** (spec §8). Per-employee is what skill
+   mix and leave management require, and is more entry. Must be settled with HR
+   before Phase 4; `employees` already exists so it shapes what we seed.
+5. **The overtime ceiling.** Five hours on top of an eight-hour net shift is long
+   under the Factories Act's daily and quarterly limits, and multi-shift working
+   adds its own provisions. The figure is configurable and is what the spec
+   specifies. Their compliance adviser should confirm before go-live. *We flag,
+   we do not advise.*
+
+**On us:**
+
+6. **Supabase project** — not created, nothing pushed. Deferred deliberately.
+7. **Predictive features cannot come first** (spec §17). Cycle-time, lead-time and
+   rejection models need roughly six months of accumulated actuals that do not
+   exist. Worth putting to the client in writing now rather than at Phase 10.
+
+---
+
+## 7. Verification
+
+Nothing here is trusted because it compiled.
+
+**Parity against the prototype — the load-bearing check.**
+`tests/engine-parity.test.ts` transcribes the algorithm from
+`docs/source/capacity-modules-prototype.html`, which already works and which the
+client has seen, then diffs the SQL engine against it cell by cell across the
+prototype's own default scenario and five more. Zero divergence. Any difference
+is a real defect in one implementation or the other.
+
+**53 unit and integration tests** against a real native Postgres, booted per run
+from an embedded binary. Covers schema shape, RLS (as the `authenticated` role —
+table owners bypass RLS, so a policy test run as superuser proves nothing), the
+working-day calendar, engine correctness, breaches, pins, overrides and the
+planning views.
+
+**Scale**, at the workload spec §11 states — 324 orders, two shipment lines each,
+seven departments, three components, three shifts:
+`13,608 tasks · 314,928 daily-load rows · 4.6 s`.
+Note the task count is lower than the spec's ~40,000 estimate; three components
+across seven departments gives 21 pairs. The row count matches. Worth checking
+against the real route.
+
+**Browser** — `npm run screenshot` drives all six screens plus four interactions
+in headless Chromium and fails on any console error. It checks the D-minus edit
+survives a reload, which is what proves it reached the database rather than only
+React state. Three real defects came from this that the build was happy with.
+
+---
+
+## 8. What is next
+
+1. **Shifts as a master.** A and B are seeded but switched off. Turning them on
+   is the clearest demonstration of the multi-shift capacity model that Rev B
+   calls its structural correction.
+2. **Named what-if runs, compared side by side.** The engine already versions
+   every run, so this is mostly UI over data that exists.
+3. **The real route and D-minus values.** Still the single change that would make
+   the biggest difference to how the demo lands.
+
+---
+
+## 9. Log
+
+Newest first. One entry per working session — what changed, and anything a
+future reader would not infer from the diff.
+
+### 2026-08-11 — Editable draft
+Masters editing (D-minus, rates, yield, route order, headcount, holidays), order
+and shipment-line entry, and drag-to-pin on the schedule. Every write re-runs the
+schedule. Three browser-only defects found and fixed (§5). Global write-error
+banner added after discovering a failed save looked identical to a successful
+one.
+
+### 2026-08-11 — Offline-first client
+Established that PGlite runs every migration unmodified, then built six screens
+on it. Demo seed written to produce a scenario with something to say: overlapping
+stuffing dates that push stitching over capacity, a late material date, a pin,
+and quiet weeks either side so the idle report means something. Playwright
+verification harness added.
+
+### 2026-08-10 — Foundation and engine
+Phase 0 schema with RLS, Phase 1 order-book schema, Phase 2 engine and planning
+views. Parity harness against the prototype. Pushed to GitHub. Three defects
+caught by tests before they shipped: the calendar horizon snap, a revoke being
+undone by test grants, and npm's vulnerable `xlsx`.

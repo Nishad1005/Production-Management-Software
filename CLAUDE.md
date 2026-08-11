@@ -1,0 +1,62 @@
+# Kram — working notes for Claude
+
+**Read [docs/PROJECT-LOG.md](docs/PROJECT-LOG.md) first.** It carries the current
+state, every decision and why it was made, the gotchas that cost time, and what
+is blocked on whom. [docs/GUIDE.md](docs/GUIDE.md) is the user manual.
+
+**Keep both current.** After any session that changes state, makes a decision, or
+burns time on a dead end, update the log — add a dated entry to §9, and put the
+dead end in §5 so nobody pays for it twice. If a screen or a control changes, the
+guide changes with it. A stale document is worse than none, because it is
+believed.
+
+## The short version
+
+Production planning for U&M Designs, against specification `DBBS/UM/KRAM/01`
+Rev B. Schedules every order backwards from its container stuffing date through a
+configurable department route, at component granularity, and flags the days a
+department is asked for more than it can make.
+
+Phases 0–2 are done. The client runs **offline** — PGlite is Postgres compiled to
+WASM, and every migration applies to it unmodified, so the browser runs the real
+engine. Supabase is configured but not yet created or pushed to.
+
+## Conventions that matter
+
+- **All logic in SQL.** The engine and every planning view are Postgres functions
+  and views, so the same code runs in the browser and on Supabase. Do not
+  reimplement arithmetic in TypeScript — there should be one implementation to be
+  wrong.
+- **Cast in SQL, not in TypeScript.** The driver returns `timestamptz` as a
+  `Date` and `numeric` as a `string`. Every query casts `::text` / `::float8`.
+- **Utilisation is additive, units are not.** A rate is what a department makes
+  in a day *doing nothing else*. Aggregate the ratio, never the raw quantity.
+- **Failures must be visible.** A blank D-minus blocks scheduling rather than
+  defaulting to zero; a calendar lookup past the horizon returns null rather than
+  snapping; a failed write raises a banner. The recurring principle is that being
+  wrong in a way that looks normal on screen is the worst outcome available.
+- **Migrations are append-only** once anything has been pushed to a real
+  Supabase project. Nothing has been pushed yet, so editing in place is still
+  correct — check §2 of the log before assuming.
+
+## Verifying
+
+- `npm test` — 53 tests against a real native Postgres, booted per run.
+- `npm run screenshot` — drives all six screens plus four interactions in
+  headless Chromium and fails on any console error.
+
+**Run the browser check before claiming a UI change works.** Three defects have
+been found this way that a green build was perfectly happy with, all of them
+things a user would have hit immediately. `document.elementFromPoint` is the
+fastest way to find out why a click or drag is not landing.
+
+`tests/engine-parity.test.ts` diffs the SQL engine against the client's own
+working prototype. If it fails, one of the two is genuinely wrong — do not adjust
+the expectation to make it pass.
+
+## Environment
+
+Node lives at `~/.nvm/versions/node/v24.19.0/bin`. Tool shells started before
+`~/.zshenv` existed do not pick it up, so prefix commands with
+`export PATH="$HOME/.nvm/versions/node/v24.19.0/bin:$PATH"`. No Homebrew, no
+Docker — both absences are worked around deliberately (see log §3).
