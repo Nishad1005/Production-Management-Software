@@ -324,6 +324,31 @@ precondition for the planning half being used in anger.
 Newest first. One entry per working session — what changed, and anything a
 future reader would not infer from the diff.
 
+### 2026-08-11 — One interface, two backends
+`src/lib/backend.ts` puts PGlite and Supabase behind the same narrow interface —
+read a view, call a function — chosen by whether `VITE_SUPABASE_URL` is set. The
+offline demo survives, which matters: it is the thing that can be shown with no
+logins and no network, and it is what the browser suite drives.
+
+Two defects the browser found that the type checker was happy with:
+
+**The backends disagreed on types.** `numeric` arrives as a string over the wire
+protocol and as a JSON number from PostgREST; `date` as a Date object or a
+string. The client had been casting in each query; now the *views* cast, once,
+so a screen cannot behave differently depending on where it runs. Every older
+view had to be brought in line — the first browser run failed on
+`peak_utilisation.toFixed is not a function`.
+
+**Set-returning functions are a different call.** `select f(...)` yields one
+column; `select * from f(...)` yields rows. PostgREST hides the distinction and
+Postgres does not, so `rpc` and `rpcRows` are separate methods rather than one
+that guesses.
+
+**Outstanding:** masters export/import still speaks raw SQL to PGlite, so it is
+offline-only. The screen says so rather than offering a button that throws.
+Export should move to the master views and import to an `import_masters(jsonb)`
+function — do it alongside auth.
+
 ### 2026-08-11 — The API surface: views to read, functions to write
 Groundwork for Supabase, and the one thing genuinely blocking it.
 

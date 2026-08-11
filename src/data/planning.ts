@@ -1,14 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { exec, query, resetDatabase } from '@/lib/database'
+import { backend, rpc, rpcRows, select } from '@/lib/backend'
 
 /**
- * Every figure on screen comes from a view or function in the database — the
- * same SQL that runs on Supabase. Nothing is recomputed in TypeScript, so there
- * is only one implementation of the arithmetic to be wrong.
+ * Every figure on screen comes from a view or a function in the database — the
+ * same SQL whether it runs in the browser or on Supabase. Nothing is recomputed
+ * in TypeScript, so there is only one implementation of the arithmetic to be
+ * wrong.
  *
- * Numerics are cast to float8 in SQL rather than parsed here: Postgres returns
- * `numeric` as a string to preserve precision, and silently getting a string
- * where a number is expected is a bug that renders fine and sorts wrongly.
+ * The views cast every column to the type wanted here, so nothing needs parsing
+ * or converting on the way out.
  */
 
 export type Run = {
@@ -26,16 +26,8 @@ export function useCurrentRun() {
   return useQuery({
     queryKey: ['run', 'current'],
     queryFn: async () =>
-      (
-        await query<Run>(
-          // run_at is cast to text like every other date here: the driver
-          // hands back a Date object otherwise, and a Date where a string is
-          // expected fails at the point of use rather than at the query.
-          `select id, run_at::text, note, task_count, breach_count, duration_ms,
-                  horizon_from::text, horizon_to::text
-             from run_history where is_current`,
-        )
-      )[0] ?? null,
+      (await select<Run>('run_history', { eq: { is_current: true } }))[0] ??
+      null,
   })
 }
 
@@ -54,14 +46,7 @@ export function useKpis(runId: string | undefined) {
     enabled: Boolean(runId),
     queryKey: ['kpis', runId],
     queryFn: async () =>
-      (
-        await query<Kpis>(
-          `select open_orders, shipment_lines, tasks, breaches, flagged_days,
-                  idle_days, pinned
-             from schedule_kpis where run_id = $1`,
-          [runId],
-        )
-      )[0],
+      (await select<Kpis>('schedule_kpis', { eq: { run_id: runId } }))[0],
   })
 }
 
@@ -83,14 +68,10 @@ export function useBottlenecks(runId: string | undefined) {
     enabled: Boolean(runId),
     queryKey: ['bottleneck', runId],
     queryFn: () =>
-      query<Bottleneck>(
-        `select department_id, department_code, department_name, route_position,
-                avg_utilisation::float8, peak_utilisation::float8,
-                flagged_days::int, idle_days::int, days_in_horizon::int,
-                bottleneck_rank::int
-           from schedule_bottleneck where run_id = $1 order by bottleneck_rank`,
-        [runId],
-      ),
+      select<Bottleneck>('schedule_bottleneck', {
+        eq: { run_id: runId },
+        order: ['bottleneck_rank'],
+      }),
   })
 }
 
@@ -108,13 +89,10 @@ export function useFlagTriage(runId: string | undefined) {
     enabled: Boolean(runId),
     queryKey: ['triage', runId],
     queryFn: () =>
-      query<TriageRow>(
-        `select department_code, load_date::text, utilisation::float8,
-                over_by::float8, days_out::int, still_possible
-           from schedule_flag_triage where run_id = $1
-          order by load_date, department_code`,
-        [runId],
-      ),
+      select<TriageRow>('schedule_flag_triage', {
+        eq: { run_id: runId },
+        order: ['load_date', 'department_code'],
+      }),
   })
 }
 
@@ -133,14 +111,10 @@ export function useHeatmap(runId: string | undefined) {
     enabled: Boolean(runId),
     queryKey: ['heatmap', runId],
     queryFn: () =>
-      query<HeatmapCell>(
-        `select department_id, department_code, route_position::int,
-                load_date::text, utilisation::float8, status,
-                components_loaded::int
-           from heatmap_cell where run_id = $1
-          order by route_position, load_date`,
-        [runId],
-      ),
+      select<HeatmapCell>('heatmap_cell', {
+        eq: { run_id: runId },
+        order: ['route_position', 'load_date'],
+      }),
   })
 }
 
@@ -162,14 +136,14 @@ export function useCellDetail(
     enabled: Boolean(runId && departmentId && loadDate),
     queryKey: ['cell', runId, departmentId, loadDate],
     queryFn: () =>
-      query<CellDetail>(
-        `select erp_order_no, customer_name, component_code,
-                qty_planned::float8, capacity::float8
-           from load_detail
-          where run_id = $1 and department_id = $2 and load_date = $3
-          order by erp_order_no, component_code`,
-        [runId, departmentId, loadDate],
-      ),
+      select<CellDetail>('load_detail', {
+        eq: {
+          run_id: runId,
+          department_id: departmentId,
+          load_date: loadDate,
+        },
+        order: ['erp_order_no', 'component_code'],
+      }),
   })
 }
 
@@ -201,18 +175,15 @@ export function useGantt(runId: string | undefined) {
     enabled: Boolean(runId),
     queryKey: ['gantt', runId],
     queryFn: () =>
-      query<GanttRow>(
-        `select task_id, shipment_line_id, erp_order_no, customer_name,
-                confidence, line_no,
-                line_qty::float8, stuffing_date::text, container_ref,
-                department_code, route_position::int, component_code,
-                due_date::text, start_date::text, end_date::text,
-                days_needed::int, qty_required::float8,
-                is_feasible, breach_reason, is_pinned
-           from schedule_gantt where run_id = $1
-          order by stuffing_date, erp_order_no, route_position, component_code`,
-        [runId],
-      ),
+      select<GanttRow>('schedule_gantt', {
+        eq: { run_id: runId },
+        order: [
+          'stuffing_date',
+          'erp_order_no',
+          'route_position',
+          'component_code',
+        ],
+      }),
   })
 }
 
@@ -232,14 +203,10 @@ export type OrderRow = {
 
 export function useOrders(runId: string | undefined) {
   return useQuery({
+    // The view counts breaches against the live plan, so a new run has to
+    // invalidate this even though the run is not a filter.
     queryKey: ['orders', runId],
-    queryFn: () =>
-      query<OrderRow>(
-        `select order_id, erp_order_no, customer_name, article_code,
-                total_qty::float8, confidence, status, line_count::int,
-                unallocated_qty::float8, next_stuffing::text, breaches
-           from order_book order by erp_order_no`,
-      ),
+    queryFn: () => select<OrderRow>('order_book', { order: ['erp_order_no'] }),
   })
 }
 
@@ -258,12 +225,10 @@ export function useShipmentLines(orderId: string | undefined) {
     enabled: Boolean(orderId),
     queryKey: ['lines', orderId],
     queryFn: () =>
-      query<ShipmentLineRow>(
-        `select id, line_no::int, qty::float8, stuffing_date::text,
-                delivery_date::text, container_ref, material_ready_date::text
-           from shipment_lines where order_id = $1 order by line_no`,
-        [orderId],
-      ),
+      select<ShipmentLineRow>('shipment_line_list', {
+        eq: { order_id: orderId },
+        order: ['line_no'],
+      }),
   })
 }
 
@@ -281,17 +246,16 @@ export type AcceptanceRow = {
 /** Spec §14 — the check that finds the problem before the commitment. */
 export function useAcceptanceCheck() {
   return useMutation({
-    mutationFn: async (input: {
+    mutationFn: (input: {
       articleId: string
       qty: number
       stuffingDate: string
     }) =>
-      query<AcceptanceRow>(
-        `select department_code, component_code, due_date::text, start_date::text,
-                end_date::text, qty_required::float8, is_feasible, breach_reason
-           from check_order_acceptance($1, $2, $3::date)`,
-        [input.articleId, input.qty, input.stuffingDate],
-      ),
+      rpcRows<AcceptanceRow>('check_order_acceptance', {
+        p_article_id: input.articleId,
+        p_qty: input.qty,
+        p_stuffing_date: input.stuffingDate,
+      }),
   })
 }
 
@@ -301,22 +265,18 @@ export function useArticles() {
   return useQuery({
     queryKey: ['articles'],
     queryFn: () =>
-      query<Article>(
-        `select id, code, name from articles where is_active order by code`,
-      ),
+      select<Article>('article_list', {
+        eq: { is_active: true },
+        order: ['code'],
+      }),
   })
 }
 
 export function useRunSchedule() {
   const client = useQueryClient()
   return useMutation({
-    mutationFn: async (confidence: string[]) => {
-      await exec(
-        `select run_schedule(array[${confidence
-          .map((c) => `'${c}'`)
-          .join(',')}]::order_confidence[])`,
-      )
-    },
+    mutationFn: (confidence: string[]) =>
+      rpc('run_schedule', { p_confidence: confidence }),
     onSuccess: () => client.invalidateQueries(),
   })
 }
@@ -324,13 +284,15 @@ export function useRunSchedule() {
 export function useResetDemo() {
   const client = useQueryClient()
   return useMutation({
-    mutationFn: resetDatabase,
+    mutationFn: async () => {
+      await backend.reset?.()
+    },
     onSuccess: () => client.invalidateQueries(),
   })
 }
 
 // ---------------------------------------------------------------------------
-// Masters, read-only for now — enough to show the numbers the engine is using.
+// Masters
 // ---------------------------------------------------------------------------
 
 export type DepartmentRow = {
@@ -347,12 +309,10 @@ export function useDepartments() {
   return useQuery({
     queryKey: ['departments'],
     queryFn: () =>
-      query<DepartmentRow>(
-        `select id, code, name, route_position::int, yield_pct::float8,
-                shifts, headcount
-           from department_master where is_active
-          order by route_position`,
-      ),
+      select<DepartmentRow>('department_master', {
+        eq: { is_active: true },
+        order: ['route_position'],
+      }),
   })
 }
 
@@ -360,8 +320,8 @@ export type ShiftRow = {
   id: string
   code: string
   name: string
-  start_time: string
-  end_time: string
+  start_label: string
+  end_label: string
   net_production_hours: number
   max_ot_hours: number
   is_active: boolean
@@ -372,21 +332,10 @@ export function useShifts() {
   return useQuery({
     queryKey: ['shifts'],
     queryFn: () =>
-      query<ShiftRow>(
-        `select id, code, name, start_label as start_time, end_label as end_time,
-                net_production_hours::float8, max_ot_hours::float8,
-                is_active, departments_running
-           from shift_master order by start_time, code`,
-      ),
+      select<ShiftRow>('shift_master', { order: ['start_time', 'code'] }),
   })
 }
 
-/**
- * Every active department against every shift, whether or not the pairing
- * exists. rate_count is what makes the grid honest: switching a shift on adds
- * no capacity at all until component rates exist for it, and a department
- * showing as running a shift with no rates is a trap.
- */
 export type DeptShiftCell = {
   department_id: string
   department_code: string
@@ -403,13 +352,9 @@ export function useDepartmentShiftGrid() {
   return useQuery({
     queryKey: ['department-shifts'],
     queryFn: () =>
-      query<DeptShiftCell>(
-        `select department_id, department_code, route_position::int,
-                shift_id, shift_code, shift_is_active, is_active,
-                sanctioned_headcount::int, rate_count
-           from department_shift_grid
-          order by route_position, start_time, shift_code`,
-      ),
+      select<DeptShiftCell>('department_shift_grid', {
+        order: ['route_position', 'start_time', 'shift_code'],
+      }),
   })
 }
 
@@ -426,12 +371,9 @@ export function useRates() {
   return useQuery({
     queryKey: ['rates'],
     queryFn: () =>
-      query<RateRow>(
-        `select department_code, component_code, shift_code,
-                units_per_day::float8, is_measured, route_position::int
-           from component_rate_master
-          order by route_position, component_code, shift_code`,
-      ),
+      select<RateRow>('component_rate_master', {
+        order: ['route_position', 'component_code', 'shift_code'],
+      }),
   })
 }
 
@@ -447,11 +389,9 @@ export function useDminus() {
   return useQuery({
     queryKey: ['dminus'],
     queryFn: () =>
-      query<DminusRow>(
-        `select article_code, department_code, route_position::int,
-                dminus_days::int, is_complete
-           from dminus_matrix order by article_code, route_position`,
-      ),
+      select<DminusRow>('dminus_matrix', {
+        order: ['article_code', 'route_position'],
+      }),
   })
 }
 
@@ -466,10 +406,8 @@ export function useBom() {
   return useQuery({
     queryKey: ['bom'],
     queryFn: () =>
-      query<BomRow>(
-        `select article_code, component_code, component_name,
-                qty_per_unit::float8
-           from bom_master order by article_code, component_code`,
-      ),
+      select<BomRow>('bom_master', {
+        order: ['article_code', 'component_code'],
+      }),
   })
 }

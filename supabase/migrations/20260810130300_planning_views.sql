@@ -79,14 +79,14 @@ with (security_invoker = true) as
          d.code as department_code,
          d.name as department_name,
          d.route_position,
-         round(avg(dd.utilisation), 4) as avg_utilisation,
-         round(max(dd.utilisation), 4) as peak_utilisation,
-         count(*) as days_in_horizon,
-         count(*) filter (where dd.status = 'over') as flagged_days,
-         count(*) filter (where dd.status = 'idle') as idle_days,
+         round(avg(dd.utilisation), 4)::float8 as avg_utilisation,
+         round(max(dd.utilisation), 4)::float8 as peak_utilisation,
+         count(*)::integer as days_in_horizon,
+         count(*) filter (where dd.status = 'over')::integer as flagged_days,
+         count(*) filter (where dd.status = 'idle')::integer as idle_days,
          rank() over (
            partition by dd.run_id order by avg(dd.utilisation) desc
-         ) as bottleneck_rank
+         )::integer as bottleneck_rank
     from public.schedule_department_day dd
     join public.departments d on d.id = dd.department_id
    group by dd.run_id, dd.department_id, d.code, d.name, d.route_position;
@@ -103,10 +103,10 @@ with (security_invoker = true) as
   select dd.run_id,
          dd.department_id,
          d.code as department_code,
-         dd.load_date,
-         dd.utilisation,
-         round(dd.utilisation - 1, 4) as over_by,
-         (dd.load_date - current_date) as days_out,
+         dd.load_date::text as load_date,
+         dd.utilisation::float8 as utilisation,
+         round(dd.utilisation - 1, 4)::float8 as over_by,
+         (dd.load_date - current_date)::integer as days_out,
          case
            when dd.load_date - current_date >= 45 then 'hiring'
            when dd.load_date - current_date >= 15 then 'overtime_resequence_subcontract'
@@ -133,9 +133,9 @@ with (security_invoker = true) as
   select dd.run_id,
          dd.department_id,
          d.code as department_code,
-         dd.load_date,
-         dd.utilisation,
-         round(greatest(0, 1 - dd.utilisation), 4) as idle_fraction
+         dd.load_date::text as load_date,
+         dd.utilisation::float8 as utilisation,
+         round(greatest(0, 1 - dd.utilisation), 4)::float8 as idle_fraction
     from public.schedule_department_day dd
     join public.departments d on d.id = dd.department_id
    where dd.utilisation < 1;
@@ -149,24 +149,24 @@ with (security_invoker = true) as
   select t.run_id,
          t.id as task_id,
          o.erp_order_no,
-         o.confidence,
+         o.confidence::text as confidence,
          cu.code as customer_code,
          cu.name as customer_name,
          a.code as article_code,
          sl.id as shipment_line_id,
          sl.line_no,
-         sl.qty as line_qty,
-         sl.stuffing_date,
+         sl.qty::float8 as line_qty,
+         sl.stuffing_date::text as stuffing_date,
          sl.container_ref,
          d.id as department_id,
          d.code as department_code,
          d.route_position,
          cmp.code as component_code,
-         t.due_date,
-         t.start_date,
-         t.end_date,
+         t.due_date::text as due_date,
+         t.start_date::text as start_date,
+         t.end_date::text as end_date,
          t.days_needed,
-         t.qty_required,
+         t.qty_required::float8 as qty_required,
          t.is_feasible,
          t.breach_reason,
          t.is_pinned
@@ -200,10 +200,10 @@ create or replace function public.check_order_acceptance(
 returns table (
   department_code text,
   component_code text,
-  due_date date,
-  start_date date,
-  end_date date,
-  qty_required numeric,
+  due_date text,
+  start_date text,
+  end_date text,
+  qty_required double precision,
   is_feasible boolean,
   breach_reason public.breach_reason
 )
@@ -256,8 +256,9 @@ begin
   delete from public.orders where id = v_order_id;
 
   return query
-    select a.department_code, a.component_code, a.due_date, a.start_date,
-           a.end_date, a.qty_required, a.is_feasible, a.breach_reason
+    select a.department_code, a.component_code, a.due_date::text,
+           a.start_date::text, a.end_date::text, a.qty_required::float8,
+           a.is_feasible, a.breach_reason
       from _acceptance a
      order by a.route_position, a.component_code;
 

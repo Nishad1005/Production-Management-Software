@@ -24,6 +24,7 @@ import {
 } from '@/data/mutations'
 import { Button, Empty, Field, Panel, Table, Tag, Td, Th } from '@/components/ui'
 import { formatDateLong, formatNumber, inputClass } from '@/components/format'
+import { backend } from '@/lib/backend'
 import { exec } from '@/lib/database'
 import {
   downloadMasters,
@@ -430,6 +431,18 @@ function MastersFileControls() {
     }
   }
 
+  // masters-io still speaks raw SQL to PGlite, so it cannot work against the
+  // hosted backend yet. Saying so is better than a button that throws.
+  if (backend.kind !== 'offline') {
+    return (
+      <p className="text-faint max-w-[40ch] text-right text-[11px]">
+        Saving masters to a file is offline-only for now. On the hosted system
+        the data is shared and backed up, so the file is a transfer tool rather
+        than a safety net — it will return as an import path.
+      </p>
+    )
+  }
+
   return (
     <div className="text-right">
       <div className="flex flex-wrap justify-end gap-2">
@@ -510,8 +523,8 @@ function ShiftsPanel() {
                 />
               </Td>
               <Td>
-                {s.start_time}–{s.end_time}
-                {s.end_time < s.start_time ? (
+                {s.start_label}–{s.end_label}
+                {s.end_label < s.start_label ? (
                   <span className="text-faint"> (overnight)</span>
                 ) : null}
               </Td>

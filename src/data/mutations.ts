@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { exec, query } from '@/lib/database'
+import { rpc, select } from '@/lib/backend'
 
 /**
  * Writes.
@@ -17,7 +17,7 @@ import { exec, query } from '@/lib/database'
  */
 
 async function rerunSchedule() {
-  await exec(`select run_schedule(p_note => 'Recomputed after change')`)
+  await rpc('run_schedule', { p_note: 'Recomputed after change' })
 }
 
 /** Every write invalidates everything: the schedule touches all of it. */
@@ -45,12 +45,10 @@ export function useCustomers() {
   return useQuery({
     queryKey: ['customers'],
     queryFn: () =>
-      query<Customer>(
-        // The acceptance check's internal customer is not a real one.
-        `select id, code, name from customers
-          where is_active and code <> '__ACCEPTANCE_CHECK__'
-          order by name`,
-      ),
+      select<Customer>('customer_list', {
+        eq: { is_active: true },
+        order: ['name'],
+      }),
   })
 }
 
@@ -68,21 +66,17 @@ export type NewOrder = {
 
 export function useCreateOrder() {
   return useWrite<NewOrder>(async (o) => {
-    await query(
-      `select create_order($1, $2, $3, $4::numeric, $5::date,
-                           $6::order_confidence, $7::date, $8, $9::date)`,
-      [
-        o.erpOrderNo,
-        o.customerId,
-        o.articleId,
-        o.qty,
-        o.stuffingDate,
-        o.confidence,
-        o.deliveryDate || null,
-        o.containerRef || null,
-        o.materialReadyDate || null,
-      ],
-    )
+    await rpc('create_order', {
+      p_erp_order_no: o.erpOrderNo,
+      p_customer_id: o.customerId,
+      p_article_id: o.articleId,
+      p_qty: o.qty,
+      p_stuffing_date: o.stuffingDate,
+      p_confidence: o.confidence,
+      p_delivery_date: o.deliveryDate || null,
+      p_container_ref: o.containerRef || null,
+      p_material_ready_date: o.materialReadyDate || null,
+    })
   })
 }
 
@@ -97,29 +91,30 @@ export type NewShipmentLine = {
 
 export function useAddShipmentLine() {
   return useWrite<NewShipmentLine>(async (l) => {
-    await query(
-      `select add_shipment_line($1, $2::numeric, $3::date, $4::date, $5, $6::date)`,
-      [
-        l.orderId,
-        l.qty,
-        l.stuffingDate,
-        l.deliveryDate || null,
-        l.containerRef || null,
-        l.materialReadyDate || null,
-      ],
-    )
+    await rpc('add_shipment_line', {
+      p_order_id: l.orderId,
+      p_qty: l.qty,
+      p_stuffing_date: l.stuffingDate,
+      p_delivery_date: l.deliveryDate || null,
+      p_container_ref: l.containerRef || null,
+      p_material_ready_date: l.materialReadyDate || null,
+    })
   })
 }
 
 export function useDeleteShipmentLine() {
   return useWrite<string>(async (id) => {
-    await query(`select delete_shipment_line($1)`, [id])
+    await rpc('delete_shipment_line', {
+      p_id: id,
+    })
   })
 }
 
 export function useDeleteOrder() {
   return useWrite<string>(async (id) => {
-    await query(`select delete_order($1)`, [id])
+    await rpc('delete_order', {
+      p_id: id,
+    })
   })
 }
 
@@ -133,11 +128,11 @@ export function useSetDminus() {
     departmentCode: string
     days: number | null
   }>(async ({ articleCode, departmentCode, days }) => {
-    await query(`select set_dminus($1, $2, $3::integer)`, [
-      articleCode,
-      departmentCode,
-      days,
-    ])
+    await rpc('set_dminus', {
+      p_article_code: articleCode,
+      p_department_code: departmentCode,
+      p_days: days,
+    })
   })
 }
 
@@ -148,12 +143,12 @@ export function useSetRate() {
     shiftCode: string
     unitsPerDay: number
   }>(async ({ componentCode, departmentCode, shiftCode, unitsPerDay }) => {
-    await query(`select set_component_rate($1, $2, $3, $4::numeric)`, [
-      componentCode,
-      departmentCode,
-      shiftCode,
-      unitsPerDay,
-    ])
+    await rpc('set_component_rate', {
+      p_component_code: componentCode,
+      p_department_code: departmentCode,
+      p_shift_code: shiftCode,
+      p_units_per_day: unitsPerDay,
+    })
   })
 }
 
@@ -164,12 +159,12 @@ export function useUpdateDepartment() {
     yieldPct?: number
     routePosition?: number
   }>(async ({ id, name, yieldPct, routePosition }) => {
-    await query(`select update_department($1, $2, $3::numeric, $4::integer)`, [
-      id,
-      name ?? null,
-      yieldPct ?? null,
-      routePosition ?? null,
-    ])
+    await rpc('update_department', {
+      p_id: id,
+      p_name: name ?? null,
+      p_yield_pct: yieldPct ?? null,
+      p_route_position: routePosition ?? null,
+    })
   })
 }
 
@@ -180,11 +175,11 @@ export function useSetHeadcount() {
     headcount: number
   }>(
     async ({ departmentCode, shiftCode, headcount }) => {
-      await query(`select set_headcount($1, $2, $3::integer)`, [
-        departmentCode,
-        shiftCode,
-        headcount,
-      ])
+      await rpc('set_headcount', {
+      p_department_code: departmentCode,
+      p_shift_code: shiftCode,
+      p_headcount: headcount,
+    })
     },
     // Headcount does not feed capacity directly — component rates do. It is the
     // denominator in the overtime maths, which is Phase 4.
@@ -199,19 +194,22 @@ export function useCreateDepartment() {
     routePosition: number
     yieldPct: number
   }>(async ({ code, name, routePosition, yieldPct }) => {
-    await query(`select create_department($1, $2, $3::integer, $4::numeric)`, [
-      code,
-      name,
-      routePosition,
-      yieldPct,
-    ])
+    await rpc('create_department', {
+      p_code: code,
+      p_name: name,
+      p_route_position: routePosition,
+      p_yield_pct: yieldPct,
+    })
   })
 }
 
 export function useSetDepartmentActive() {
   return useWrite<{ id: string; isActive: boolean }>(
     async ({ id, isActive }) => {
-      await query(`select set_department_active($1, $2)`, [id, isActive])
+      await rpc('set_department_active', {
+      p_id: id,
+      p_is_active: isActive,
+    })
     },
   )
 }
@@ -231,19 +229,22 @@ export function useUpdateShift() {
     netProductionHours?: number
     maxOtHours?: number
   }>(async ({ id, name, netProductionHours, maxOtHours }) => {
-    await query(`select update_shift($1, $2, $3::numeric, $4::numeric)`, [
-      id,
-      name ?? null,
-      netProductionHours ?? null,
-      maxOtHours ?? null,
-    ])
+    await rpc('update_shift', {
+      p_id: id,
+      p_name: name ?? null,
+      p_net_production_hours: netProductionHours ?? null,
+      p_max_ot_hours: maxOtHours ?? null,
+    })
   })
 }
 
 export function useSetShiftActive() {
   return useWrite<{ id: string; isActive: boolean }>(
     async ({ id, isActive }) => {
-      await query(`select set_shift_active($1, $2)`, [id, isActive])
+      await rpc('set_shift_active', {
+      p_id: id,
+      p_is_active: isActive,
+    })
     },
   )
 }
@@ -260,12 +261,12 @@ export function useSetDepartmentShift() {
     isActive: boolean
     headcount?: number
   }>(async ({ departmentCode, shiftCode, isActive, headcount }) => {
-    await query(`select set_department_shift($1, $2, $3, $4::integer)`, [
-      departmentCode,
-      shiftCode,
-      isActive,
-      headcount ?? null,
-    ])
+    await rpc('set_department_shift', {
+      p_department_code: departmentCode,
+      p_shift_code: shiftCode,
+      p_is_active: isActive,
+      p_headcount: headcount ?? null,
+    })
   })
 }
 
@@ -279,24 +280,26 @@ export function useHolidays() {
   return useQuery({
     queryKey: ['holidays'],
     queryFn: () =>
-      query<Holiday>(
-        `select id, holiday_date::text, description from holidays
-          order by holiday_date`,
-      ),
+      select<Holiday>('holiday_list', { order: ['holiday_date'] }),
   })
 }
 
 export function useAddHoliday() {
   return useWrite<{ date: string; description: string }>(
     async ({ date, description }) => {
-      await query(`select add_holiday($1::date, $2)`, [date, description])
+      await rpc('add_holiday', {
+      p_date: date,
+      p_description: description,
+    })
     },
   )
 }
 
 export function useDeleteHoliday() {
   return useWrite<string>(async (id) => {
-    await query(`select remove_holiday($1)`, [id])
+    await rpc('remove_holiday', {
+      p_id: id,
+    })
   })
 }
 
@@ -316,13 +319,13 @@ export function useCreatePin() {
     startDate: string
     reason: string
   }>(async (p) => {
-    await query(`select create_pin($1, $2, $3, $4::date, $5)`, [
-      p.shipmentLineId,
-      p.departmentCode,
-      p.componentCode,
-      p.startDate,
-      p.reason,
-    ])
+    await rpc('create_pin', {
+      p_shipment_line_id: p.shipmentLineId,
+      p_department_code: p.departmentCode,
+      p_component_code: p.componentCode,
+      p_start_date: p.startDate,
+      p_reason: p.reason,
+    })
   })
 }
 
@@ -334,11 +337,11 @@ export function useReleasePin() {
   }>(async (p) => {
     // Released, never deleted: the record of who moved what, and why, is the
     // point of asking for a reason in the first place.
-    await query(`select release_pin($1, $2, $3)`, [
-      p.shipmentLineId,
-      p.departmentCode,
-      p.componentCode,
-    ])
+    await rpc('release_pin', {
+      p_shipment_line_id: p.shipmentLineId,
+      p_department_code: p.departmentCode,
+      p_component_code: p.componentCode,
+    })
   })
 }
 
@@ -357,10 +360,6 @@ export function usePins() {
   return useQuery({
     queryKey: ['pins'],
     queryFn: () =>
-      query<PinRow>(
-        `select id, shipment_line_id, erp_order_no, line_no::int,
-                department_code, component_code, pinned_start_date::text, reason
-           from pin_list order by pinned_start_date`,
-      ),
+      select<PinRow>('pin_list', { order: ['pinned_start_date'] }),
   })
 }

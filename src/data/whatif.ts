@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { query } from '@/lib/database'
+import { rpc, rpcRows, select } from '@/lib/backend'
 
 /**
  * Scenarios and run comparison.
@@ -29,16 +29,11 @@ export function useRuns() {
   return useQuery({
     queryKey: ['runs'],
     queryFn: () =>
-      query<RunSummary>(
-        `select id, run_at::text, note, is_current, task_count, breach_count,
-                duration_ms, what_if_department, what_if_factor::float8,
-                what_if_from::text, what_if_to::text,
-                what_if_applied, what_if_intended
-           from run_history
-          where status = 'complete'
-          order by run_at desc
-          limit 30`,
-      ),
+      select<RunSummary>('run_history', {
+        eq: { status: 'complete' },
+        order: ['run_at desc'],
+        limit: 30,
+      }),
   })
 }
 
@@ -59,15 +54,10 @@ export function useComparison(base?: string, scenario?: string) {
     enabled: Boolean(base && scenario && base !== scenario),
     queryKey: ['comparison', base, scenario],
     queryFn: () =>
-      query<ComparisonRow>(
-        `select department_code, route_position,
-                base_utilisation::float8, scenario_utilisation::float8,
-                utilisation_delta::float8,
-                base_flagged_days, scenario_flagged_days,
-                base_breaches, scenario_breaches
-           from compare_schedule_runs($1, $2)`,
-        [base, scenario],
-      ),
+      rpcRows<ComparisonRow>('compare_schedule_runs', {
+        p_base: base,
+        p_scenario: scenario,
+      }),
   })
 }
 
@@ -88,13 +78,10 @@ export function useChangedTasks(base?: string, scenario?: string) {
     enabled: Boolean(base && scenario && base !== scenario),
     queryKey: ['changed-tasks', base, scenario],
     queryFn: () =>
-      query<ChangedTask>(
-        `select change, erp_order_no, line_no::int, department_code,
-                component_code, base_start::text, scenario_start::text,
-                base_breach, scenario_breach
-           from compare_run_tasks($1, $2)`,
-        [base, scenario],
-      ),
+      rpcRows<ChangedTask>('compare_run_tasks', {
+        p_base: base,
+        p_scenario: scenario,
+      }),
   })
 }
 
@@ -111,18 +98,14 @@ export function useRunWhatIf() {
   const client = useQueryClient()
   return useMutation({
     mutationFn: async (s: Scenario) => {
-      const rows = await query<{ id: string }>(
-        `select run_what_if($1, $2::order_confidence[], $3, $4::date, $5::date, $6::numeric) as id`,
-        [
-          s.note,
-          `{${s.confidence.join(',')}}`,
-          s.departmentCode,
-          s.from,
-          s.to,
-          s.factor,
-        ],
-      )
-      return rows[0].id
+      return rpc<string>('run_what_if', {
+        p_note: s.note,
+        p_confidence: s.confidence,
+        p_department_code: s.departmentCode,
+        p_from: s.from,
+        p_to: s.to,
+        p_factor: s.factor,
+      })
     },
     onSuccess: () => client.invalidateQueries({ queryKey: ['runs'] }),
   })
@@ -132,7 +115,7 @@ export function usePromoteRun() {
   const client = useQueryClient()
   return useMutation({
     mutationFn: async (runId: string) => {
-      await query(`select promote_schedule_run($1)`, [runId])
+      await rpc('promote_schedule_run', { p_run_id: runId })
     },
     // Promoting changes the live plan, so every screen has to reread.
     onSuccess: () => client.invalidateQueries(),
@@ -143,7 +126,7 @@ export function useDeleteRun() {
   const client = useQueryClient()
   return useMutation({
     mutationFn: async (runId: string) => {
-      await query(`select delete_schedule_run($1)`, [runId])
+      await rpc('delete_schedule_run', { p_id: runId })
     },
     onSuccess: () => client.invalidateQueries({ queryKey: ['runs'] }),
   })

@@ -8,6 +8,13 @@
 --
 -- security_invoker so row-level security applies to the calling user rather
 -- than the view's owner.
+--
+-- Every column is cast to the type the client wants, here rather than in the
+-- query. The two backends disagree otherwise: the Postgres wire protocol hands
+-- back `numeric` as a string and `date` as a Date object, while PostgREST
+-- serialises them as a JSON number and a string. Casting once, in the view,
+-- means a screen cannot behave differently depending on where it is running —
+-- which would be a miserable class of bug to chase.
 
 -- ---------------------------------------------------------------------------
 -- Command centre figures, one row per run.
@@ -37,19 +44,19 @@ with (security_invoker = true) as
 create view public.run_history
 with (security_invoker = true) as
   select id,
-         run_at,
+         run_at::text as run_at,
          note,
          is_current,
          status,
          task_count,
          breach_count,
          duration_ms,
-         horizon_from,
-         horizon_to,
+         horizon_from::text as horizon_from,
+         horizon_to::text as horizon_to,
          params -> 'what_if' ->> 'department' as what_if_department,
-         (params -> 'what_if' ->> 'factor')::numeric as what_if_factor,
-         (params -> 'what_if' ->> 'from')::date as what_if_from,
-         (params -> 'what_if' ->> 'to')::date as what_if_to,
+         (params -> 'what_if' ->> 'factor')::float8 as what_if_factor,
+         (params -> 'what_if' ->> 'from')::text as what_if_from,
+         (params -> 'what_if' ->> 'to')::text as what_if_to,
          (params -> 'what_if' ->> 'applied')::integer as what_if_applied,
          (params -> 'what_if' ->> 'intended')::integer as what_if_intended
     from public.schedule_runs;
@@ -63,10 +70,10 @@ with (security_invoker = true) as
          dd.department_id,
          d.code as department_code,
          d.route_position,
-         dd.load_date,
-         dd.utilisation,
+         dd.load_date::text as load_date,
+         dd.utilisation::float8 as utilisation,
          dd.status,
-         dd.components_loaded
+         dd.components_loaded::integer as components_loaded
     from public.schedule_department_day dd
     join public.departments d on d.id = dd.department_id;
 
@@ -75,12 +82,12 @@ create view public.load_detail
 with (security_invoker = true) as
   select l.run_id,
          l.department_id,
-         l.load_date,
+         l.load_date::text as load_date,
          o.erp_order_no,
          cu.name as customer_name,
          cmp.code as component_code,
-         sum(l.qty_planned) as qty_planned,
-         max(cap.capacity) as capacity
+         sum(l.qty_planned)::float8 as qty_planned,
+         max(cap.capacity)::float8 as capacity
     from public.schedule_daily_load l
     join public.shipment_lines sl on sl.id = l.shipment_line_id
     join public.orders o on o.id = sl.order_id
@@ -110,12 +117,12 @@ with (security_invoker = true) as
          o.erp_order_no,
          cu.name as customer_name,
          a.code as article_code,
-         o.total_qty,
-         o.confidence,
-         o.status,
-         r.line_count,
-         r.unallocated_qty,
-         (select min(sl.stuffing_date) from public.shipment_lines sl
+         o.total_qty::float8 as total_qty,
+         o.confidence::text as confidence,
+         o.status::text as status,
+         r.line_count::integer as line_count,
+         r.unallocated_qty::float8 as unallocated_qty,
+         (select min(sl.stuffing_date)::text from public.shipment_lines sl
            where sl.order_id = o.id) as next_stuffing,
          (select count(*)::integer
             from public.schedule_tasks t
@@ -137,7 +144,7 @@ with (security_invoker = true) as
          d.code,
          d.name,
          d.route_position,
-         d.yield_pct,
+         d.yield_pct::float8 as yield_pct,
          d.is_active,
          string_agg(s.code, ', ' order by s.code) as shifts,
          sum(ds.sanctioned_headcount)::integer as headcount
@@ -156,8 +163,8 @@ with (security_invoker = true) as
          s.end_time,
          to_char(s.start_time, 'HH24:MI') as start_label,
          to_char(s.end_time, 'HH24:MI') as end_label,
-         s.net_production_hours,
-         s.max_ot_hours,
+         s.net_production_hours::float8 as net_production_hours,
+         s.max_ot_hours::float8 as max_ot_hours,
          s.is_active,
          (select count(*)::integer
             from public.department_shifts ds
@@ -195,7 +202,7 @@ with (security_invoker = true) as
          d.route_position,
          cmp.code as component_code,
          s.code as shift_code,
-         cr.units_per_day,
+         cr.units_per_day::float8 as units_per_day,
          cr.is_measured
     from public.component_rates cr
     join public.departments d on d.id = cr.department_id
@@ -221,7 +228,7 @@ with (security_invoker = true) as
          a.code as article_code,
          c.code as component_code,
          c.name as component_name,
-         b.qty_per_unit
+         b.qty_per_unit::float8 as qty_per_unit
     from public.article_bom b
     join public.articles a on a.id = b.article_id
     join public.components c on c.id = b.component_id;
@@ -235,12 +242,45 @@ with (security_invoker = true) as
          sl.line_no,
          d.code as department_code,
          c.code as component_code,
-         p.pinned_start_date,
+         p.pinned_start_date::text as pinned_start_date,
          p.reason,
-         p.pinned_at
+         p.pinned_at::text as pinned_at
     from public.schedule_pins p
     join public.shipment_lines sl on sl.id = p.shipment_line_id
     join public.orders o on o.id = sl.order_id
     join public.departments d on d.id = p.department_id
     join public.components c on c.id = p.component_id
    where p.is_active;
+
+
+-- ---------------------------------------------------------------------------
+-- The remaining tables the client reads, wrapped so it only ever touches views
+-- and never a table directly. Same casting rule.
+-- ---------------------------------------------------------------------------
+
+create view public.shipment_line_list
+with (security_invoker = true) as
+  select id,
+         order_id,
+         line_no,
+         qty::float8 as qty,
+         stuffing_date::text as stuffing_date,
+         delivery_date::text as delivery_date,
+         container_ref,
+         material_ready_date::text as material_ready_date
+    from public.shipment_lines;
+
+create view public.article_list
+with (security_invoker = true) as
+  select id, code, name, category, is_active from public.articles;
+
+create view public.customer_list
+with (security_invoker = true) as
+  select id, code, name, country, is_active
+    from public.customers
+   where code <> '__ACCEPTANCE_CHECK__';
+
+create view public.holiday_list
+with (security_invoker = true) as
+  select id, holiday_date::text as holiday_date, description
+    from public.holidays;

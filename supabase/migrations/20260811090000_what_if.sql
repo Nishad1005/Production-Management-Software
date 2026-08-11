@@ -127,9 +127,9 @@ create or replace function public.compare_schedule_runs(
 returns table (
   department_code text,
   route_position integer,
-  base_utilisation numeric,
-  scenario_utilisation numeric,
-  utilisation_delta numeric,
+  base_utilisation double precision,
+  scenario_utilisation double precision,
+  utilisation_delta double precision,
   base_flagged_days integer,
   scenario_flagged_days integer,
   base_breaches integer,
@@ -152,9 +152,10 @@ as $$
   )
   select coalesce(b.department_code, s.department_code),
          coalesce(b.route_position, s.route_position),
-         b.avg_utilisation,
-         s.avg_utilisation,
-         round(coalesce(s.avg_utilisation, 0) - coalesce(b.avg_utilisation, 0), 4),
+         b.avg_utilisation::float8,
+         s.avg_utilisation::float8,
+         round(coalesce(s.avg_utilisation::numeric, 0)
+               - coalesce(b.avg_utilisation::numeric, 0), 4)::float8,
          coalesce(b.flagged_days, 0)::integer,
          coalesce(s.flagged_days, 0)::integer,
          coalesce(bb.n, 0),
@@ -184,8 +185,8 @@ returns table (
   line_no integer,
   department_code text,
   component_code text,
-  base_start date,
-  scenario_start date,
+  base_start text,
+  scenario_start text,
   base_breach public.breach_reason,
   scenario_breach public.breach_reason
 )
@@ -202,8 +203,8 @@ as $$
          sl.line_no,
          d.code,
          c.code,
-         b.start_date,
-         s.start_date,
+         b.start_date::text,
+         s.start_date::text,
          b.breach_reason,
          s.breach_reason
     from public.schedule_tasks b
