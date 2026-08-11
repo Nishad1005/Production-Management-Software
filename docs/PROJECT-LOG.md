@@ -343,6 +343,32 @@ precondition for the planning half being used in anger.
 Newest first. One entry per working session — what changed, and anything a
 future reader would not infer from the diff.
 
+### 2026-08-12 — Access control checked against the live project
+`npm run verify:live` checks access control over real requests against the real
+project, because the local suite provably cannot catch what matters here — every
+policy was green when a probe found the whole function API callable by anyone
+holding the anon key.
+
+Anonymous: ten for ten. Every view unreadable, every function uncallable, all
+blocked at the door rather than inside.
+
+Signed in as an admin + planner account: reads the masters, sees only its own
+profile, can list users, can edit masters. Confirms the seed applied — four
+departments — and that the Users screen works, since the roles were granted
+through it.
+
+**Still untested: a restricted account.** The escalation check is meaningless
+for an account that is already an admin, and the script now says so rather than
+reporting a pass. Spec §16's promise — that an HOD cannot reach another
+department's data regardless of how the request is made — has not been exercised
+live. The policies are unit-tested per role locally; what is unverified is
+whether PostgREST and the grants agree with them.
+
+A first version of that check reported ESCALATED against a working system,
+because it did not look at the roles the account started with. A check that
+cannot tell a feature from a hole gets ignored, which is worse than not having
+it.
+
 ### 2026-08-11 — Auth, and masters as a portable file
 Sign-in, sessions, a Users screen for the twelve roles, and role-aware
 navigation. Accounts are created in the Supabase dashboard — creating one needs

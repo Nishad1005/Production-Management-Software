@@ -117,21 +117,22 @@ async function checkSignedIn(db, email, password) {
     `${profiles?.length ?? 0} rows`,
   )
 
-  // Privilege escalation, the check that matters most.
-  const { error: escalate } = await db.rpc('grant_role', {
-    p_user_id: auth.user.id,
-    p_role: 'admin',
-  })
-  const { data: afterEscalation } = await db.from('my_access').select('*')
-  const gainedAdmin = (afterEscalation?.[0]?.roles ?? []).includes('admin')
-  report(
-    'cannot grant itself admin',
-    !gainedAdmin,
-    gainedAdmin ? 'ESCALATED' : escalate ? undefined : 'call allowed but no effect',
-  )
+  const isAdmin = roles.includes('admin')
+
+  // Privilege escalation, the check that matters most — but only meaningful
+  // for an account that is not already an admin. An admin granting a role is
+  // the feature, and a check that cannot tell the two apart would report a
+  // working system as broken, or worse, get ignored.
+  if (isAdmin) {
+    report('escalation check skipped — already an admin', true)
+  } else {
+    await db.rpc('grant_role', { p_user_id: auth.user.id, p_role: 'admin' })
+    const { data: after } = await db.from('my_access').select('*')
+    const gained = (after?.[0]?.roles ?? []).includes('admin')
+    report('cannot grant itself admin', !gained, gained ? 'ESCALATED' : undefined)
+  }
 
   const { error: listError } = await db.rpc('list_users')
-  const isAdmin = roles.includes('admin')
   report(
     isAdmin ? 'can list users (is admin)' : 'cannot list users',
     isAdmin ? !listError : Boolean(listError),
