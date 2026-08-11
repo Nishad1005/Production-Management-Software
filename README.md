@@ -11,6 +11,28 @@ flags the days on which a department is asked to produce more than it can.
 > people, and the slack available in the same window. Whether to run overtime,
 > add people, resequence or talk to the customer stays a production decision.
 
+## It runs with no backend at all
+
+The whole application runs offline in the browser. PGlite is Postgres 18
+compiled to WebAssembly, so the migrations, the scheduling engine and the
+planning views are the *same SQL* that will run on Supabase — nothing is
+reimplemented in JavaScript for the demo. On first load it applies the schema,
+seeds a demonstration order book and runs the scheduler; state persists in
+IndexedDB.
+
+```bash
+npm install
+npm run dev          # http://localhost:5173 — no database, no accounts, no network
+```
+
+`npm run build` produces a `dist/` folder that runs from any static host. There
+is no server to stand up and nothing to sign into, which is what makes it
+practical to hand to someone and let them click.
+
+The one thing offline does **not** exercise is row-level security: everything
+runs as the owner, so policies exist but are never enforced. That is what
+`tests/rls.test.ts` is for, against a native Postgres.
+
 ## Status
 
 | Phase | Scope | State |
@@ -20,26 +42,24 @@ flags the days on which a department is asked to produce more than it can.
 | 2 | Scheduling engine, planning outputs, acceptance check | **Done** |
 | 3–10 | WIP, manpower, material, quality, machines, cost, command centre, predictive | Not started |
 
-The React client is a shell only — the screens are the next piece of work. Every
-figure below is exercised by the test suite against a real Postgres.
+Screens: command centre, load heatmap, schedule, order book, order acceptance
+check, masters. Masters are read-only so far; editing them is next, along with
+drag-to-reschedule on the Gantt.
 
-## Getting started
-
-Requires Node LTS (installed here via nvm; `~/.zshrc` loads it).
-
-```bash
-npm install
-cp .env.example .env.local     # fill from the Supabase project API settings
-npm run dev
-```
+## Commands
 
 | Command | Does |
 |---|---|
-| `npm test` | Boots a throwaway Postgres, applies every migration, runs 53 tests |
+| `npm run dev` | The app, offline, on port 5173 |
+| `npm test` | Boots a throwaway native Postgres, applies every migration, runs 53 tests |
+| `npm run screenshot` | Drives every screen in headless Chromium and captures it |
 | `npm run build` | Type-check and production build |
 | `npm run lint` | oxlint |
 | `npm run db:push` | Apply migrations to the linked Supabase project |
 | `npm run db:types` | Regenerate `src/lib/database.types.ts` |
+
+Going online later is a change of transport, not of logic: the SQL is already
+written and tested, and `supabase link && npm run db:push` applies it unchanged.
 
 ## How the tests work
 
