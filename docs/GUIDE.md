@@ -163,10 +163,64 @@ the shipped quantity survives every loss downstream of it.
 
 ---
 
+### What if
+
+Try a change without touching the live plan.
+
+Describe what you are trying, pick a department, a window and a capacity level,
+and run it. The scenario is scheduled as its own complete version of the plan and
+compared against the live one. The capacity change is applied for that run and
+taken straight back out — **the masters are never edited**.
+
+| Preset | Multiplier | Stands for |
+|---|---|---|
+| Department down | ×0 | A breakdown or a shutdown |
+| Overtime | ×1.2 | Roughly two hours a day on top |
+| Second shift | ×2 | Double the capacity |
+
+Any multiplier can be typed directly. Leaving the department blank runs the book
+unchanged, which is how you ask "what happens if the probable orders land?" —
+tick or untick *Include probable orders* and compare.
+
+What comes back:
+
+- **Four figures** — breaches and flagged days, now against the scenario, each
+  with the difference spelled out.
+- **Per department** — utilisation before and after, the change, and the breach
+  count on each side. This is where you see a constraint move from one department
+  to another.
+- **What changed** — only the tasks that actually moved or changed verdict,
+  labelled *Resolved*, *New breach*, *Different reason* or *Dates moved*. This is
+  the "these six stop breaching if you do this" answer.
+
+**Make this the plan** promotes the scenario. The plan it replaces is kept, as
+every run is. **Discard** throws the scenario away.
+
+The **Runs** list at the bottom keeps every run ever made. Any of them can be
+compared against the live plan, so you can go back and see what a plan looked
+like before a decision was taken.
+
+> If a scenario's window overlaps a capacity override that was already booked —
+> a scheduled shutdown, say — the real one wins and the scenario applies only to
+> the rest. The screen tells you when that has happened, because a partial result
+> presented as a whole one would be worse than no result.
+
 ### Masters
 
 The figures every schedule run depends on. **Underlined values are editable** —
 click one, type, press Enter. Every change re-runs the schedule immediately.
+
+**Save masters to a file / Load from a file.** Everything on this screen —
+route, shifts, staffing, D-minus, rates, BOM, holidays — written to a single
+file, and read back.
+
+Use it before you close the browser after entering anything real. This build
+keeps its data in one browser, so a cleared cache takes the lot; the file is the
+only copy that survives. It is also how real figures move between machines, and
+how they will be loaded into the hosted system later.
+
+Loading **merges by code** and never wipes what is already there, so a partly
+filled file is safe to apply.
 
 **Production route.** Departments in the order work flows through them. Yield is
 the percentage that survives each step, and it compounds backwards: five
@@ -272,10 +326,14 @@ bar, give a reason. Every later run honours it.
 **"The factory is closed for Diwali."** → *Masters*, add the holidays. The
 calendar renumbers and every schedule shifts.
 
-**"What if we put stitching on a second shift?"** → *Masters*. Switch the shift
-on under *Shifts*, then switch it on for that department in *Who works which
-shift*. Correct the copied rates for the second shift's staffing, then look at
-the bottleneck table — the constraint often moves somewhere else entirely.
+**"What if we put stitching on a second shift?"** → *What if*. Pick the
+department, *Second shift*, run it. The comparison shows whether it resolves the
+breaches and where the constraint moves to. If you decide to do it for real,
+*Masters* is where it gets made permanent.
+
+**"A machine is down next week — how bad is it?"** → *What if*, pick the
+department, *Department down*, set the window to the outage. The changed-task
+list tells you which orders it actually touches.
 
 **"These capacity figures are wrong."** → *Masters*, component rates. Read the
 warning above about dedicated rates first.
@@ -295,7 +353,8 @@ Worth knowing before showing it to anyone:
   export file to build the mapping against.
 - **No login, and access control is not active offline.** The permission model is
   built and tested, but the offline build runs as a single user with full rights.
-- **Nothing is shared.** Each browser holds its own copy. Two people running it
-  see their own data.
+- **Nothing is shared, and nothing is backed up.** Each browser holds its own
+  copy, so two people running it see different data and a cleared cache loses
+  everything. Save the masters to a file after entering anything real.
 - **Phases 3 onwards do not exist** — no WIP tracking, manpower, material,
   quality, machines or costing yet.

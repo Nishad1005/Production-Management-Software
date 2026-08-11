@@ -123,6 +123,18 @@ export async function exec(sql: string): Promise<void> {
 }
 
 /**
+ * Runs several statements as one unit, rolled back entirely if any of them
+ * fails. Used by the masters import, where a file applied halfway would leave
+ * the route describing a factory that does not exist.
+ */
+export async function transaction<T>(
+  fn: (run: (sql: string, params?: unknown[]) => Promise<unknown>) => Promise<T>,
+): Promise<T> {
+  const db = await getDatabase()
+  return db.transaction(async (tx) => fn((sql, params) => tx.query(sql, params)))
+}
+
+/**
  * Deletes the persisted database, waiting for the browser to confirm it.
  *
  * Firing the request without awaiting it means the next PGlite.create() can win

@@ -1,0 +1,51 @@
+# Kram — static deploy.
+#
+# The whole application, database included, is a static bundle: PGlite is
+# Postgres compiled to WebAssembly, so there is no server to run and no
+# environment to configure.
+#
+# Note there are deliberately *no* COOP/COEP headers here. Cross-origin
+# isolation is the usual price of running WASM databases, but PGlite's
+# IndexedDB backend never touches SharedArrayBuffer, so the site works as an
+# ordinary static deploy. Adding those headers would break embedding for no gain.
+#
+# No redirect rules either: the app routes on the URL fragment, so every request
+# is for a real file.
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "24"
+
+# Vite fingerprints everything under /assets, so it can be cached forever. This
+# matters more than usual here — the Postgres binary is 10 MB, and a returning
+# visitor should never fetch it twice.
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Declared explicitly rather than trusted to the default: WebAssembly.instantiate
+# refuses a stream served as anything other than application/wasm, and a wrong
+# MIME type here fails as a blank page with a console error nobody sees.
+[[headers]]
+  for = "/assets/*.wasm"
+  [headers.values]
+    Content-Type = "application/wasm"
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Postgres' bundled data directory, fetched as an array buffer.
+[[headers]]
+  for = "/assets/*.data"
+  [headers.values]
+    Content-Type = "application/octet-stream"
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# The entry point must never be cached, or a deploy ships new assets that
+# nothing references.
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"

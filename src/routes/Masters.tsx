@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import {
   useBom,
   useDepartmentShiftGrid,
@@ -23,6 +24,13 @@ import {
 } from '@/data/mutations'
 import { Button, Empty, Field, Panel, Table, Tag, Td, Th } from '@/components/ui'
 import { formatDateLong, formatNumber, inputClass } from '@/components/format'
+import { exec } from '@/lib/database'
+import {
+  downloadMasters,
+  exportMasters,
+  importMasters,
+  readJsonFile,
+} from '@/lib/masters-io'
 import {
   EditableNumber,
   EditableText,
@@ -65,10 +73,13 @@ export function Masters() {
 
   return (
     <div className="space-y-6">
-      <p className="text-mid max-w-[85ch] text-[12px]">
-        Underlined figures are editable — click one, type, press Enter. Every
-        change re-runs the schedule.
-      </p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <p className="text-mid max-w-[70ch] text-[12px]">
+          Underlined figures are editable — click one, type, press Enter. Every
+          change re-runs the schedule.
+        </p>
+        <MastersFileControls />
+      </div>
 
       <Panel
         title="Production route"
@@ -370,6 +381,87 @@ export function Masters() {
           onClose={() => setAddingHoliday(false)}
         />
       ) : null}
+    </div>
+  )
+}
+
+/**
+ * Save the masters to a file and load them back.
+ *
+ * The offline build keeps everything in one browser, so a real route and
+ * D-minus matrix entered here is one cleared cache away from gone. The file uses
+ * codes rather than internal ids, so it also applies cleanly to a different
+ * database — which is how real data will reach Supabase.
+ */
+function MastersFileControls() {
+  const client = useQueryClient()
+  const [busy, setBusy] = useState<'export' | 'import' | null>(null)
+  const [message, setMessage] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const fileInput = useRef<HTMLInputElement>(null)
+
+  async function onExport() {
+    setBusy('export')
+    setError(null)
+    try {
+      downloadMasters(await exportMasters())
+      setMessage('Masters saved to a file.')
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  async function onImport(file: File) {
+    setBusy('import')
+    setError(null)
+    setMessage(null)
+    try {
+      const applied = await importMasters(await readJsonFile(file))
+      await exec(`select run_schedule(p_note => 'Masters imported')`)
+      await client.invalidateQueries()
+      setMessage(`${applied} rows applied, and the schedule re-run.`)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setBusy(null)
+      if (fileInput.current) fileInput.current.value = ''
+    }
+  }
+
+  return (
+    <div className="text-right">
+      <div className="flex flex-wrap justify-end gap-2">
+        <Button variant="quiet" onClick={onExport} disabled={busy !== null}>
+          {busy === 'export' ? 'Saving…' : 'Save masters to a file'}
+        </Button>
+        <Button
+          variant="quiet"
+          onClick={() => fileInput.current?.click()}
+          disabled={busy !== null}
+        >
+          {busy === 'import' ? 'Loading…' : 'Load from a file'}
+        </Button>
+        <input
+          ref={fileInput}
+          type="file"
+          accept="application/json,.json"
+          className="hidden"
+          data-testid="masters-import"
+          onChange={(e) => {
+            const file = e.target.files?.[0]
+            if (file) void onImport(file)
+          }}
+        />
+      </div>
+      {message ? (
+        <p className="text-clear mt-1.5 text-[11.5px]">{message}</p>
+      ) : null}
+      {error ? <p className="text-flag mt-1.5 text-[11.5px]">{error}</p> : null}
+      <p className="text-faint mt-1.5 max-w-[40ch] text-[11px]">
+        Loading merges by code — it never wipes what is already there.
+      </p>
     </div>
   )
 }

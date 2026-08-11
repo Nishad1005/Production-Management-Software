@@ -8,6 +8,7 @@ import { OrderBook } from '@/routes/OrderBook'
 import { Acceptance } from '@/routes/Acceptance'
 import { Gantt } from '@/routes/Gantt'
 import { Masters } from '@/routes/Masters'
+import { WhatIf } from '@/routes/WhatIf'
 
 const NAV = [
   { to: '/', label: 'Command centre', end: true },
@@ -15,6 +16,7 @@ const NAV = [
   { to: '/gantt', label: 'Schedule' },
   { to: '/orders', label: 'Order book' },
   { to: '/accept', label: 'Accept an order' },
+  { to: '/whatif', label: 'What if' },
   { to: '/masters', label: 'Masters' },
 ]
 
@@ -196,6 +198,7 @@ export function App() {
             <Route path="/gantt" element={<Gantt />} />
             <Route path="/orders" element={<OrderBook />} />
             <Route path="/accept" element={<Acceptance />} />
+            <Route path="/whatif" element={<WhatIf />} />
             <Route path="/masters" element={<Masters />} />
           </Routes>
         </Shell>

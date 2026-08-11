@@ -252,14 +252,45 @@ React state. Three real defects came from this that the build was happy with.
 
 ## 8. What is next
 
-1. **Named what-if runs, compared side by side.** The engine already versions
-   every run and `run_schedule(p_make_current => false)` already writes one, so
-   this is mostly UI over data that exists. Promote or discard afterwards.
-2. **The real route and D-minus values.** Still the single change that would make
-   the biggest difference to how the demo lands.
-3. **Articles and components as masters.** Currently seeded only; there is no way
+1. **The real route and D-minus values.** Still the single change that would make
+   the biggest difference to how the demo lands. Blocked on a session with PPC —
+   and `docs/GUIDE.md` now covers saving the masters to a file afterwards, so
+   that session's work is not held hostage by one browser.
+2. **Supabase**, per the decision below: after the demo, before Phase 3.
+3. **Phase 3 — WIP tracking.** The highest-value build from the concept deck.
+   It replaces the daily-production Google Sheet (slide 18), unlocks six of the
+   nine MD dashboard KPIs, and makes capacity self-correcting rather than
+   asserted. Inherently multi-user, so it needs Supabase first.
+4. **Articles and components as masters.** Currently seeded only; there is no way
    to add a new article without SQL. Lower priority than it sounds, since both
    arrive from Panipuri in the real system.
+
+### Why the MD dashboard is not next
+
+Slides 5–6 are the client's headline ask, and it is the wrong thing to build
+now. Of its nine KPIs only three — orders running, delayed orders, containers by
+stuffing date — can be computed from data that exists. OTIF, daily production,
+WIP value, production efficiency, rejections and material shortages all need
+actuals that arrive with Phases 3–6.
+
+Shipping it with six invented figures would undermine every real number beside
+them. It follows Phase 3.
+
+### Deployment and Supabase timing
+
+**Netlify, verified.** PGlite never touches `SharedArrayBuffer` or
+`crossOriginIsolated`, so no COOP/COEP headers are needed — the usual blocker for
+WASM databases does not apply. Largest asset is 10.1 MB against a 100 MB limit,
+and `HashRouter` means no redirect rules. `netlify.toml` pins Node, sets the WASM
+MIME type explicitly and caches fingerprinted assets forever.
+
+Each first-time visitor downloads ~5 MB, because the database ships to the
+browser. Acceptable for a demo; it disappears when Supabase takes over.
+
+**Supabase: after the demo, before Phase 3.** The hard boundary is the WIP
+ledger — one department declares output and the next accepts it, which cannot
+work in a database living in one browser tab. Until then, offline is an
+advantage: no accounts, no cost, and a build that runs from a folder.
 
 ---
 
@@ -267,6 +298,34 @@ React state. Three real defects came from this that the build was happy with.
 
 Newest first. One entry per working session — what changed, and anything a
 future reader would not infer from the diff.
+
+### 2026-08-11 — What-if, masters export/import, Netlify
+Scenarios as a first-class screen: a capacity multiplier over a window for one
+department, run as a non-current version of the plan and compared against the
+live one. The deck's three examples — machine downtime, overtime, a second
+shift — are the same lever at 0, 1.2 and 2.0, so the form asks for the lever
+rather than pretending they are separate features.
+
+`run_what_if` applies temporary capacity overrides, runs the engine and takes
+them straight back out, inside an exception handler so a failed run cannot leave
+one behind masquerading as a capacity change nobody remembers making. Where a
+*real* override already occupies the window, the scenario does not overwrite it —
+the run records how much of the change actually applied, and the screen says so
+rather than presenting a partial result as a whole one.
+
+Masters export/import writes every master to a JSON file keyed by code rather
+than internal id, so a file from one database applies to another. Two reasons:
+it stops a cleared browser cache destroying a PPC data-entry session, and it is
+how real data will seed Supabase.
+
+**Closed a verification gap that had been open the whole project**: every browser
+check until now ran against the Vite dev server, never the production bundle
+Netlify would actually serve. Both are now checked. They agree — but that was an
+assumption, not a fact, until it was tested.
+
+Also fixed a spelling bug the screenshot caught and the test did not: the
+comparison read "8 more breachs", because the plural was being derived by adding
+an "s". Plurals are now passed in explicitly.
 
 ### 2026-08-11 — Shifts as a master
 Shifts panel (net production hours, overtime ceiling, switch on/off) and a

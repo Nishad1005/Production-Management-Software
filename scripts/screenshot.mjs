@@ -121,6 +121,35 @@ await step('edit D-minus', async () => {
   return 'D-60 → D-64, persisted across reload'
 })
 
+// --- masters survive a round trip through a file ----------------------------
+
+await step('masters round-trip', async () => {
+  await go('#/masters', 'text=Production route')
+
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    page.click('button:has-text("Save masters to a file")'),
+  ])
+  const saved = `${outDir}/kram-masters.json`
+  await download.saveAs(saved)
+
+  // The previous step left wood at D-64. Move it, then load the file back and
+  // it should return — which is what proves the file carries real values and
+  // the import reaches the database.
+  const cell = page.locator('button:has-text("D-64")').first()
+  await cell.click()
+  const input = page.locator('input[type=number]:visible').first()
+  await input.fill('70')
+  await input.press('Enter')
+  await page.waitForSelector('button:has-text("D-70")', { timeout: 60_000 })
+
+  await page.setInputFiles('[data-testid="masters-import"]', saved)
+  await page.waitForSelector('text=/\\d+ rows applied/', { timeout: 60_000 })
+  await page.waitForSelector('button:has-text("D-64")', { timeout: 60_000 })
+
+  return 'exported, changed, re-imported, value restored'
+})
+
 // --- bringing a second shift on adds capacity -------------------------------
 
 await step('bring a shift on', async () => {
@@ -205,6 +234,69 @@ await step('drag to reschedule', async () => {
   await page.waitForSelector('text=Pulled forward to protect', { timeout: 60_000 })
   await page.screenshot({ path: `${outDir}/schedule-pinned.png`, fullPage: true })
   return 'pin saved and honoured by the next run'
+})
+
+// --- a what-if scenario, compared and promoted ------------------------------
+
+await step('what-if scenario', async () => {
+  await go('#/whatif', 'text=Try a change')
+
+  await page.fill(
+    'input[placeholder="Second shift on stitching through November"]',
+    'Stitching down for a fortnight',
+  )
+  await page.selectOption('form select', { label: 'Stitching' })
+  await page.click('button:has-text("Department down")')
+  await page.click('button:has-text("Run it")')
+
+  await page.waitForSelector('text=What changed', { timeout: 60_000 })
+  await page.screenshot({ path: `${outDir}/whatif.png`, fullPage: true })
+
+  // Taking a department out for the whole horizon cannot make the plan better.
+  // If this reports fewer breaches, the comparison is reading the two runs the
+  // wrong way round — which would look entirely plausible on screen.
+  const worse = await page.locator('text=/\\d+ more breaches/').count()
+  if (!worse) {
+    throw new Error(
+      'shutting a department down did not increase the breach count',
+    )
+  }
+
+  const changed = await page
+    .locator('table tr', { hasText: 'STITCH' })
+    .filter({ hasText: 'COVER' })
+    .count()
+  if (changed < 2) {
+    throw new Error(`only ${changed} tasks changed — expected the department's work to move`)
+  }
+  return `${changed} tasks changed, breach count up`
+})
+
+await step('promote a scenario', async () => {
+  await go('#/whatif', 'text=Try a change')
+
+  // Compare the newest non-live run, then make it the plan.
+  await page.locator('button:has-text("Compare")').first().click()
+  await page.waitForSelector('button:has-text("Make this the plan")', {
+    timeout: 60_000,
+  })
+  await page.click('button:has-text("Make this the plan")')
+
+  // The promoted run must be the one now labelled as live.
+  await page.waitForFunction(
+    () => {
+      const rows = [...document.querySelectorAll('tr')]
+      return rows.some(
+        (r) =>
+          r.textContent?.includes('Live plan') &&
+          r.textContent?.includes('Stitching down'),
+      )
+    },
+    undefined,
+    { timeout: 60_000 },
+  )
+  await page.screenshot({ path: `${outDir}/whatif-promoted.png`, fullPage: true })
+  return 'scenario is now the live plan'
 })
 
 await browser.close()
