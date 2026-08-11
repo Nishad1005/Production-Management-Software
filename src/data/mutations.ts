@@ -193,18 +193,117 @@ export function useUpdateDepartment() {
 }
 
 export function useSetHeadcount() {
-  return useWrite<{ departmentId: string; headcount: number }>(
-    async ({ departmentId, headcount }) => {
+  return useWrite<{
+    departmentId: string
+    shiftId: string
+    headcount: number
+  }>(
+    async ({ departmentId, shiftId, headcount }) => {
       await query(
-        `update department_shifts set sanctioned_headcount = $2
-          where department_id = $1 and is_active`,
-        [departmentId, headcount],
+        `update department_shifts set sanctioned_headcount = $3
+          where department_id = $1 and shift_id = $2`,
+        [departmentId, shiftId, headcount],
       )
     },
     // Headcount does not feed capacity directly — component rates do. It is the
     // denominator in the overtime maths, which is Phase 4.
     { rerun: false },
   )
+}
+
+// ---------------------------------------------------------------------------
+// Shifts
+//
+// Spec §2 calls the multi-shift model Rev B's structural correction: "A
+// department running two shifts has roughly double the daily capacity, the
+// overtime ceiling applies per person per shift rather than per day, and
+// attendance is recorded per shift. With a single headcount field, every
+// capacity figure in the system would have been wrong — and wrong in a way that
+// looks entirely normal on screen."
+// ---------------------------------------------------------------------------
+
+export function useUpdateShift() {
+  return useWrite<{
+    id: string
+    name?: string
+    netProductionHours?: number
+    maxOtHours?: number
+  }>(async ({ id, name, netProductionHours, maxOtHours }) => {
+    await query(
+      `update shifts
+          set name = coalesce($2, name),
+              net_production_hours = coalesce($3, net_production_hours),
+              max_ot_hours = coalesce($4, max_ot_hours)
+        where id = $1`,
+      [id, name ?? null, netProductionHours ?? null, maxOtHours ?? null],
+    )
+  })
+}
+
+export function useSetShiftActive() {
+  return useWrite<{ id: string; isActive: boolean }>(
+    async ({ id, isActive }) => {
+      await query(`update shifts set is_active = $2 where id = $1`, [
+        id,
+        isActive,
+      ])
+    },
+  )
+}
+
+/**
+ * Turns a shift on or off for one department.
+ *
+ * Switching one on copies the department's component rates across from a shift
+ * it already works, because a department_shift with no rates contributes
+ * exactly nothing — the shift would appear to be running while adding no
+ * capacity, which is the kind of wrong that looks normal on screen. The copied
+ * figures are a starting point and stay flagged as estimated.
+ */
+export function useSetDepartmentShift() {
+  return useWrite<{
+    departmentId: string
+    shiftId: string
+    isActive: boolean
+    headcount?: number
+  }>(async ({ departmentId, shiftId, isActive, headcount }) => {
+    // A new pairing starts from the department's existing establishment rather
+    // than zero — the same reasoning as copying the rates: a plausible starting
+    // point beats a figure nobody meant.
+    await query(
+      `insert into department_shifts (department_id, shift_id, sanctioned_headcount, is_active)
+       values ($1, $2,
+               coalesce($4::integer,
+                        (select max(ds.sanctioned_headcount)
+                           from department_shifts ds
+                          where ds.department_id = $1),
+                        0),
+               $3)
+       on conflict (department_id, shift_id)
+       do update set is_active = excluded.is_active,
+                     sanctioned_headcount =
+                       coalesce($4::integer, department_shifts.sanctioned_headcount)`,
+      [departmentId, shiftId, isActive, headcount ?? null],
+    )
+
+    if (!isActive) return
+
+    await query(
+      `with source as (
+         select cr.shift_id
+           from component_rates cr
+          where cr.department_id = $1 and cr.shift_id <> $2
+          group by cr.shift_id
+          limit 1
+       )
+       insert into component_rates (component_id, department_id, shift_id, units_per_day)
+       select cr.component_id, cr.department_id, $2, cr.units_per_day
+         from component_rates cr, source
+        where cr.department_id = $1 and cr.shift_id = source.shift_id
+       on conflict (component_id, department_id, shift_id) do nothing`,
+      [departmentId, shiftId],
+    )
+  })
 }
 
 /**

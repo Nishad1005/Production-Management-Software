@@ -176,6 +176,7 @@ Keep adding to this. Each one was a real dead end.
 | Gantt bar refuses to drag | The 1px deadline marker sat on top of it. All decorations are now `pointer-events-none`. Took three wrong guesses; `document.elementFromPoint` gave the answer in one. |
 | Dragging selects the row text | Use `select-none` on the row. **Not** `preventDefault` on pointerdown — that also suppresses the `pointermove` stream the drag depends on. |
 | Tests deadlock | Files ran in parallel against one database, contending on the same master rows. `fileParallelism: false`. |
+| A Playwright check passes when the feature is broken | `getByRole(role, { name })` matches the accessible name by **substring** by default, so `name: 'Running'` also matches every `'Not running'`. Pass `exact: true` whenever one label is a substring of another. Cost a full diagnosis of a feature that was working. |
 | `command not found: node` in a tool shell | The shell was started before `~/.zshenv` existed and does not reload it. Prefix commands with `export PATH="$HOME/.nvm/versions/node/v24.19.0/bin:$PATH"`. |
 | npm warns about uncovered install scripts | npm 11 gates them. `npm approve-scripts <pkg>`, then reinstall. Needed for `esbuild`, `fsevents`, `@embedded-postgres/darwin-arm64`. |
 
@@ -251,13 +252,14 @@ React state. Three real defects came from this that the build was happy with.
 
 ## 8. What is next
 
-1. **Shifts as a master.** A and B are seeded but switched off. Turning them on
-   is the clearest demonstration of the multi-shift capacity model that Rev B
-   calls its structural correction.
-2. **Named what-if runs, compared side by side.** The engine already versions
-   every run, so this is mostly UI over data that exists.
-3. **The real route and D-minus values.** Still the single change that would make
+1. **Named what-if runs, compared side by side.** The engine already versions
+   every run and `run_schedule(p_make_current => false)` already writes one, so
+   this is mostly UI over data that exists. Promote or discard afterwards.
+2. **The real route and D-minus values.** Still the single change that would make
    the biggest difference to how the demo lands.
+3. **Articles and components as masters.** Currently seeded only; there is no way
+   to add a new article without SQL. Lower priority than it sounds, since both
+   arrive from Panipuri in the real system.
 
 ---
 
@@ -265,6 +267,23 @@ React state. Three real defects came from this that the build was happy with.
 
 Newest first. One entry per working session — what changed, and anything a
 future reader would not infer from the diff.
+
+### 2026-08-11 — Shifts as a master
+Shifts panel (net production hours, overtime ceiling, switch on/off) and a
+department × shift grid with per-shift sanctioned headcount. Headcount editing
+moved off the route table, where it had been quietly wrong: it wrote to *every*
+active shift for a department at once, which is meaningless the moment a second
+shift runs.
+
+Switching a shift on for a department copies that department's component rates
+and establishment across as a starting point. Without the rates the pairing
+would show as running while adding no capacity whatsoever — the failure mode the
+grid's "No rates" flag now catches. The copied figures are flagged estimated and
+are wrong whenever the headcount differs; the panel says so.
+
+Two engine tests pin the behaviour: capacity sums across active shifts (four days
+of stitching becomes two), and a globally-active shift a department does not work
+contributes nothing.
 
 ### 2026-08-11 — Editable draft
 Masters editing (D-minus, rates, yield, route order, headcount, holidays), order

@@ -395,6 +395,78 @@ export function useDepartments() {
   })
 }
 
+export type ShiftRow = {
+  id: string
+  code: string
+  name: string
+  start_time: string
+  end_time: string
+  net_production_hours: number
+  max_ot_hours: number
+  is_active: boolean
+  departments_running: number
+}
+
+export function useShifts() {
+  return useQuery({
+    queryKey: ['shifts'],
+    queryFn: () =>
+      query<ShiftRow>(
+        `select s.id, s.code, s.name,
+                to_char(s.start_time, 'HH24:MI') as start_time,
+                to_char(s.end_time, 'HH24:MI') as end_time,
+                s.net_production_hours::float8, s.max_ot_hours::float8,
+                s.is_active,
+                (select count(*)::int from department_shifts ds
+                   join departments d on d.id = ds.department_id
+                  where ds.shift_id = s.id and ds.is_active and d.is_active
+                ) as departments_running
+           from shifts s
+          order by s.start_time, s.code`,
+      ),
+  })
+}
+
+/**
+ * Every active department against every shift, whether or not the pairing
+ * exists. rate_count is what makes the grid honest: switching a shift on adds
+ * no capacity at all until component rates exist for it, and a department
+ * showing as running a shift with no rates is a trap.
+ */
+export type DeptShiftCell = {
+  department_id: string
+  department_code: string
+  route_position: number
+  shift_id: string
+  shift_code: string
+  shift_is_active: boolean
+  is_active: boolean
+  sanctioned_headcount: number | null
+  rate_count: number
+}
+
+export function useDepartmentShiftGrid() {
+  return useQuery({
+    queryKey: ['department-shifts'],
+    queryFn: () =>
+      query<DeptShiftCell>(
+        `select d.id as department_id, d.code as department_code,
+                d.route_position::int, s.id as shift_id, s.code as shift_code,
+                s.is_active as shift_is_active,
+                coalesce(ds.is_active, false) as is_active,
+                ds.sanctioned_headcount::int,
+                (select count(*)::int from component_rates cr
+                  where cr.department_id = d.id and cr.shift_id = s.id) as rate_count
+           from departments d
+           cross join shifts s
+           left join department_shifts ds
+             on ds.department_id = d.id and ds.shift_id = s.id
+          where d.is_active
+          order by d.route_position, s.start_time, s.code`,
+      ),
+  })
+}
+
 export type RateRow = {
   department_code: string
   component_code: string

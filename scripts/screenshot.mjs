@@ -121,6 +121,56 @@ await step('edit D-minus', async () => {
   return 'D-60 → D-64, persisted across reload'
 })
 
+// --- bringing a second shift on adds capacity -------------------------------
+
+await step('bring a shift on', async () => {
+  await go('#/masters', 'text=Who works which shift')
+
+  // Switch shift A on globally, then onto stitching specifically.
+  await page
+    .locator('tr', { hasText: 'Shift A' })
+    .getByRole('button', { name: 'Switch on' })
+    .click()
+
+  const grid = page.locator('section').filter({ hasText: 'Who works which shift' })
+  const stitch = grid.locator('tr', { hasText: 'STITCH' })
+
+  // Count rather than presence: the GEN column already reads "Running", so
+  // waiting for that text would pass without anything having happened.
+  //
+  // exact:true matters — getByRole matches the accessible name by *substring*
+  // by default, so plain 'Running' also matches every 'Not running' and the
+  // baseline comes out wrong.
+  const before = await stitch
+    .getByRole('button', { name: 'Running', exact: true })
+    .count()
+  await stitch.getByRole('button', { name: 'Not running' }).first().click()
+
+  await page.waitForFunction(
+    (n) => {
+      const section = [...document.querySelectorAll('section')].find((s) =>
+        s.textContent?.includes('Who works which shift'),
+      )
+      const row = [...(section?.querySelectorAll('tr') ?? [])].find((r) =>
+        r.textContent?.includes('STITCH'),
+      )
+      const running = [...(row?.querySelectorAll('button') ?? [])].filter(
+        (b) => b.textContent?.trim() === 'Running',
+      )
+      return running.length > n
+    },
+    before,
+    { timeout: 60_000 },
+  )
+
+  // Rates must have been copied across, or the shift adds nothing at all.
+  const missing = await grid.locator('text=No rates').count()
+  if (missing) throw new Error('shift switched on without component rates')
+
+  await page.screenshot({ path: `${outDir}/masters-shifts.png`, fullPage: true })
+  return 'shift A onto stitching, rates copied'
+})
+
 // --- dragging a Gantt bar proposes a pin ------------------------------------
 
 await step('drag to reschedule', async () => {

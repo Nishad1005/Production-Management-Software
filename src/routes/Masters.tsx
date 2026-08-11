@@ -1,5 +1,12 @@
 import { useState } from 'react'
-import { useBom, useDepartments, useDminus, useRates } from '@/data/planning'
+import {
+  useBom,
+  useDepartmentShiftGrid,
+  useDepartments,
+  useDminus,
+  useRates,
+  useShifts,
+} from '@/data/planning'
 import {
   useAddHoliday,
   useCreateDepartment,
@@ -7,9 +14,12 @@ import {
   useHolidays,
   useSetDepartmentActive,
   useSetDminus,
+  useSetDepartmentShift,
   useSetHeadcount,
   useSetRate,
+  useSetShiftActive,
   useUpdateDepartment,
+  useUpdateShift,
 } from '@/data/mutations'
 import { Button, Empty, Field, Panel, Table, Tag, Td, Th } from '@/components/ui'
 import { formatDateLong, formatNumber, inputClass } from '@/components/format'
@@ -35,7 +45,6 @@ export function Masters() {
   const setDminus = useSetDminus()
   const setRate = useSetRate()
   const updateDepartment = useUpdateDepartment()
-  const setHeadcount = useSetHeadcount()
   const setActive = useSetDepartmentActive()
   const addHoliday = useAddHoliday()
   const deleteHoliday = useDeleteHoliday()
@@ -77,8 +86,8 @@ export function Masters() {
               <Th>Code</Th>
               <Th>Department</Th>
               <Th align="right">Yield</Th>
-              <Th>Shifts</Th>
-              <Th align="right">Headcount</Th>
+              <Th>Shifts running</Th>
+              <Th align="right">Total headcount</Th>
               <Th />
             </tr>
           </thead>
@@ -118,21 +127,8 @@ export function Masters() {
                     }
                   />
                 </Td>
-                <Td>{d.shifts ?? '—'}</Td>
-                <Td align="right">
-                  <EditableNumber
-                    value={d.headcount}
-                    min={0}
-                    step={1}
-                    onCommit={(headcount) =>
-                      headcount !== null &&
-                      setHeadcount.mutate({
-                        departmentId: d.id,
-                        headcount,
-                      })
-                    }
-                  />
-                </Td>
+                <Td>{d.shifts ?? <span className="text-flag">none</span>}</Td>
+                <Td align="right">{formatNumber(d.headcount)}</Td>
                 <Td align="right">
                   <button
                     type="button"
@@ -165,6 +161,9 @@ export function Masters() {
           Five departments at 98% each cost roughly a tenth of factory capacity.
         </p>
       </Panel>
+
+      <ShiftsPanel />
+      <DepartmentShiftGrid />
 
       <Panel
         title="D-minus matrix"
@@ -372,6 +371,234 @@ export function Masters() {
         />
       ) : null}
     </div>
+  )
+}
+
+/**
+ * Spec §2 lists the multi-shift model as one of Rev B's two structural
+ * corrections: with a single headcount field every capacity figure in the system
+ * would have been wrong, and wrong in a way that looks entirely normal.
+ */
+function ShiftsPanel() {
+  const shifts = useShifts()
+  const updateShift = useUpdateShift()
+  const setShiftActive = useSetShiftActive()
+
+  return (
+    <Panel
+      title="Shifts"
+      meta={`${shifts.data?.filter((s) => s.is_active).length ?? 0} running`}
+    >
+      <p className="text-mid mb-3 max-w-[80ch] text-[12px]">
+        A department running two shifts has roughly double the daily capacity,
+        and the overtime ceiling applies per person per shift rather than per
+        day. Net production hours exclude breaks, setup and cleanup — the
+        capacity maths uses this figure, never the clock span.
+      </p>
+      <Table>
+        <thead>
+          <tr>
+            <Th>Code</Th>
+            <Th>Shift</Th>
+            <Th>Hours</Th>
+            <Th align="right">Net production</Th>
+            <Th align="right">Overtime ceiling</Th>
+            <Th align="right">Departments</Th>
+            <Th />
+          </tr>
+        </thead>
+        <tbody>
+          {shifts.data?.map((s) => (
+            <tr key={s.id} className={s.is_active ? '' : 'text-faint'}>
+              <Td className="font-semibold">{s.code}</Td>
+              <Td>
+                <EditableText
+                  value={s.name}
+                  onCommit={(name) => updateShift.mutate({ id: s.id, name })}
+                />
+              </Td>
+              <Td>
+                {s.start_time}–{s.end_time}
+                {s.end_time < s.start_time ? (
+                  <span className="text-faint"> (overnight)</span>
+                ) : null}
+              </Td>
+              <Td align="right">
+                <EditableNumber
+                  value={s.net_production_hours}
+                  suffix=" h"
+                  min={1}
+                  max={24}
+                  onCommit={(netProductionHours) =>
+                    netProductionHours !== null &&
+                    updateShift.mutate({ id: s.id, netProductionHours })
+                  }
+                />
+              </Td>
+              <Td align="right">
+                <EditableNumber
+                  value={s.max_ot_hours}
+                  suffix=" h"
+                  min={0}
+                  max={12}
+                  onCommit={(maxOtHours) =>
+                    maxOtHours !== null &&
+                    updateShift.mutate({ id: s.id, maxOtHours })
+                  }
+                />
+              </Td>
+              <Td align="right">{s.departments_running}</Td>
+              <Td align="right">
+                <button
+                  type="button"
+                  className="text-faint hover:text-blue text-[11px]"
+                  onClick={() =>
+                    setShiftActive.mutate({ id: s.id, isActive: !s.is_active })
+                  }
+                >
+                  {s.is_active ? 'Switch off' : 'Switch on'}
+                </button>
+              </Td>
+            </tr>
+          ))}
+        </tbody>
+      </Table>
+      <p className="text-faint mt-3 max-w-[80ch] text-[11.5px]">
+        Five hours of overtime on top of an eight-hour net shift is a long day
+        under the Factories Act's daily and quarterly limits, and multi-shift
+        working adds its own provisions. The ceiling is configurable and the
+        default is what the specification states; it is not a legal opinion and
+        should be confirmed independently before go-live.
+      </p>
+    </Panel>
+  )
+}
+
+/**
+ * Which shifts each department actually works, and with how many people.
+ * Capacity is the sum across the shifts switched on here.
+ */
+function DepartmentShiftGrid() {
+  const grid = useDepartmentShiftGrid()
+  const setDepartmentShift = useSetDepartmentShift()
+  const setHeadcount = useSetHeadcount()
+
+  const rows = grid.data ?? []
+  const shiftCodes = [
+    ...new Map(rows.map((r) => [r.shift_code, r.shift_is_active])),
+  ]
+  const departments = [
+    ...new Map(rows.map((r) => [r.department_id, r.department_code])),
+  ]
+
+  const missingRates = rows.filter((r) => r.is_active && r.rate_count === 0)
+
+  return (
+    <Panel title="Who works which shift" meta="Capacity is the sum of these">
+      <p className="text-mid mb-3 max-w-[80ch] text-[12px]">
+        Switch a shift on for a department and its capacity is added to that
+        department's day. The number beneath is the sanctioned headcount for that
+        department on that shift — the establishment the overtime maths divides
+        by.
+      </p>
+
+      <Table>
+        <thead>
+          <tr>
+            <Th>Department</Th>
+            {shiftCodes.map(([code, active]) => (
+              <Th key={code} align="right">
+                {code}
+                {active ? '' : ' (off)'}
+              </Th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {departments.map(([departmentId, departmentCode]) => (
+            <tr key={departmentId}>
+              <Td className="font-semibold">{departmentCode}</Td>
+              {shiftCodes.map(([code]) => {
+                const cell = rows.find(
+                  (r) =>
+                    r.department_id === departmentId && r.shift_code === code,
+                )
+                if (!cell) return <Td key={code} align="right">—</Td>
+                return (
+                  <Td key={code} align="right">
+                    <div className="flex flex-col items-end gap-0.5">
+                      <button
+                        type="button"
+                        disabled={!cell.shift_is_active}
+                        onClick={() =>
+                          setDepartmentShift.mutate({
+                            departmentId,
+                            shiftId: cell.shift_id,
+                            isActive: !cell.is_active,
+                          })
+                        }
+                        className={`text-[11px] ${
+                          cell.is_active
+                            ? 'text-clear font-semibold'
+                            : 'text-faint hover:text-blue'
+                        } disabled:hover:text-faint disabled:cursor-not-allowed`}
+                        title={
+                          cell.shift_is_active
+                            ? cell.is_active
+                              ? 'Switch this shift off for this department'
+                              : 'Switch this shift on for this department'
+                            : 'This shift is switched off entirely'
+                        }
+                      >
+                        {cell.is_active ? 'Running' : 'Not running'}
+                      </button>
+                      {cell.is_active ? (
+                        <span className="text-[11px]">
+                          <EditableNumber
+                            value={cell.sanctioned_headcount}
+                            suffix=" people"
+                            min={0}
+                            step={1}
+                            width="w-24"
+                            onCommit={(headcount) =>
+                              headcount !== null &&
+                              setHeadcount.mutate({
+                                departmentId,
+                                shiftId: cell.shift_id,
+                                headcount,
+                              })
+                            }
+                          />
+                        </span>
+                      ) : null}
+                      {cell.is_active && cell.rate_count === 0 ? (
+                        <Tag tone="flag">No rates</Tag>
+                      ) : null}
+                    </div>
+                  </Td>
+                )
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </Table>
+
+      {missingRates.length ? (
+        <p className="text-flag mt-3 max-w-[80ch] text-[11.5px]">
+          {missingRates.length} department-shift pairing
+          {missingRates.length === 1 ? ' is' : 's are'} switched on with no
+          component rates, so {missingRates.length === 1 ? 'it adds' : 'they add'}{' '}
+          no capacity at all. Enter rates below, or switch the pairing off.
+        </p>
+      ) : null}
+
+      <p className="text-faint mt-3 max-w-[80ch] text-[11.5px]">
+        Switching a shift on copies the department's existing rates across as a
+        starting point, flagged estimated. They are almost certainly wrong if the
+        headcount differs — a second shift with half the people does not make
+        what the first one makes.
+      </p>
+    </Panel>
   )
 }
 

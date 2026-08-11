@@ -173,6 +173,31 @@ the percentage that survives each step, and it compounds backwards: five
 departments at 98% each cost roughly a tenth of factory capacity. Deactivating a
 department never deletes it — one with history keeps it.
 
+**Shifts.** Each shift's clock hours, its **net production hours** — time
+actually available for work, excluding breaks, setup and cleanup — and its
+overtime ceiling per person. The capacity maths uses the net figure, never the
+clock span. A shift running overnight is normal and shows as such.
+
+Switching a shift off here switches it off everywhere.
+
+> The overtime ceiling defaults to five hours on top of an eight-hour net shift,
+> which is what the specification states. It is a long day under the Factories
+> Act's daily and quarterly limits, and multi-shift working adds its own
+> provisions. The figure is configurable; confirm it with a compliance adviser
+> before go-live.
+
+**Who works which shift.** The grid that decides capacity. Switch a shift on for
+a department and its capacity is added to that department's day — a department
+running two shifts has roughly double the capacity of one running a single
+shift. Beneath each is the sanctioned headcount for that department on that
+shift.
+
+Switching a shift on copies that department's existing rates and headcount across
+as a starting point. **They will be wrong if the second shift is staffed
+differently** — a shift with half the people does not make what the first one
+makes, so correct the rates below. A pairing switched on with no rates at all is
+flagged in red, because it would appear to be running while adding nothing.
+
 **D-minus matrix.** How many days before the stuffing date each department must
 be finished, per article per department, because each article takes a different
 time through each step. Clearing a cell puts it back to blank and stops that
@@ -246,6 +271,11 @@ bar, give a reason. Every later run honours it.
 
 **"The factory is closed for Diwali."** → *Masters*, add the holidays. The
 calendar renumbers and every schedule shifts.
+
+**"What if we put stitching on a second shift?"** → *Masters*. Switch the shift
+on under *Shifts*, then switch it on for that department in *Who works which
+shift*. Correct the copied rates for the second shift's staffing, then look at
+the bottleneck table — the constraint often moves somewhere else entirely.
 
 **"These capacity figures are wrong."** → *Masters*, component rates. Read the
 warning above about dedicated rates first.

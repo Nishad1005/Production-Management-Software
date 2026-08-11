@@ -165,6 +165,84 @@ describe('run_schedule', () => {
     })
   })
 
+  // Spec §2 calls this Rev B's structural correction: "A department running two
+  // shifts has roughly double the daily capacity... With a single headcount
+  // field, every capacity figure in the system would have been wrong — and
+  // wrong in a way that looks entirely normal on screen."
+  it('adds the capacity of every shift a department works', async () => {
+    await withRollback(async (c) => {
+      await applySeed(c)
+      await createOrder(c, { qty: 100, stuffingDate: '2026-12-01' })
+
+      const coverDays = async (run: string) =>
+        c
+          .query<{ n: string }>(
+            `select count(distinct l.load_date) as n
+               from schedule_daily_load l
+               join components cmp on cmp.id = l.component_id
+              where l.run_id = $1 and cmp.code = 'COVER'`,
+            [run],
+          )
+          .then((r) => Number(r.rows[0].n))
+
+      // Stitching on the General shift alone: 30 covers a day.
+      const oneShift = await runSchedule(c)
+      expect(await coverDays(oneShift)).toBe(4)
+
+      // Bring shift A onto the same work at the same rate.
+      await c.query(`update shifts set is_active = true where code = 'A'`)
+      await c.query(
+        `insert into department_shifts (department_id, shift_id, sanctioned_headcount)
+         values ((select id from departments where code = 'STITCH'),
+                 (select id from shifts where code = 'A'), 12)`,
+      )
+      await c.query(
+        `insert into component_rates (component_id, department_id, shift_id, units_per_day)
+         values ((select id from components where code = 'COVER'),
+                 (select id from departments where code = 'STITCH'),
+                 (select id from shifts where code = 'A'), 30)`,
+      )
+
+      // 60 a day now, so the same work takes half as long.
+      const twoShifts = await runSchedule(c)
+      expect(await coverDays(twoShifts)).toBe(2)
+
+      // And the load is split across both shifts, not doubled onto one.
+      const { rows } = await c.query<{ shift: string; qty: string }>(
+        `select s.code as shift, sum(l.qty_planned)::text as qty
+           from schedule_daily_load l
+           join shifts s on s.id = l.shift_id
+           join components cmp on cmp.id = l.component_id
+          where l.run_id = $1 and cmp.code = 'COVER'
+          group by s.code order by s.code`,
+        [twoShifts],
+      )
+      expect(rows.map((r) => r.shift)).toEqual(['A', 'GEN'])
+      expect(Number(rows[0].qty)).toBeCloseTo(Number(rows[1].qty), 2)
+    })
+  })
+
+  it('ignores a shift the department does not work', async () => {
+    await withRollback(async (c) => {
+      await applySeed(c)
+      await createOrder(c, { qty: 100, stuffingDate: '2026-12-01' })
+
+      // Switched on globally, but stitching has no department_shifts row for it
+      // and no rate — so it must contribute nothing.
+      await c.query(`update shifts set is_active = true where code = 'A'`)
+      const run = await runSchedule(c)
+
+      const { rows } = await c.query<{ n: string }>(
+        `select count(distinct l.load_date) as n
+           from schedule_daily_load l
+           join components cmp on cmp.id = l.component_id
+          where l.run_id = $1 and cmp.code = 'COVER'`,
+        [run],
+      )
+      expect(Number(rows[0].n)).toBe(4)
+    })
+  })
+
   it('plans exactly the required quantity, no more and no less', async () => {
     await withRollback(async (c) => {
       await applySeed(c)
