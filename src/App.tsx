@@ -1,6 +1,7 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { HashRouter, NavLink, Route, Routes } from 'react-router'
+import { AccessContext, useAccess } from '@/lib/access-context'
 import { clearWriteError, onWriteError } from '@/lib/queryClient'
 import { backend } from '@/lib/backend'
 import {
@@ -9,7 +10,6 @@ import {
   OFFLINE_ACCESS,
   signOut,
   useSession,
-  type Access,
   type Role,
 } from '@/lib/auth'
 import { CommandCentre } from '@/routes/CommandCentre'
@@ -33,9 +33,6 @@ const NAV: { to: string; label: string; end?: boolean; roles: Role[] }[] = [
   { to: '/masters', label: 'Masters', roles: ['planner', 'admin'] },
   { to: '/users', label: 'Users', roles: ['admin'] },
 ]
-
-const AccessContext = createContext<Access>(OFFLINE_ACCESS)
-export const useAccess = () => useContext(AccessContext)
 
 /**
  * Postgres has to compile and the schema has to apply before anything can
