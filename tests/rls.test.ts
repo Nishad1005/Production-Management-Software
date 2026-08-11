@@ -1,6 +1,12 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import { becomeUser, createUser, withRollback } from './helpers/db'
+import {
+  attempt,
+  becomeAnon,
+  becomeUser,
+  createUser,
+  withRollback,
+} from './helpers/db'
 
 // Spec §16: access is enforced at the database, "regardless of how the request
 // is made". These tests run as the `authenticated` API role, because a policy
@@ -127,6 +133,54 @@ describe('employees', () => {
       await c.query(`insert into employees (emp_code, name) values ('E1', 'A')`)
       const { rows } = await c.query(`select emp_code from employees`)
       expect(rows).toHaveLength(1)
+    })
+  })
+})
+
+
+describe('anonymous callers', () => {
+  /**
+   * The anon key ships in the browser bundle, so anyone who loads the page can
+   * make requests with it. Postgres grants EXECUTE on new functions to PUBLIC,
+   * which made the whole API callable by strangers — RLS still protected the
+   * data, but run_schedule does real work before RLS has anything to say.
+   * Found against the live project, not by a test, which is why there is now
+   * a test.
+   */
+  it('cannot execute any function', async () => {
+    await withRollback(async (c) => {
+      await becomeAnon(c)
+      for (const call of [
+        `select run_schedule()`,
+        `select set_dminus('A', 'B', 1)`,
+        `select check_order_acceptance(gen_random_uuid(), 10, current_date)`,
+        `select run_what_if('probe')`,
+        `select promote_schedule_run(gen_random_uuid())`,
+      ]) {
+        expect(await attempt(c, call), call).toMatch(/permission denied/)
+      }
+    })
+  })
+
+  it('cannot read any table or view', async () => {
+    await withRollback(async (c) => {
+      await c.query(
+        `insert into departments (code, name, route_position) values ('WOOD', 'Wood', 10)`,
+      )
+      await becomeAnon(c)
+
+      for (const relation of [
+        'departments',
+        'department_master',
+        'order_book',
+        'schedule_gantt',
+        'run_history',
+      ]) {
+        expect(
+          await attempt(c, `select * from ${relation}`),
+          relation,
+        ).toMatch(/permission denied/)
+      }
     })
   })
 })

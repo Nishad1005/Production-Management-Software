@@ -17,9 +17,13 @@ Rev B. Schedules every order backwards from its container stuffing date through 
 configurable department route, at component granularity, and flags the days a
 department is asked for more than it can make.
 
-Phases 0–2 are done. The client runs **offline** — PGlite is Postgres compiled to
-WASM, and every migration applies to it unmodified, so the browser runs the real
-engine. Supabase is configured but not yet created or pushed to.
+Phases 0–2 are done. The client runs against either backend, chosen by whether
+`VITE_SUPABASE_URL` is set: PGlite in the browser for the offline demo, Supabase
+for the hosted system. Both use the same views and functions.
+
+**Supabase is live.** Every migration is applied. Auth is the next piece — until
+it exists, the hosted build shows nothing, because anon is correctly denied
+everything.
 
 ## Conventions that matter
 
@@ -35,9 +39,9 @@ engine. Supabase is configured but not yet created or pushed to.
   defaulting to zero; a calendar lookup past the horizon returns null rather than
   snapping; a failed write raises a banner. The recurring principle is that being
   wrong in a way that looks normal on screen is the worst outcome available.
-- **Migrations are append-only** once anything has been pushed to a real
-  Supabase project. Nothing has been pushed yet, so editing in place is still
-  correct — check §2 of the log before assuming.
+- **Migrations are append-only.** The schema has been pushed to the live
+  Supabase project (`fiqfbbnmksppbpxmhnbv`), so editing an existing migration
+  now means the file and the database disagree. Add a new one.
 
 ## Verifying
 

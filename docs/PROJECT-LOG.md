@@ -62,9 +62,16 @@ shipment lines, and pins by dragging a schedule bar.
 unmodified in the browser, so the demo runs the real engine with no backend.
 `npm run build` produces a static folder.
 
-**Not yet online.** Supabase CLI config exists (`project_id = "kram"`), but no
-project has been created and no migration has been pushed. Deliberate — the
-offline draft is being shown first.
+**Online.** Supabase project `fiqfbbnmksppbpxmhnbv` — *kram*, Mumbai
+(ap-south-1), Postgres 17.6. All seventeen migrations applied.
+
+> **Migrations are append-only from here.** Editing one now means the file and
+> the live database disagree, silently, until something breaks in a way that
+> makes no sense.
+
+Auth does not exist yet, so the hosted build shows nothing — anon is denied
+everything, which is correct. The offline build is unaffected and still the one
+to demo from.
 
 ---
 
@@ -176,6 +183,7 @@ Keep adding to this. Each one was a real dead end.
 | Gantt bar refuses to drag | The 1px deadline marker sat on top of it. All decorations are now `pointer-events-none`. Took three wrong guesses; `document.elementFromPoint` gave the answer in one. |
 | Dragging selects the row text | Use `select-none` on the row. **Not** `preventDefault` on pointerdown — that also suppresses the `pointermove` stream the drag depends on. |
 | Tests deadlock | Files ran in parallel against one database, contending on the same master rows. `fileParallelism: false`. |
+| Anon can call your functions on Supabase | Postgres grants `EXECUTE` to `PUBLIC` on every new function, *and* Supabase's default privileges grant it to `anon` explicitly. Revoking from `PUBLIC` alone leaves the explicit grant standing. Revoke from both. Tell the two apart by the error: "permission denied for **function**" means blocked at the door, "for **table**" means it ran until it hit RLS. |
 | A Playwright check passes when the feature is broken | `getByRole(role, { name })` matches the accessible name by **substring** by default, so `name: 'Running'` also matches every `'Not running'`. Pass `exact: true` whenever one label is a substring of another. Cost a full diagnosis of a feature that was working. |
 | `command not found: node` in a tool shell | The shell was started before `~/.zshenv` existed and does not reload it. Prefix commands with `export PATH="$HOME/.nvm/versions/node/v24.19.0/bin:$PATH"`. |
 | npm warns about uncovered install scripts | npm 11 gates them. `npm approve-scripts <pkg>`, then reinstall. Needed for `esbuild`, `fsevents`, `@embedded-postgres/darwin-arm64`. |
@@ -323,6 +331,33 @@ precondition for the planning half being used in anger.
 
 Newest first. One entry per working session — what changed, and anything a
 future reader would not infer from the diff.
+
+### 2026-08-11 — Supabase is live, and anon could call everything
+All seventeen migrations applied to `fiqfbbnmksppbpxmhnbv` (Mumbai, Postgres
+17.6). They went on unchanged — the schema written against PGlite 18 and tested
+against embedded Postgres 18 needed nothing altered for 17.6.
+
+**Then the first probe found a real hole.** Calling `set_dminus` with nothing but
+the anon key — which ships in the browser bundle by design — succeeded. RLS made
+the write a no-op, so no data was exposed, but `run_schedule` and
+`check_order_acceptance` do real work before RLS has anything to say: an
+anonymous caller could have made the database schedule the whole order book,
+repeatedly, for free.
+
+Two migrations to close it, because the first was not enough. Revoking `EXECUTE`
+from `PUBLIC` left Supabase's own explicit grant to `anon` in place. The error
+message is what gave it away — "permission denied for *table* schedule_runs"
+rather than "for *function* run_schedule" means the function was entered and ran
+until it hit RLS. It now reads "for function", which is blocked at the door.
+
+The test suite gained an anon lockout test, and `scripts/db/grants.sql` now
+mirrors Supabase's grants so the revoke has something to bite on — otherwise the
+test would pass against a database that never had the privilege.
+
+Worth stating plainly: **this was found by probing the live project, not by a
+test.** The whole suite was green throughout. Local Postgres and Supabase differ
+in exactly the way that matters here — one ships with permissive defaults that
+the other does not.
 
 ### 2026-08-11 — One interface, two backends
 `src/lib/backend.ts` puts PGlite and Supabase behind the same narrow interface —

@@ -52,6 +52,35 @@ export async function becomeUser(
   await client.query('set local role authenticated')
 }
 
+/**
+ * Switches to the `anon` role — an unauthenticated request holding nothing but
+ * the public API key, which is published in the browser bundle by design.
+ */
+export async function becomeAnon(client: pg.Client): Promise<void> {
+  await client.query('set local role anon')
+}
+
+/**
+ * Runs a statement expected to fail and returns the error message, leaving the
+ * transaction usable. Without the savepoint the first failure poisons it and
+ * every later assertion reports "current transaction is aborted" instead of
+ * whatever it was actually testing.
+ */
+export async function attempt(
+  client: pg.Client,
+  sql: string,
+): Promise<string | null> {
+  await client.query('savepoint probe')
+  try {
+    await client.query(sql)
+    await client.query('release savepoint probe')
+    return null
+  } catch (error) {
+    await client.query('rollback to savepoint probe')
+    return error instanceof Error ? error.message : String(error)
+  }
+}
+
 /** Creates an auth user (profile follows by trigger) and grants roles. */
 export async function createUser(
   client: pg.Client,

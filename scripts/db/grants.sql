@@ -14,6 +14,9 @@ grant usage on schema public to anon, authenticated, service_role;
 alter default privileges in schema public
   grant select, insert, update, delete on tables to authenticated, service_role;
 
+-- Supabase grants anon explicitly, not only via PUBLIC. Reproducing that is
+-- what makes the revoke migrations testable — without it they would pass
+-- against a database that never had the privilege in the first place.
 alter default privileges in schema public
   grant select on tables to anon;
 
