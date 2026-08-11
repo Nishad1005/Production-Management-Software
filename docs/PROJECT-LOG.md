@@ -292,12 +292,63 @@ ledger — one department declares output and the next accepts it, which cannot
 work in a database living in one browser tab. Until then, offline is an
 advantage: no accounts, no cost, and a build that runs from a folder.
 
+### What going live actually needs
+
+The schema, engine and API surface are ready — every read is a view and every
+write a function, so nothing needs rewriting. What remains:
+
+1. **The project.** Create it, `supabase link`, `npm run db:push`. All fifteen
+   migrations apply unchanged; they have never been edited after being applied
+   anywhere, so there is no drift to reconcile.
+2. **A transport swap.** `src/lib/database.ts` currently sends SQL to PGlite.
+   Add a Supabase implementation that calls `.from(view).select()` and
+   `.rpc(fn)`, chosen by an environment variable. Both use the same views and
+   functions, so the offline demo keeps working — useful for showing people
+   without handing out logins.
+3. **Auth.** A login screen, and admin screens for users and roles. RLS is
+   written and tested but has never been exercised through the app, because the
+   offline build runs as the owner.
+4. **Real masters**, loaded from an export file (see `docs/GUIDE.md`).
+5. **Netlify environment variables** for the project URL and anon key. The
+   service role key never goes near the client.
+
+Only steps 2 and 3 are real work. **Planning is usable by PPC and merchandising
+the day that is done** — order acceptance, the schedule and the heatmap stand on
+their own. WIP tracking makes capacity self-correcting, but it is not a
+precondition for the planning half being used in anger.
+
 ---
 
 ## 9. Log
 
 Newest first. One entry per working session — what changed, and anything a
 future reader would not infer from the diff.
+
+### 2026-08-11 — The API surface: views to read, functions to write
+Groundwork for Supabase, and the one thing genuinely blocking it.
+
+The client had been sending ad-hoc SQL strings. That works against PGlite,
+which executes anything, and **cannot work against Supabase at all** —
+PostgREST exposes tables, views and functions, never arbitrary SQL. Ten reads
+and fifteen writes would have had to be rewritten during the migration, which is
+the worst moment to be rewriting queries.
+
+So they were moved now, while both ends are still under test:
+`schedule_kpis`, `run_history`, `heatmap_cell`, `load_detail`, `order_book`,
+`department_master`, `shift_master`, `department_shift_grid`,
+`component_rate_master`, `dminus_matrix`, `bom_master`, `pin_list`; and every
+write became a function — `set_dminus`, `set_department_shift`, `create_order`,
+`create_pin` and the rest.
+
+Two things fell out of it beyond portability. The rules now sit next to the data
+rather than in a client that will eventually be replaced — the D-minus
+completeness rule and the rate-copying on shift activation are database
+behaviour now, and are tested as such. And `tests/api.test.ts` carries a guard
+that fails if raw DML reappears in `src/data`, because such a line would work
+perfectly in the offline build and break the moment the backend moves.
+
+Behaviour is unchanged: 72 tests and all fourteen browser steps green, before
+and after.
 
 ### 2026-08-11 — What-if, masters export/import, Netlify
 Scenarios as a first-class screen: a capacity multiplier over a window for one

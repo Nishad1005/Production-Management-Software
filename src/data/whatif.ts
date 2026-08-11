@@ -31,14 +31,10 @@ export function useRuns() {
     queryFn: () =>
       query<RunSummary>(
         `select id, run_at::text, note, is_current, task_count, breach_count,
-                duration_ms,
-                params -> 'what_if' ->> 'department' as what_if_department,
-                (params -> 'what_if' ->> 'factor')::float8 as what_if_factor,
-                params -> 'what_if' ->> 'from' as what_if_from,
-                params -> 'what_if' ->> 'to' as what_if_to,
-                (params -> 'what_if' ->> 'applied')::int as what_if_applied,
-                (params -> 'what_if' ->> 'intended')::int as what_if_intended
-           from schedule_runs
+                duration_ms, what_if_department, what_if_factor::float8,
+                what_if_from::text, what_if_to::text,
+                what_if_applied, what_if_intended
+           from run_history
           where status = 'complete'
           order by run_at desc
           limit 30`,
@@ -147,9 +143,7 @@ export function useDeleteRun() {
   const client = useQueryClient()
   return useMutation({
     mutationFn: async (runId: string) => {
-      await query(`delete from schedule_runs where id = $1 and not is_current`, [
-        runId,
-      ])
+      await query(`select delete_schedule_run($1)`, [runId])
     },
     onSuccess: () => client.invalidateQueries({ queryKey: ['runs'] }),
   })

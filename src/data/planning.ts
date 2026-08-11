@@ -33,7 +33,7 @@ export function useCurrentRun() {
           // expected fails at the point of use rather than at the query.
           `select id, run_at::text, note, task_count, breach_count, duration_ms,
                   horizon_from::text, horizon_to::text
-             from schedule_runs where is_current`,
+             from run_history where is_current`,
         )
       )[0] ?? null,
   })
@@ -56,18 +56,9 @@ export function useKpis(runId: string | undefined) {
     queryFn: async () =>
       (
         await query<Kpis>(
-          `select
-             (select count(*)::int from orders where status = 'open') as open_orders,
-             (select count(*)::int from shipment_lines) as shipment_lines,
-             (select count(*)::int from schedule_tasks where run_id = $1) as tasks,
-             (select count(*)::int from schedule_tasks
-               where run_id = $1 and not is_feasible) as breaches,
-             (select count(*)::int from schedule_department_day
-               where run_id = $1 and status = 'over') as flagged_days,
-             (select count(*)::int from schedule_department_day
-               where run_id = $1 and status = 'idle') as idle_days,
-             (select count(*)::int from schedule_tasks
-               where run_id = $1 and is_pinned) as pinned`,
+          `select open_orders, shipment_lines, tasks, breaches, flagged_days,
+                  idle_days, pinned
+             from schedule_kpis where run_id = $1`,
           [runId],
         )
       )[0],
@@ -143,13 +134,11 @@ export function useHeatmap(runId: string | undefined) {
     queryKey: ['heatmap', runId],
     queryFn: () =>
       query<HeatmapCell>(
-        `select dd.department_id, d.code as department_code, d.route_position::int,
-                dd.load_date::text, dd.utilisation::float8, dd.status,
-                dd.components_loaded::int
-           from schedule_department_day dd
-           join departments d on d.id = dd.department_id
-          where dd.run_id = $1
-          order by d.route_position, dd.load_date`,
+        `select department_id, department_code, route_position::int,
+                load_date::text, utilisation::float8, status,
+                components_loaded::int
+           from heatmap_cell where run_id = $1
+          order by route_position, load_date`,
         [runId],
       ),
   })
@@ -174,22 +163,11 @@ export function useCellDetail(
     queryKey: ['cell', runId, departmentId, loadDate],
     queryFn: () =>
       query<CellDetail>(
-        `select o.erp_order_no, cu.name as customer_name, cmp.code as component_code,
-                sum(l.qty_planned)::float8 as qty_planned,
-                max(cap.capacity)::float8 as capacity
-           from schedule_daily_load l
-           join shipment_lines sl on sl.id = l.shipment_line_id
-           join orders o on o.id = sl.order_id
-           join customers cu on cu.id = o.customer_id
-           join components cmp on cmp.id = l.component_id
-           left join (
-             select run_id, department_id, component_id, load_date, sum(capacity) as capacity
-               from schedule_daily_capacity group by 1,2,3,4
-           ) cap on cap.run_id = l.run_id and cap.department_id = l.department_id
-                and cap.component_id = l.component_id and cap.load_date = l.load_date
-          where l.run_id = $1 and l.department_id = $2 and l.load_date = $3
-          group by o.erp_order_no, cu.name, cmp.code
-          order by o.erp_order_no, cmp.code`,
+        `select erp_order_no, customer_name, component_code,
+                qty_planned::float8, capacity::float8
+           from load_detail
+          where run_id = $1 and department_id = $2 and load_date = $3
+          order by erp_order_no, component_code`,
         [runId, departmentId, loadDate],
       ),
   })
@@ -257,22 +235,10 @@ export function useOrders(runId: string | undefined) {
     queryKey: ['orders', runId],
     queryFn: () =>
       query<OrderRow>(
-        `select o.id as order_id, o.erp_order_no, cu.name as customer_name,
-                a.code as article_code, o.total_qty::float8, o.confidence, o.status,
-                r.line_count::int, r.unallocated_qty::float8,
-                (select min(sl.stuffing_date)::text from shipment_lines sl
-                  where sl.order_id = o.id) as next_stuffing,
-                (select count(*)::int from schedule_tasks t
-                   join shipment_lines sl on sl.id = t.shipment_line_id
-                  where sl.order_id = o.id and t.run_id = $1 and not t.is_feasible
-                ) as breaches
-           from orders o
-           join customers cu on cu.id = o.customer_id
-           join articles a on a.id = o.article_id
-           join order_qty_reconciliation r on r.order_id = o.id
-          where cu.code <> '__ACCEPTANCE_CHECK__'
-          order by o.erp_order_no`,
-        [runId ?? null],
+        `select order_id, erp_order_no, customer_name, article_code,
+                total_qty::float8, confidence, status, line_count::int,
+                unallocated_qty::float8, next_stuffing::text, breaches
+           from order_book order by erp_order_no`,
       ),
   })
 }
@@ -382,15 +348,10 @@ export function useDepartments() {
     queryKey: ['departments'],
     queryFn: () =>
       query<DepartmentRow>(
-        `select d.id, d.code, d.name, d.route_position::int, d.yield_pct::float8,
-                string_agg(s.code, ', ' order by s.code) as shifts,
-                sum(ds.sanctioned_headcount)::int as headcount
-           from departments d
-           left join department_shifts ds on ds.department_id = d.id and ds.is_active
-           left join shifts s on s.id = ds.shift_id and s.is_active
-          where d.is_active
-          group by d.id, d.code, d.name, d.route_position, d.yield_pct
-          order by d.route_position`,
+        `select id, code, name, route_position::int, yield_pct::float8,
+                shifts, headcount
+           from department_master where is_active
+          order by route_position`,
       ),
   })
 }
@@ -412,17 +373,10 @@ export function useShifts() {
     queryKey: ['shifts'],
     queryFn: () =>
       query<ShiftRow>(
-        `select s.id, s.code, s.name,
-                to_char(s.start_time, 'HH24:MI') as start_time,
-                to_char(s.end_time, 'HH24:MI') as end_time,
-                s.net_production_hours::float8, s.max_ot_hours::float8,
-                s.is_active,
-                (select count(*)::int from department_shifts ds
-                   join departments d on d.id = ds.department_id
-                  where ds.shift_id = s.id and ds.is_active and d.is_active
-                ) as departments_running
-           from shifts s
-          order by s.start_time, s.code`,
+        `select id, code, name, start_label as start_time, end_label as end_time,
+                net_production_hours::float8, max_ot_hours::float8,
+                is_active, departments_running
+           from shift_master order by start_time, code`,
       ),
   })
 }
@@ -450,19 +404,11 @@ export function useDepartmentShiftGrid() {
     queryKey: ['department-shifts'],
     queryFn: () =>
       query<DeptShiftCell>(
-        `select d.id as department_id, d.code as department_code,
-                d.route_position::int, s.id as shift_id, s.code as shift_code,
-                s.is_active as shift_is_active,
-                coalesce(ds.is_active, false) as is_active,
-                ds.sanctioned_headcount::int,
-                (select count(*)::int from component_rates cr
-                  where cr.department_id = d.id and cr.shift_id = s.id) as rate_count
-           from departments d
-           cross join shifts s
-           left join department_shifts ds
-             on ds.department_id = d.id and ds.shift_id = s.id
-          where d.is_active
-          order by d.route_position, s.start_time, s.code`,
+        `select department_id, department_code, route_position::int,
+                shift_id, shift_code, shift_is_active, is_active,
+                sanctioned_headcount::int, rate_count
+           from department_shift_grid
+          order by route_position, start_time, shift_code`,
       ),
   })
 }
@@ -481,14 +427,10 @@ export function useRates() {
     queryKey: ['rates'],
     queryFn: () =>
       query<RateRow>(
-        `select d.code as department_code, cmp.code as component_code,
-                s.code as shift_code, cr.units_per_day::float8, cr.is_measured,
-                d.route_position::int
-           from component_rates cr
-           join departments d on d.id = cr.department_id
-           join components cmp on cmp.id = cr.component_id
-           join shifts s on s.id = cr.shift_id
-          order by d.route_position, cmp.code, s.code`,
+        `select department_code, component_code, shift_code,
+                units_per_day::float8, is_measured, route_position::int
+           from component_rate_master
+          order by route_position, component_code, shift_code`,
       ),
   })
 }
@@ -506,13 +448,9 @@ export function useDminus() {
     queryKey: ['dminus'],
     queryFn: () =>
       query<DminusRow>(
-        `select a.code as article_code, d.code as department_code,
-                d.route_position::int, adm.dminus_days::int, adm.is_complete
-           from article_dept_dminus adm
-           join articles a on a.id = adm.article_id
-           join departments d on d.id = adm.department_id
-          where a.is_active and d.is_active
-          order by a.code, d.route_position`,
+        `select article_code, department_code, route_position::int,
+                dminus_days::int, is_complete
+           from dminus_matrix order by article_code, route_position`,
       ),
   })
 }
@@ -529,12 +467,9 @@ export function useBom() {
     queryKey: ['bom'],
     queryFn: () =>
       query<BomRow>(
-        `select a.code as article_code, c.code as component_code,
-                c.name as component_name, b.qty_per_unit::float8
-           from article_bom b
-           join articles a on a.id = b.article_id
-           join components c on c.id = b.component_id
-          order by a.code, c.code`,
+        `select article_code, component_code, component_name,
+                qty_per_unit::float8
+           from bom_master order by article_code, component_code`,
       ),
   })
 }

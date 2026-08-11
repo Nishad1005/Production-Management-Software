@@ -624,8 +624,8 @@ function DepartmentShiftGrid() {
                         disabled={!cell.shift_is_active}
                         onClick={() =>
                           setDepartmentShift.mutate({
-                            departmentId,
-                            shiftId: cell.shift_id,
+                            departmentCode,
+                            shiftCode: code,
                             isActive: !cell.is_active,
                           })
                         }
@@ -655,8 +655,8 @@ function DepartmentShiftGrid() {
                             onCommit={(headcount) =>
                               headcount !== null &&
                               setHeadcount.mutate({
-                                departmentId,
-                                shiftId: cell.shift_id,
+                                departmentCode,
+                                shiftCode: code,
                                 headcount,
                               })
                             }
