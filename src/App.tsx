@@ -1,7 +1,17 @@
-import { useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { HashRouter, NavLink, Route, Routes } from 'react-router'
 import { clearWriteError, onWriteError } from '@/lib/queryClient'
-import { getDatabase } from '@/lib/database'
+import { backend } from '@/lib/backend'
+import {
+  fetchAccess,
+  has,
+  OFFLINE_ACCESS,
+  signOut,
+  useSession,
+  type Access,
+  type Role,
+} from '@/lib/auth'
 import { CommandCentre } from '@/routes/CommandCentre'
 import { Heatmap } from '@/routes/Heatmap'
 import { OrderBook } from '@/routes/OrderBook'
@@ -9,29 +19,37 @@ import { Acceptance } from '@/routes/Acceptance'
 import { Gantt } from '@/routes/Gantt'
 import { Masters } from '@/routes/Masters'
 import { WhatIf } from '@/routes/WhatIf'
+import { Users } from '@/routes/Users'
+import { Login, NoAccess } from '@/routes/Login'
 
-const NAV = [
-  { to: '/', label: 'Command centre', end: true },
-  { to: '/heatmap', label: 'Load heatmap' },
-  { to: '/gantt', label: 'Schedule' },
-  { to: '/orders', label: 'Order book' },
-  { to: '/accept', label: 'Accept an order' },
-  { to: '/whatif', label: 'What if' },
-  { to: '/masters', label: 'Masters' },
+/** Which roles each screen is for. Cosmetic — RLS is the real boundary. */
+const NAV: { to: string; label: string; end?: boolean; roles: Role[] }[] = [
+  { to: '/', label: 'Command centre', end: true, roles: ['md', 'planner', 'merchandiser', 'admin'] },
+  { to: '/heatmap', label: 'Load heatmap', roles: ['md', 'planner', 'merchandiser', 'admin'] },
+  { to: '/gantt', label: 'Schedule', roles: ['md', 'planner', 'admin'] },
+  { to: '/orders', label: 'Order book', roles: ['md', 'planner', 'merchandiser', 'admin'] },
+  { to: '/accept', label: 'Accept an order', roles: ['planner', 'merchandiser', 'admin'] },
+  { to: '/whatif', label: 'What if', roles: ['planner', 'admin'] },
+  { to: '/masters', label: 'Masters', roles: ['planner', 'admin'] },
+  { to: '/users', label: 'Users', roles: ['admin'] },
 ]
+
+const AccessContext = createContext<Access>(OFFLINE_ACCESS)
+export const useAccess = () => useContext(AccessContext)
 
 /**
  * Postgres has to compile and the schema has to apply before anything can
- * render. It takes a second or two on first load and is instant thereafter,
- * so the wait is explained rather than hidden behind a spinner.
+ * render — offline, at least. It takes a second or two on first load and is
+ * instant thereafter, so the wait is explained rather than hidden.
  */
 function Boot({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<'booting' | 'ready' | 'failed'>('booting')
-  const [error, setError] = useState<string>('')
+  const [error, setError] = useState('')
 
   useEffect(() => {
     let cancelled = false
-    getDatabase()
+    backend
+      .ready()
       .then(() => !cancelled && setState('ready'))
       .catch((e: unknown) => {
         if (cancelled) return
@@ -75,9 +93,44 @@ function Boot({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * A save that fails quietly leaves the old value on screen and the user
- * believing it worked. Every write failure lands here, whatever triggered it.
+ * Sign-in, where there is anything to sign in to.
+ *
+ * The offline build has no accounts, so it goes straight through as the owner.
+ * Putting a login screen in front of a database with no users in it would be
+ * theatre.
  */
+function AuthGate({ children }: { children: React.ReactNode }) {
+  const { session, checked, isHosted } = useSession()
+
+  const access = useQuery({
+    enabled: !isHosted || Boolean(session),
+    queryKey: ['access', session?.user.id ?? 'offline'],
+    queryFn: () => fetchAccess(session),
+  })
+
+  if (!isHosted) {
+    return (
+      <AccessContext.Provider value={OFFLINE_ACCESS}>
+        {children}
+      </AccessContext.Provider>
+    )
+  }
+
+  if (!checked) return null
+  if (!session) return <Login />
+  if (access.isLoading) return null
+
+  if (!access.data?.roles.length) {
+    return <NoAccess email={session.user.email ?? null} onSignOut={signOut} />
+  }
+
+  return (
+    <AccessContext.Provider value={access.data}>
+      {children}
+    </AccessContext.Provider>
+  )
+}
+
 function WriteErrorBanner() {
   const [message, setMessage] = useState<string | null>(null)
   useEffect(() => onWriteError(setMessage), [])
@@ -106,6 +159,9 @@ function WriteErrorBanner() {
 }
 
 function Shell({ children }: { children: React.ReactNode }) {
+  const access = useAccess()
+  const visible = NAV.filter((item) => has(access, ...item.roles))
+
   return (
     <div className="min-h-full">
       <header className="gridpaper bg-sheet border-ink border-b-2">
@@ -127,12 +183,16 @@ function Shell({ children }: { children: React.ReactNode }) {
                 asked for more than it can make.
               </p>
             </div>
-            <div className="border-ink min-w-[220px] border-[1.5px]">
+
+            <div className="border-ink min-w-[240px] border-[1.5px]">
               {[
                 ['Ref', 'DBBS/UM/KRAM/01'],
                 ['Revision', 'B'],
                 ['Client', 'U&M Designs'],
-                ['Build', 'Offline draft'],
+                [
+                  access.isOffline ? 'Build' : 'Signed in',
+                  access.isOffline ? 'Offline draft' : (access.email ?? ''),
+                ],
               ].map(([k, v]) => (
                 <div
                   key={k}
@@ -141,7 +201,7 @@ function Shell({ children }: { children: React.ReactNode }) {
                   <span className="text-faint border-rule border-r px-2.5 py-1.5 text-[10.5px] tracking-[0.08em] uppercase">
                     {k}
                   </span>
-                  <span className="px-2.5 py-1.5 text-[11px] font-medium">
+                  <span className="truncate px-2.5 py-1.5 text-[11px] font-medium">
                     {v}
                   </span>
                 </div>
@@ -149,24 +209,41 @@ function Shell({ children }: { children: React.ReactNode }) {
             </div>
           </div>
 
-          <nav className="mt-6 flex flex-wrap gap-x-6 gap-y-1">
-            {NAV.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.end}
-                className={({ isActive }) =>
-                  `font-sans border-b-2 pb-2.5 text-[13px] font-semibold ${
-                    isActive
-                      ? 'border-blue text-blue'
-                      : 'text-mid hover:text-ink border-transparent'
-                  }`
-                }
-              >
-                {item.label}
-              </NavLink>
-            ))}
-          </nav>
+          <div className="mt-6 flex flex-wrap items-end justify-between gap-4">
+            <nav className="flex flex-wrap gap-x-6 gap-y-1">
+              {visible.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  end={item.end}
+                  className={({ isActive }) =>
+                    `font-sans border-b-2 pb-2.5 text-[13px] font-semibold ${
+                      isActive
+                        ? 'border-blue text-blue'
+                        : 'text-mid hover:text-ink border-transparent'
+                    }`
+                  }
+                >
+                  {item.label}
+                </NavLink>
+              ))}
+            </nav>
+
+            {!access.isOffline ? (
+              <div className="flex items-center gap-3 pb-2.5">
+                <span className="text-faint text-[11px]">
+                  {access.roles.join(' · ')}
+                </span>
+                <button
+                  type="button"
+                  onClick={signOut}
+                  className="text-mid hover:text-flag text-[11.5px]"
+                >
+                  Sign out
+                </button>
+              </div>
+            ) : null}
+          </div>
         </div>
       </header>
 
@@ -176,7 +253,11 @@ function Shell({ children }: { children: React.ReactNode }) {
 
       <footer className="border-ink bg-sheet mt-6 border-t-2">
         <div className="text-faint mx-auto flex max-w-[1400px] flex-wrap justify-between gap-4 px-6 py-5 text-[11px] tracking-[0.06em]">
-          <span>Kram — offline draft. Postgres runs in the browser.</span>
+          <span>
+            {access.isOffline
+              ? 'Kram — offline draft. Postgres runs in the browser.'
+              : 'Kram — hosted. Access is enforced in the database.'}
+          </span>
           <span>
             Reports load against capacity. Takes no view on overtime, hiring or
             ship dates.
@@ -191,17 +272,20 @@ export function App() {
   return (
     <HashRouter>
       <Boot>
-        <Shell>
-          <Routes>
-            <Route path="/" element={<CommandCentre />} />
-            <Route path="/heatmap" element={<Heatmap />} />
-            <Route path="/gantt" element={<Gantt />} />
-            <Route path="/orders" element={<OrderBook />} />
-            <Route path="/accept" element={<Acceptance />} />
-            <Route path="/whatif" element={<WhatIf />} />
-            <Route path="/masters" element={<Masters />} />
-          </Routes>
-        </Shell>
+        <AuthGate>
+          <Shell>
+            <Routes>
+              <Route path="/" element={<CommandCentre />} />
+              <Route path="/heatmap" element={<Heatmap />} />
+              <Route path="/gantt" element={<Gantt />} />
+              <Route path="/orders" element={<OrderBook />} />
+              <Route path="/accept" element={<Acceptance />} />
+              <Route path="/whatif" element={<WhatIf />} />
+              <Route path="/masters" element={<Masters />} />
+              <Route path="/users" element={<Users />} />
+            </Routes>
+          </Shell>
+        </AuthGate>
       </Boot>
     </HashRouter>
   )

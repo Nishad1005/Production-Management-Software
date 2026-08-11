@@ -69,9 +69,20 @@ unmodified in the browser, so the demo runs the real engine with no backend.
 > the live database disagree, silently, until something breaks in a way that
 > makes no sense.
 
-Auth does not exist yet, so the hosted build shows nothing — anon is denied
-everything, which is correct. The offline build is unaffected and still the one
-to demo from.
+**Auth is in.** Email and password, sessions, a Users screen for assigning the
+twelve spec roles, and role-aware navigation. Accounts are created in the
+Supabase dashboard — creating one needs the service role key, which bypasses
+every access rule and must never reach a browser, so it is deliberately not an
+in-app action. Assigning roles, which is what actually decides what anyone sees,
+is.
+
+The first admin is bootstrapped once via `supabase/bootstrap.sql` in the SQL
+editor: only an admin can grant roles, so the first one cannot be granted
+through the application.
+
+`npm run dev` is offline; `npm run dev:hosted` reads `.env.hosted.local` and
+talks to Supabase. Netlify picks the env vars up from its own environment, so
+the deployed build is hosted the moment they are set — and not before.
 
 ---
 

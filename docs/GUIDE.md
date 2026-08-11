@@ -22,18 +22,33 @@ built to report, and to stop there.
 
 ---
 
-## Starting it
+## Two ways to run it
 
-```bash
-npm run dev
-```
+**Offline** — `npm run dev`, then http://localhost:5173.
 
-Then open **http://localhost:5173**.
+No database to install, no login, no network. Postgres runs inside the browser.
+The first load takes a second or two while it starts and applies the schema;
+after that it is instant, and what you enter is remembered between visits. This
+is the build to demonstrate from: nothing to set up, nothing to sign into.
 
-There is no database to install, no login and no network connection required.
-Postgres runs inside the browser. The first load takes a second or two while it
-starts and applies the schema; after that it is instant, and whatever you enter
-is remembered between visits.
+**Hosted** — `npm run dev:hosted`, or the deployed site.
+
+Talks to the shared Supabase database. Everyone sees the same data, and you sign
+in. Which one you get is decided by whether the Supabase details are configured,
+and nothing else — the screens are identical.
+
+### Signing in
+
+Accounts are created by an administrator in the Supabase dashboard
+(*Authentication → Users → Add user*, with *Auto Confirm User* ticked). They
+then appear on the **Users** screen, where roles are assigned.
+
+**A new account has no roles and can see nothing.** That is deliberate — you are
+signed in, the system works, and there is simply nothing you have been given
+access to yet. The screen says as much rather than showing empty tables.
+
+Roles are enforced in the database on every request, not in the browser. Hiding a
+screen is a convenience; being unable to read the data is the actual rule.
 
 To hand it to someone else, `npm run build` produces a `dist/` folder that will
 run from any static web host.

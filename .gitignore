@@ -12,8 +12,11 @@ dist
 dist-ssr
 *.local
 
-# Environment — the anon key is public, but the service role key is not.
-# Nothing matching .env* is ever committed.
+# Environment. The anon key is public by design, but nothing matching .env* is
+# committed regardless — a habit worth keeping when service role keys exist.
+#
+# .env.hosted.local + `npm run dev:hosted` points a local run at Supabase.
+# Plain `npm run dev` has no variables and runs offline against PGlite.
 .env
 .env.*
 !.env.example
