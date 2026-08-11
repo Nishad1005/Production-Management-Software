@@ -343,6 +343,23 @@ precondition for the planning half being used in anger.
 Newest first. One entry per working session — what changed, and anything a
 future reader would not infer from the diff.
 
+### 2026-08-11 — Auth, and masters as a portable file
+Sign-in, sessions, a Users screen for the twelve roles, and role-aware
+navigation. Accounts are created in the Supabase dashboard — creating one needs
+the service role key, and an in-app button for it would mean an edge function
+holding that key permanently for a task done a handful of times. Assigning
+roles, which is what actually decides what anyone sees, is in the application.
+
+`list_users` is SECURITY DEFINER because it reads `auth.users`, which the
+authenticated role cannot see and should not. The admin check is inside the
+function, and is the only thing between a signed-in user and everyone's email
+address.
+
+Masters export/import is no longer offline-only: export reads the master views,
+import goes through `import_masters(jsonb)`. The file stays keyed by code rather
+than internal id, which is what lets PPC's figures be entered in the offline
+build and loaded into the hosted one.
+
 ### 2026-08-11 — Supabase is live, and anon could call everything
 All seventeen migrations applied to `fiqfbbnmksppbpxmhnbv` (Mumbai, Postgres
 17.6). They went on unchanged — the schema written against PGlite 18 and tested
@@ -389,11 +406,6 @@ view had to be brought in line — the first browser run failed on
 column; `select * from f(...)` yields rows. PostgREST hides the distinction and
 Postgres does not, so `rpc` and `rpcRows` are separate methods rather than one
 that guesses.
-
-**Outstanding:** masters export/import still speaks raw SQL to PGlite, so it is
-offline-only. The screen says so rather than offering a button that throws.
-Export should move to the master views and import to an `import_masters(jsonb)`
-function — do it alongside auth.
 
 ### 2026-08-11 — The API surface: views to read, functions to write
 Groundwork for Supabase, and the one thing genuinely blocking it.

@@ -24,8 +24,7 @@ import {
 } from '@/data/mutations'
 import { Button, Empty, Field, Panel, Table, Tag, Td, Th } from '@/components/ui'
 import { formatDateLong, formatNumber, inputClass } from '@/components/format'
-import { backend } from '@/lib/backend'
-import { exec } from '@/lib/database'
+import { rpc } from '@/lib/backend'
 import {
   downloadMasters,
   exportMasters,
@@ -420,7 +419,7 @@ function MastersFileControls() {
     setMessage(null)
     try {
       const applied = await importMasters(await readJsonFile(file))
-      await exec(`select run_schedule(p_note => 'Masters imported')`)
+      await rpc('run_schedule', { p_note: 'Masters imported' })
       await client.invalidateQueries()
       setMessage(`${applied} rows applied, and the schedule re-run.`)
     } catch (e) {
@@ -429,18 +428,6 @@ function MastersFileControls() {
       setBusy(null)
       if (fileInput.current) fileInput.current.value = ''
     }
-  }
-
-  // masters-io still speaks raw SQL to PGlite, so it cannot work against the
-  // hosted backend yet. Saying so is better than a button that throws.
-  if (backend.kind !== 'offline') {
-    return (
-      <p className="text-faint max-w-[40ch] text-right text-[11px]">
-        Saving masters to a file is offline-only for now. On the hosted system
-        the data is shared and backed up, so the file is a transfer tool rather
-        than a safety net — it will return as an import path.
-      </p>
-    )
   }
 
   return (
@@ -473,7 +460,8 @@ function MastersFileControls() {
       ) : null}
       {error ? <p className="text-flag mt-1.5 text-[11.5px]">{error}</p> : null}
       <p className="text-faint mt-1.5 max-w-[40ch] text-[11px]">
-        Loading merges by code — it never wipes what is already there.
+        Loading merges by code — it never wipes what is already there. The file
+        moves between the offline and hosted systems unchanged.
       </p>
     </div>
   )

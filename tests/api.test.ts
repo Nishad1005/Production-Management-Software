@@ -247,3 +247,59 @@ describe('pin writes', () => {
     })
   })
 })
+
+describe('masters as a file', () => {
+  /**
+   * The file is keyed by code rather than internal id, so it must apply to a
+   * database that has never seen those ids — which is the whole point: PPC's
+   * figures get entered offline and loaded into the hosted system.
+   */
+  it('round-trips through a file, keyed by code not id', async () => {
+    await withRollback(async (c) => {
+      await applySeed(c)
+
+      const { rows: exported } = await c.query<{ file: unknown }>(
+        `select jsonb_build_object(
+           'kram_masters', 1,
+           'tables', jsonb_build_object(
+             'departments', (select jsonb_agg(to_jsonb(x)) from (
+                select code, name, route_position, yield_pct, is_active
+                  from department_master) x),
+             'component_rates', (select jsonb_agg(to_jsonb(x)) from (
+                select component_code, department_code, shift_code, units_per_day
+                  from component_rate_master) x),
+             'article_dept_dminus', (select jsonb_agg(to_jsonb(x)) from (
+                select article_code, department_code, dminus_days, is_complete
+                  from dminus_matrix) x)
+           )) as file`,
+      )
+
+      // Change things the file should put back.
+      await c.query(`select set_dminus('AARA-LC', 'WOOD', 99)`)
+      await c.query(`select set_component_rate('COVER', 'STITCH', 'GEN', 7)`)
+
+      const applied = await c.query<{ n: number }>(
+        `select import_masters($1::jsonb) as n`,
+        [JSON.stringify(exported[0].file)],
+      )
+      expect(applied.rows[0].n).toBeGreaterThan(0)
+
+      const { rows: after } = await c.query<{ d: number; rate: string }>(
+        `select (select dminus_days from dminus_matrix
+                  where article_code = 'AARA-LC' and department_code = 'WOOD') as d,
+                (select units_per_day::text from component_rate_master
+                  where component_code = 'COVER' and department_code = 'STITCH') as rate`,
+      )
+      expect(after[0].d).toBe(60)
+      expect(Number(after[0].rate)).toBe(30)
+    })
+  })
+
+  it('refuses a file that is not one of ours', async () => {
+    await withRollback(async (c) => {
+      await expect(
+        c.query(`select import_masters('{"something": "else"}'::jsonb)`),
+      ).rejects.toThrow(/not a Kram masters file/)
+    })
+  })
+})
