@@ -3,6 +3,7 @@ import { readFile, readdir } from 'node:fs/promises'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
+import type pg from 'pg'
 import { withClient, withRollback } from './helpers/db'
 import { applySeed } from './helpers/fixtures'
 
@@ -292,6 +293,76 @@ describe('masters as a file', () => {
       )
       expect(after[0].d).toBe(60)
       expect(Number(after[0].rate)).toBe(30)
+    })
+  })
+
+  /**
+   * The file carried departments and no edges between them, so applying it to a
+   * fresh database rebuilt a factory where nothing feeds anything: no runway
+   * checks, and yield collapsing to each department's own. The check above
+   * passed throughout — it exports, changes one number and asserts that number
+   * came back, which says nothing about the fields it never looks at.
+   */
+  const graphFile = (c: pg.Client) =>
+    c.query<{ file: unknown }>(
+      `select jsonb_build_object(
+         'kram_masters', 1,
+         'tables', jsonb_build_object(
+           'departments', (select jsonb_agg(to_jsonb(x)) from (
+              select code, name, route_position, yield_pct, is_active
+                from department_master) x),
+           'department_dependencies', (select jsonb_agg(to_jsonb(x)) from (
+              select department_code, depends_on_code
+                from department_dependency_list) x)
+         )) as file`,
+    )
+
+  const edges = async (c: pg.Client) =>
+    (
+      await c.query<{ department_code: string; depends_on_code: string }>(
+        `select department_code, depends_on_code from department_dependency_list
+          order by department_code`,
+      )
+    ).rows
+
+  it('carries the route graph', async () => {
+    await withRollback(async (c) => {
+      await applySeed(c)
+      const before = await edges(c)
+      expect(before).toHaveLength(3)
+
+      const { rows: file } = await graphFile(c)
+
+      await c.query(`delete from department_dependencies where true`)
+      expect(await edges(c)).toEqual([])
+
+      await c.query(`select import_masters($1::jsonb)`, [
+        JSON.stringify(file[0].file),
+      ])
+      expect(await edges(c)).toEqual(before)
+    })
+  })
+
+  it('removes an edge the file no longer has, rather than merging it back', async () => {
+    await withRollback(async (c) => {
+      await applySeed(c)
+      // Two departments declared parallel, then saved. Re-applying that file
+      // has to keep them parallel — with a merge, absence could never travel
+      // and the graph would only ever accumulate.
+      await c.query(`select set_department_dependency('FABCUT', 'WOOD', false)`)
+      const { rows: file } = await graphFile(c)
+
+      await c.query(`select set_department_dependency('FABCUT', 'WOOD', true)`)
+      expect(await edges(c)).toHaveLength(3)
+
+      await c.query(`select import_masters($1::jsonb)`, [
+        JSON.stringify(file[0].file),
+      ])
+      const after = await edges(c)
+      expect(after).toHaveLength(2)
+      expect(
+        after.some((e) => e.department_code === 'FABCUT'),
+      ).toBe(false)
     })
   })
 

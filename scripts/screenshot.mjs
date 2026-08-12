@@ -107,19 +107,20 @@ await step('add an order', async () => {
 
 await step('edit D-minus', async () => {
   await go('#/masters', 'text=D-minus matrix')
-  const cell = page.locator('button:has-text("D-60")').first()
+  // Ply cutting on the Boden dining chair, the one article carrying no offset.
+  const cell = page.locator('button:has-text("D-80")').first()
   await cell.click()
   const input = page.locator('input[type=number]:visible').first()
-  await input.fill('64')
+  await input.fill('84')
   await input.press('Enter')
-  await page.waitForSelector('button:has-text("D-64")', { timeout: 60_000 })
+  await page.waitForSelector('button:has-text("D-84")', { timeout: 60_000 })
 
   // And it survives a reload, which is what proves it reached the database
   // rather than only React state.
   await go('#/masters', 'text=D-minus matrix')
-  await page.waitForSelector('button:has-text("D-64")', { timeout: 60_000 })
+  await page.waitForSelector('button:has-text("D-84")', { timeout: 60_000 })
   await page.screenshot({ path: `${outDir}/masters.png`, fullPage: true })
-  return 'D-60 → D-64, persisted across reload'
+  return 'D-80 → D-84, persisted across reload'
 })
 
 // --- masters survive a round trip through a file ----------------------------
@@ -134,21 +135,60 @@ await step('masters round-trip', async () => {
   const saved = `${outDir}/kram-masters.json`
   await download.saveAs(saved)
 
-  // The previous step left wood at D-64. Move it, then load the file back and
-  // it should return — which is what proves the file carries real values and
-  // the import reaches the database.
-  const cell = page.locator('button:has-text("D-64")').first()
+  // The previous step left ply cutting at D-84. Move it, then load the file
+  // back and it should return — which is what proves the file carries real
+  // values and the import reaches the database.
+  const cell = page.locator('button:has-text("D-84")').first()
   await cell.click()
   const input = page.locator('input[type=number]:visible').first()
-  await input.fill('70')
+  await input.fill('90')
   await input.press('Enter')
-  await page.waitForSelector('button:has-text("D-70")', { timeout: 60_000 })
+  await page.waitForSelector('button:has-text("D-90")', { timeout: 60_000 })
 
+  // The route graph travels in the file too, and did not until today. Break it
+  // first, so the import has something to put back beyond a single number.
+  await go('#/masters', 'text=What feeds what')
+  const graph = page.locator('[data-testid="route-dependency-grid"]')
+  const columns = await page.evaluate(() => {
+    const table = document.querySelector('[data-testid="route-dependency-grid"]')
+    return [...(table?.querySelectorAll('thead th') ?? [])].map((h) =>
+      h.textContent?.trim(),
+    )
+  })
+  await graph
+    .locator('tbody tr')
+    .filter({ hasText: 'SAND' })
+    .first()
+    .locator('td')
+    .nth(columns.indexOf('ASSY'))
+    .locator('button')
+    .click()
+  await page.waitForTimeout(1200)
+
+  await go('#/masters', 'text=Production route')
   await page.setInputFiles('[data-testid="masters-import"]', saved)
   await page.waitForSelector('text=/\\d+ rows applied/', { timeout: 60_000 })
-  await page.waitForSelector('button:has-text("D-64")', { timeout: 60_000 })
+  await page.waitForSelector('button:has-text("D-84")', { timeout: 60_000 })
 
-  return 'exported, changed, re-imported, value restored'
+  // The edge has to come back with it. A file that carries departments and not
+  // what feeds them rebuilds a factory where nothing waits for anything.
+  await go('#/masters', 'text=What feeds what')
+  const restored = await page.evaluate(() => {
+    const table = document.querySelector('[data-testid="route-dependency-grid"]')
+    const heads = [...(table?.querySelectorAll('thead th') ?? [])].map((h) =>
+      h.textContent?.trim(),
+    )
+    const row = [...(table?.querySelectorAll('tbody tr') ?? [])].find((r) =>
+      r.querySelector('td')?.textContent?.trim().startsWith('SAND'),
+    )
+    const cell = row?.querySelectorAll('td')[heads.indexOf('ASSY')]
+    return cell?.textContent?.trim()
+  })
+  if (restored !== '●') {
+    throw new Error(`the file lost the route graph — SAND/ASSY reads ${restored}`)
+  }
+
+  return 'exported, D-minus and the route graph both restored'
 })
 
 // --- bringing a second shift on adds capacity -------------------------------
@@ -272,23 +312,23 @@ await step('route order guard', async () => {
   await page.click('button:has-text("D-minus")')
   await page.waitForTimeout(400)
 
-  // Fabric cutting sits after wood but is about to be told to finish ten days
-  // before it — which holds it behind work that is not due, and raises a runway
-  // breach that is not real.
+  // Sanding is fed by assembly, and is about to be told to finish well before
+  // it — which holds it behind work that is not due, and raises a runway breach
+  // that is not real.
   const grid = page.locator('[data-testid="capacity-grid"]')
-  const fabcutColumn = await page.evaluate(() => {
+  const sandColumn = await page.evaluate(() => {
     const table = document.querySelector('[data-testid="capacity-grid"]')
     const heads = [...(table?.querySelectorAll('thead th') ?? [])].map((h) =>
       h.textContent?.trim(),
     )
-    return heads.indexOf('FABCUT')
+    return heads.indexOf('SAND')
   })
-  if (fabcutColumn < 1) throw new Error('FABCUT column not found')
+  if (sandColumn < 1) throw new Error('SAND column not found')
 
   // Scoped to the grid: once the warning appears it brings its own table, and
   // an unanchored "first table" locator quietly moves to it.
   const cellAt = () =>
-    grid.locator('tbody tr').first().locator('td').nth(fabcutColumn).locator('button')
+    grid.locator('tbody tr').first().locator('td').nth(sandColumn).locator('button')
 
   await cellAt().click()
   const input = page.locator('input[type=number]:visible').first()
@@ -304,7 +344,10 @@ await step('route order guard', async () => {
   // Correcting it clears the warning rather than leaving it to be dismissed.
   await cellAt().click()
   const fix = page.locator('input[type=number]:visible').first()
-  await fix.fill('50')
+  // 56 is sanding's own figure. Anything at or below wood finishing's D-46
+  // would simply trade one contradiction for another — equal due dates count,
+  // because the second department would start before the first had finished.
+  await fix.fill('56')
   await fix.press('Enter')
   await page.waitForFunction(
     () => !document.body.textContent?.includes('A department is due before something that feeds it'),
@@ -317,26 +360,26 @@ await step('route order guard', async () => {
 // --- saying two departments are parallel clears a false breach --------------
 
 await step('parallel feeders', async () => {
-  // Put the contradiction back: fabric cutting due ten days before wood, while
-  // waiting on it. The disagreement is real only because we claim wood feeds
-  // fabric cutting, which it does not.
+  // Put the contradiction back: sanding due well before assembly, while waiting
+  // on it. The disagreement only exists because we claim assembly feeds
+  // sanding.
   await go('#/capacity', 'text=Capacity sheet')
   await page.click('button:has-text("D-minus")')
   await page.waitForTimeout(400)
 
   const grid = page.locator('[data-testid="capacity-grid"]')
-  const fabcutColumn = await page.evaluate(() => {
+  const sandColumn = await page.evaluate(() => {
     const table = document.querySelector('[data-testid="capacity-grid"]')
     const heads = [...(table?.querySelectorAll('thead th') ?? [])].map((h) =>
       h.textContent?.trim(),
     )
-    return heads.indexOf('FABCUT')
+    return heads.indexOf('SAND')
   })
   const cell = grid
     .locator('tbody tr')
     .first()
     .locator('td')
-    .nth(fabcutColumn)
+    .nth(sandColumn)
     .locator('button')
   await cell.click()
   const dminus = page.locator('input[type=number]:visible').first()
@@ -347,7 +390,7 @@ await step('parallel feeders', async () => {
     { timeout: 60_000 },
   )
 
-  // Say what is true on Masters — fabric cutting waits for nothing.
+  // Say what is true on Masters — sanding waits for nothing.
   await go('#/masters', 'text=What feeds what')
   const dependencies = page.locator('[data-testid="route-dependency-grid"]')
   const columns = await page.evaluate(() => {
@@ -361,15 +404,9 @@ await step('parallel feeders', async () => {
 
   // Anchored by testid and by row text, not by position: this panel sits above
   // two other grids on the same screen.
-  await rowFor('FABCUT')
+  await rowFor('SAND')
     .locator('td')
-    .nth(columns.indexOf('WOOD'))
-    .locator('button')
-    .click()
-  await page.waitForTimeout(1200)
-  await rowFor('STITCH')
-    .locator('td')
-    .nth(columns.indexOf('WOOD'))
+    .nth(columns.indexOf('ASSY'))
     .locator('button')
     .click()
   await page.waitForTimeout(1200)
@@ -406,11 +443,11 @@ await step('parallel feeders', async () => {
     .locator('tbody tr')
     .first()
     .locator('td')
-    .nth(fabcutColumn)
+    .nth(sandColumn)
     .locator('button')
   await restore.click()
   const back = page.locator('input[type=number]:visible').first()
-  await back.fill('50')
+  await back.fill('56')
   await back.press('Enter')
   await page.waitForTimeout(1200)
 
@@ -461,10 +498,11 @@ await step('declare production', async () => {
 })
 
 await step('count in a handover', async () => {
-  // Assembly is fed by stitching in the seeded graph, so what stitching just
-  // declared is now sitting in assembly's queue.
+  // Stapling is fed by stitching, so what stitching just declared is now
+  // sitting in stapling's queue. Assembly would have been wrong: it is fed by
+  // ply cutting and machining, which is a different stream entirely.
   await go('#/production', 'text=What you were asked for')
-  await page.selectOption('[data-testid="production-department"]', 'ASSY')
+  await page.selectOption('[data-testid="production-department"]', 'STAPLE')
   await page.waitForSelector('[data-testid="pending-acceptance"]', {
     timeout: 60_000,
   })
@@ -484,7 +522,7 @@ await step('count in a handover', async () => {
     undefined,
     { timeout: 60_000 },
   )
-  return 'assembly counted in 24 of 26, shortfall kept'
+  return 'stapling counted in 24 of 26, shortfall kept'
 })
 
 // --- a what-if scenario, compared and promoted ------------------------------
@@ -515,7 +553,7 @@ await step('what-if scenario', async () => {
 
   const changed = await page
     .locator('table tr', { hasText: 'STITCH' })
-    .filter({ hasText: 'COVER' })
+    .filter({ hasText: '::STITCH' })
     .count()
   if (changed < 2) {
     throw new Error(`only ${changed} tasks changed — expected the department's work to move`)

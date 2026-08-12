@@ -12,6 +12,17 @@ export async function applySeed(client: pg.Client): Promise<void> {
   )
 }
 
+/**
+ * The demonstration data, on U&M's fourteen departments. Applied on top of the
+ * seed, exactly as the offline build applies it — `src/lib/database.ts` sorts
+ * the two files and gets them in this order.
+ */
+export async function applyDemoSeed(client: pg.Client): Promise<void> {
+  await client.query(
+    await readFile(join(repoRoot, 'supabase', 'seed_demo.sql'), 'utf8'),
+  )
+}
+
 export type OrderSpec = {
   erpOrderNo?: string
   articleCode?: string

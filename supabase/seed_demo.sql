@@ -1,15 +1,250 @@
--- Kram — demonstration order book.
+-- Kram — demonstration data, on U&M's own factory.
 --
 -- Applied on top of seed.sql in the offline build only. `supabase db reset`
 -- picks up seed.sql by name and leaves this alone, so a real project never gets
--- fictional orders by accident.
+-- fictional orders by accident, and the hosted database has never seen it.
 --
--- The figures are chosen so the planning screens have something to say. On the
--- placeholder route stitching is the constraint at 30 covers a day, against
--- wood's 40 chairs, fabric cutting's 60 and assembly's 50 — so clustering
--- orders around one stuffing window is what produces flagged days, and the
--- quiet weeks either side are what produces the idle report.
+-- seed.sql stays exactly as it is. Its four-department line is the fixture
+-- `tests/engine-parity.test.ts` reproduces against the client's own prototype,
+-- and that is the most valuable test in the project. This file parks those four
+-- departments and lays U&M's fourteen over the top — the same thing
+-- scripts/import-capacity-sheet.mjs does to the live database.
+--
+-- ===========================================================================
+--  EVERY CAPACITY FIGURE AND EVERY ORDER BELOW IS INVENTED.
+--
+--  The department names, their dependencies and the article codes are real —
+--  taken from U&M's capacity sheet and the structure PPC confirmed. The rates,
+--  the yields, the D-minus offsets, the customers and the order book are not.
+--  They are chosen so the screens have something to say. The header badge reads
+--  "Offline draft" for this reason, and the rates carry the ESTIMATED tag.
+-- ===========================================================================
 
+-- ---------------------------------------------------------------------------
+-- Park the placeholder route. route_position is unique, and seed.sql occupies
+-- exactly the numbers the real route wants.
+-- ---------------------------------------------------------------------------
+update public.departments
+   set is_active = false, route_position = 900 + route_position
+ where code in ('WOOD', 'FABCUT', 'STITCH', 'ASSY');
+
+update public.articles set is_active = false where code = 'AARA-LC';
+
+-- seed.sql wires its four departments into a single line. Parking them is not
+-- enough, because two of its codes — STITCH and ASSY — are U&M's own, so those
+-- rows are reused below rather than replaced and their edges survive. One of
+-- them is `ASSY depends on STITCH`, which would leave Assembly waiting for
+-- Stitching: backwards, and the sort of thing that reads as a real finding on
+-- the capacity sheet during a demonstration.
+--
+-- Removed before the real graph goes in, so at this point these are the only
+-- three edges that exist.
+delete from public.department_dependencies dd
+ using public.departments d, public.departments f
+ where dd.department_id = d.id
+   and dd.depends_on_department_id = f.id
+   and (d.code in ('WOOD', 'FABCUT', 'STITCH', 'ASSY')
+     or f.code in ('WOOD', 'FABCUT', 'STITCH', 'ASSY'));
+
+-- ---------------------------------------------------------------------------
+-- The route. Position orders the display; department_dependencies below is what
+-- the engine walks.
+--
+-- Yields vary because they do: finishing and stitching lose more than packing.
+-- It also gives Production's measured-yield view something to disagree with.
+-- ---------------------------------------------------------------------------
+insert into public.departments (code, name, route_position, yield_pct)
+values
+  ('PLYCUT',   'Ply Cutting',          10,  98),
+  ('MACHINE',  'Machining',            20,  98),
+  ('ASSY',     'Assembly',             30,  97),
+  ('SAND',     'Sanding',              40,  99),
+  ('WOODFIN',  'Wood Finishing',       50,  96),
+  ('METALFIN', 'Metal Finishing',      60,  98),
+  ('FOAM',     'Foam Pasting',         70,  99),
+  ('FIBER',    'Fiber Processing',     80,  99),
+  ('CUT',      'Cutting',              90,  97),
+  ('STITCH',   'Stitching',           100,  96),
+  ('STAPLE',   'Stapling',            110,  98),
+  ('FIT',      'Fitting',             120,  99),
+  ('QC',       'Final QC inspection', 130,  99),
+  ('PACK',     'Final Packing',       140, 100)
+on conflict (code) do update
+  set name = excluded.name,
+      route_position = excluded.route_position,
+      yield_pct = excluded.yield_pct,
+      is_active = true;
+
+-- What feeds what, as PPC confirmed it: four entry points and three streams —
+-- frame, fabric and metal — converging at stitching, stapling and fitting.
+insert into public.department_dependencies (department_id, depends_on_department_id)
+select d.id, f.id
+  from (values
+    ('ASSY',     'PLYCUT'),
+    ('ASSY',     'MACHINE'),
+    ('SAND',     'ASSY'),
+    ('WOODFIN',  'SAND'),
+    ('FOAM',     'WOODFIN'),
+    ('METALFIN', 'MACHINE'),
+    ('STITCH',   'CUT'),
+    ('STITCH',   'FIBER'),
+    ('STAPLE',   'FOAM'),
+    ('STAPLE',   'STITCH'),
+    ('FIT',      'STAPLE'),
+    ('FIT',      'METALFIN'),
+    ('QC',       'FIT'),
+    ('PACK',     'QC')
+  ) as v (dept_code, feeder_code)
+  join public.departments d on d.code = v.dept_code
+  join public.departments f on f.code = v.feeder_code
+on conflict do nothing;
+
+insert into public.department_shifts (department_id, shift_id, sanctioned_headcount)
+select d.id, s.id, v.headcount
+  from (values
+    ('PLYCUT', 8), ('MACHINE', 10), ('ASSY', 14), ('SAND', 6),
+    ('WOODFIN', 9), ('METALFIN', 5), ('FOAM', 7), ('FIBER', 4),
+    ('CUT', 6), ('STITCH', 22), ('STAPLE', 16), ('FIT', 12),
+    ('QC', 4), ('PACK', 6)
+  ) as v (dept_code, headcount)
+  join public.departments d on d.code = v.dept_code
+  join public.shifts s on s.code = 'GEN'
+on conflict (department_id, shift_id) do nothing;
+
+-- ---------------------------------------------------------------------------
+-- Six articles, codes and names as they appear in U&M's capacity sheet.
+-- ---------------------------------------------------------------------------
+insert into public.articles (code, name, category)
+values
+  ('125034299',      'Boden Dining Chair — Smokey Taupe',      'Dining'),
+  ('125034308',      'Boden Barstool — Smokey Taupe',          'Barstool'),
+  ('UD354 SPPL WAL', 'Betsy Chair — Specter Pearl',            'Dining'),
+  ('UT263 SPWL COU', 'Betsy Counter Stool — Specter Pearl',    'Barstool'),
+  ('UO265 DEN VBR',  'Lucaya Ottoman — Denby Flax',            'Ottoman'),
+  ('DL25107',        'Mable Chair',                            'Lounge')
+on conflict (code) do nothing;
+
+-- ---------------------------------------------------------------------------
+-- Which departments each article actually passes through.
+--
+-- Not all fourteen, which is the point. A dining chair has no metalwork; an
+-- ottoman is fully upholstered so nothing it contains is ever sanded or
+-- lacquered. This is what makes the capacity sheet look like a real one — and
+-- it exercises the rule that a component is inflated only for the losses of the
+-- departments its own material passes through.
+--
+-- The ottoman is the instructive case. Foam Pasting normally waits for Wood
+-- Finishing, which the ottoman skips entirely, so the engine walks back through
+-- the graph and holds it behind Assembly instead.
+-- ---------------------------------------------------------------------------
+create temp table _route as
+  select a.id   as article_id,
+         a.code as article_code,
+         d.id   as department_id,
+         d.code as department_code,
+         d.route_position
+    from public.articles a
+    cross join public.departments d
+   where a.is_active and d.is_active
+     and a.code in ('125034299', '125034308', 'UD354 SPPL WAL',
+                    'UT263 SPWL COU', 'UO265 DEN VBR', 'DL25107')
+     and not exists (
+       select 1
+         from (values
+           -- No metalwork in a dining chair.
+           ('125034299', 'MACHINE'), ('125034299', 'METALFIN'),
+           ('UD354 SPPL WAL', 'MACHINE'), ('UD354 SPPL WAL', 'METALFIN'),
+           -- Fully upholstered: no exposed timber to sand or finish, and no
+           -- metal at all.
+           ('UO265 DEN VBR', 'MACHINE'), ('UO265 DEN VBR', 'METALFIN'),
+           ('UO265 DEN VBR', 'SAND'),    ('UO265 DEN VBR', 'WOODFIN')
+         ) as skip (article_code, department_code)
+        where skip.article_code = a.code and skip.department_code = d.code
+     );
+
+-- One stage component per article per department, named the way
+-- set_capacity_cell() writes them, so the demo and a real capacity sheet agree.
+insert into public.components (code, name)
+select r.article_code || '::' || r.department_code,
+       r.department_code || ' work on ' || r.article_code
+  from _route r
+on conflict (code) do nothing;
+
+insert into public.article_bom (article_id, component_id, qty_per_unit)
+select r.article_id, c.id, 1
+  from _route r
+  join public.components c on c.code = r.article_code || '::' || r.department_code
+on conflict (article_id, component_id) do nothing;
+
+-- ---------------------------------------------------------------------------
+-- Rates — INVENTED. Dedicated figures: what the department manages in a day
+-- with the whole establishment on that one thing and nothing else, which is the
+-- convention that makes utilisation additive and the one PPC has to enter real
+-- numbers against.
+--
+-- Stitching is deliberately the tightest at 38 a day. It is what makes the
+-- bottleneck view say something, and it is a plausible shape for upholstery —
+-- machines and trained operators, against benches that can absorb more.
+--
+-- The rest are generous on purpose. A shipment line can never be larger than
+-- the tightest D-minus window it passes through multiplied by that department's
+-- rate, and if any window is narrow then the answer to "can we take this order"
+-- stops depending on the date at all — which is exactly the thing the
+-- acceptance screen exists to show.
+-- ---------------------------------------------------------------------------
+insert into public.component_rates (component_id, department_id, shift_id, units_per_day)
+select c.id, r.department_id, s.id, v.units_per_day
+  from _route r
+  join public.components c on c.code = r.article_code || '::' || r.department_code
+  join public.shifts s on s.code = 'GEN'
+  join (values
+    ('PLYCUT', 130), ('MACHINE', 110), ('ASSY', 75), ('SAND', 120),
+    ('WOODFIN', 90), ('METALFIN', 95), ('FOAM', 100), ('FIBER', 160),
+    ('CUT', 120), ('STITCH', 38), ('STAPLE', 90), ('FIT', 120),
+    ('QC', 150), ('PACK', 170)
+  ) as v (dept_code, units_per_day) on v.dept_code = r.department_code
+on conflict (component_id, department_id, shift_id) do nothing;
+
+-- ---------------------------------------------------------------------------
+-- D-minus — INVENTED. Working days before the container stuffing date that each
+-- department has to be finished.
+--
+-- A base profile plus a per-article offset, so the matrix varies the way a real
+-- one does without any article contradicting the route graph: shifting every
+-- department of an article by the same amount cannot reorder them.
+--
+-- The gaps between consecutive departments are what give each one room to work.
+-- Too narrow and a single order cannot fit however far ahead it is placed, so
+-- the answer to "can we take this" becomes a flat no and the demonstration has
+-- nothing to say.
+-- ---------------------------------------------------------------------------
+update public.article_dept_dminus adm
+   set dminus_days = base.days + off.offset_days,
+       is_complete = true
+  from _route r
+  join (values
+    ('PLYCUT', 80), ('MACHINE', 80), ('ASSY', 64), ('SAND', 56),
+    ('WOODFIN', 46), ('METALFIN', 50), ('FOAM', 36), ('FIBER', 50),
+    ('CUT', 50), ('STITCH', 30), ('STAPLE', 21), ('FIT', 13),
+    ('QC', 8), ('PACK', 4)
+  ) as base (dept_code, days) on base.dept_code = r.department_code
+  join (values
+    ('125034299', 0), ('125034308', 3), ('UD354 SPPL WAL', 2),
+    ('UT263 SPWL COU', 3), ('UO265 DEN VBR', -2), ('DL25107', 5)
+  ) as off (article_code, offset_days) on off.article_code = r.article_code
+ where adm.article_id = r.article_id
+   and adm.department_id = r.department_id;
+
+drop table _route;
+
+-- ---------------------------------------------------------------------------
+-- Customers and orders — INVENTED. erp_order_no mimics Panipuri's numbering so
+-- the import module has a shape to expect.
+--
+-- Dated relative to today rather than fixed, so the demonstration still has an
+-- order book whenever it is opened. Fixed dates would quietly become a factory
+-- with nothing left to schedule, some weeks after they were written.
+-- ---------------------------------------------------------------------------
 insert into public.customers (code, name, country)
 values
   ('NORDIC', 'Nordic Living ApS', 'Denmark'),
@@ -17,88 +252,145 @@ values
   ('HARPER', 'Harper & Co', 'United States')
 on conflict (code) do nothing;
 
--- ---------------------------------------------------------------------------
--- Orders. erp_order_no mimics Panipuri's numbering so the import module has a
--- shape to expect.
--- ---------------------------------------------------------------------------
-
 insert into public.orders
   (erp_order_no, customer_id, article_id, total_qty, order_date, confidence)
 select v.erp_order_no,
        (select id from public.customers where code = v.customer_code),
-       (select id from public.articles where code = 'AARA-LC'),
+       (select id from public.articles where code = v.article_code),
        v.total_qty,
        v.order_date,
        v.confidence::public.order_confidence
   from (values
-    -- Three orders stuffing within a week of each other: the overlap is what
+    -- Three orders stuffing within a week of each other. The overlap is what
     -- pushes stitching over capacity, and the reason capacity flagging exists.
-    ('SO/26-27/0412', 'NORDIC',    250, date '2026-08-28', 'confirmed'),
-    ('SO/26-27/0418', 'CASAVERDE', 300, date '2026-09-01', 'confirmed'),
-    ('SO/26-27/0423', 'HARPER',    200, date '2026-09-04', 'confirmed'),
+    ('SO/26-27/0412', 'NORDIC',    '125034299',      250, current_date - 75, 'confirmed'),
+    ('SO/26-27/0418', 'CASAVERDE', 'UD354 SPPL WAL', 300, current_date - 71, 'confirmed'),
+    ('SO/26-27/0423', 'HARPER',    '125034308',      200, current_date - 68, 'confirmed'),
 
     -- Ships in two phases from one order — the case that makes the shipment
     -- line, not the order, the scheduling unit.
-    ('SO/26-27/0431', 'NORDIC',    400, date '2026-09-15', 'confirmed'),
+    ('SO/26-27/0431', 'NORDIC',    'DL25107',        400, current_date - 57, 'confirmed'),
 
     -- Comfortable, and far enough out to sit in the idle stretch.
-    ('SO/26-27/0447', 'CASAVERDE', 120, date '2026-10-02', 'confirmed'),
+    ('SO/26-27/0447', 'CASAVERDE', 'UO265 DEN VBR',  120, current_date - 40, 'confirmed'),
 
     -- Material lands late; the schedule is arithmetically valid and physically
     -- impossible.
-    ('SO/26-27/0455', 'HARPER',    180, date '2026-08-20', 'confirmed'),
+    ('SO/26-27/0455', 'HARPER',    'UT263 SPWL COU', 180, current_date - 88, 'confirmed'),
 
     -- Not yet firm. Excluded when the planner filters to confirmed only.
-    ('SO/26-27/0462', 'NORDIC',     90, date '2026-10-20', 'probable'),
-    ('SO/26-27/0470', 'HARPER',    150, date '2026-11-05', 'forecast')
-  ) as v (erp_order_no, customer_code, total_qty, order_date, confidence)
+    ('SO/26-27/0462', 'NORDIC',    '125034299',       90, current_date - 22, 'probable'),
+    ('SO/26-27/0470', 'HARPER',    'UO265 DEN VBR',  150, current_date - 7,  'forecast')
+  ) as v (erp_order_no, customer_code, article_code, total_qty, order_date, confidence)
 on conflict (erp_order_no) do nothing;
 
 -- ---------------------------------------------------------------------------
 -- Shipment lines. Every date calculation keys on these, never on the order.
 -- ---------------------------------------------------------------------------
-
 insert into public.shipment_lines
   (order_id, line_no, qty, stuffing_date, delivery_date, container_ref, material_ready_date)
 select (select id from public.orders where erp_order_no = v.erp_order_no),
        v.line_no, v.qty, v.stuffing_date, v.delivery_date, v.container_ref, v.material_ready
   from (values
-    ('SO/26-27/0412', 1, 250, date '2026-11-16', date '2026-12-28', 'MSKU-4417290', null::date),
-    ('SO/26-27/0418', 1, 300, date '2026-11-18', date '2026-12-30', 'MSKU-4417318', null::date),
-    ('SO/26-27/0423', 1, 200, date '2026-11-20', date '2027-01-06', 'TGHU-2280154', null::date),
+    -- Already in production. Its upstream departments were due a fortnight ago,
+    -- which is what gives the Production screen real history and puts flagged
+    -- days inside the fortnight where the only remaining option is a phone call
+    -- to the customer.
+    --
+    -- Fabric is not in the building until well after cutting would have to
+    -- start: arithmetically valid, physically impossible.
+    ('SO/26-27/0455', 1, 180, current_date + 34, current_date + 76, 'TGHU-2291877', current_date + 9),
 
-    -- One order, two containers, three weeks apart.
-    ('SO/26-27/0431', 1, 150, date '2026-12-11', date '2027-01-22', 'CMAU-7741023', null::date),
-    ('SO/26-27/0431', 2, 250, date '2027-01-08', date '2027-02-18', 'CMAU-7741566', null::date),
+    -- The cluster. Three containers inside a week is what pushes stitching over
+    -- capacity, and the reason capacity flagging exists at all. Close enough in
+    -- that its earliest work is already inside the fortnight, so flag triage has
+    -- all three of its lead-time bands to show rather than one.
+    ('SO/26-27/0412', 1, 250, current_date + 55,  current_date + 97 , 'MSKU-4417290', null::date),
+    ('SO/26-27/0418', 1, 300, current_date + 57,  current_date + 99 , 'MSKU-4417318', null::date),
+    ('SO/26-27/0423', 1, 200, current_date + 59,  current_date + 101, 'TGHU-2280154', null::date),
 
-    ('SO/26-27/0447', 1, 120, date '2027-01-29', date '2027-03-12', 'MSKU-5120847', null::date),
+    -- One order, two containers, four weeks apart.
+    ('SO/26-27/0431', 1, 150, current_date + 82,  current_date + 124, 'CMAU-7741023', null::date),
+    ('SO/26-27/0431', 2, 250, current_date + 110, current_date + 152, 'CMAU-7741566', null::date),
 
-    -- Fabric is not in the building until well after wood would have to start.
-    ('SO/26-27/0455', 1, 180, date '2026-10-30', date '2026-12-11', 'TGHU-2291877', date '2026-10-05'),
+    ('SO/26-27/0447', 1, 120, current_date + 131, current_date + 173, 'MSKU-5120847', null::date),
 
-    ('SO/26-27/0462', 1,  90, date '2027-02-12', date '2027-03-26', null, null::date),
-    ('SO/26-27/0470', 1, 150, date '2027-03-05', date '2027-04-16', null, null::date)
+    ('SO/26-27/0462', 1,  90, current_date + 145, current_date + 187, null, null::date),
+    ('SO/26-27/0470', 1, 150, current_date + 166, current_date + 208, null, null::date)
   ) as v (erp_order_no, line_no, qty, stuffing_date, delivery_date, container_ref, material_ready)
 on conflict (order_id, line_no) do nothing;
 
 -- ---------------------------------------------------------------------------
 -- One manual pin, so the Gantt has something to show and later runs have
--- something to honour.
---
--- Stitching on the Casa Verde order is pulled six working days earlier than the
--- engine would place it. Spec §6: the engine schedules around it and reports
--- any breach it causes, rather than quietly putting it back.
+-- something to honour. Spec §6: the engine schedules around it and reports any
+-- breach it causes, rather than quietly putting it back.
 -- ---------------------------------------------------------------------------
-
 insert into public.schedule_pins
   (shipment_line_id, department_id, component_id, pinned_start_date, reason)
 select sl.id,
-       (select id from public.departments where code = 'STITCH'),
-       (select id from public.components where code = 'COVER'),
+       d.id,
+       c.id,
        public.subtract_working_days(
-         public.prev_working_day(sl.stuffing_date - 40), 6),
-       'Line free after the Nordic run — start early to protect the January container'
+         public.prev_working_day(sl.stuffing_date - 22), 6),
+       'Line free after the Nordic run — start early to protect the March container'
   from public.shipment_lines sl
   join public.orders o on o.id = sl.order_id
+  join public.articles a on a.id = o.article_id
+  join public.departments d on d.code = 'STITCH'
+  join public.components c on c.code = a.code || '::STITCH'
  where o.erp_order_no = 'SO/26-27/0447'
+on conflict do nothing;
+
+-- ---------------------------------------------------------------------------
+-- A few days of production already declared — INVENTED.
+--
+-- The Harper counter stool ships in about five weeks, so its early departments
+-- ran a fortnight ago and its later ones have not started. This
+-- is what stops the Production screen, WIP by order and measured yield from
+-- opening empty on the one part of the system nobody has seen before.
+--
+-- Dates are the departments' own due dates, which is where backward scheduling
+-- puts the work, so the entries line up with the plan rather than floating
+-- beside it.
+-- ---------------------------------------------------------------------------
+insert into public.production_declarations
+  (shipment_line_id, department_id, component_id, production_date, shift_id,
+   qty_good, qty_rejected, note)
+select sl.id,
+       d.id,
+       c.id,
+       public.prev_working_day(sl.stuffing_date - adm.dminus_days),
+       s.id,
+       v.good,
+       v.rejected,
+       v.note
+  from public.shipment_lines sl
+  join public.orders o on o.id = sl.order_id
+  join public.articles a on a.id = o.article_id
+  join (values
+    ('PLYCUT',  214, 4, null),
+    ('MACHINE', 208, 9, 'Two lengths of tube out of tolerance'),
+    ('ASSY',    198, 3, null)
+  ) as v (dept_code, good, rejected, note) on true
+  join public.departments d on d.code = v.dept_code
+  join public.components c on c.code = a.code || '::' || v.dept_code
+  join public.article_dept_dminus adm
+    on adm.article_id = a.id and adm.department_id = d.id
+  join public.shifts s on s.code = 'GEN'
+ where o.erp_order_no = 'SO/26-27/0455'
+on conflict do nothing;
+
+-- Assembly counted in what ply cutting handed over, and counted six fewer than
+-- were declared. The gap is kept rather than reconciled — it is the reason the
+-- second count exists.
+insert into public.production_acceptances
+  (declaration_id, department_id, qty_accepted, note)
+select decl.id,
+       (select id from public.departments where code = 'ASSY'),
+       208,
+       'Six panels damaged in transit between benches'
+  from public.production_declarations decl
+  join public.departments d on d.id = decl.department_id and d.code = 'PLYCUT'
+  join public.shipment_lines sl on sl.id = decl.shipment_line_id
+  join public.orders o on o.id = sl.order_id and o.erp_order_no = 'SO/26-27/0455'
 on conflict do nothing;

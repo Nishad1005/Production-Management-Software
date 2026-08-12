@@ -41,13 +41,16 @@ for the hosted system. Both use the same views and functions.
 - **Migrations are append-only.** The schema has been pushed to the live
   Supabase project (`fiqfbbnmksppbpxmhnbv`), so editing an existing migration
   now means the file and the database disagree. Add a new one.
+- **`seed.sql` is the parity fixture — do not change it.** The demonstration
+  data is `seed_demo.sql`, applied on top in the offline build only, and it is
+  what the client sees. `tests/seed-demo.test.ts` covers it.
 - **Migrations run before `seed.sql`.** A backfill that derives rows from another
   table gets nothing on a fresh database. Backfill for the live project *and*
   declare the same thing in the seed, or the two diverge silently.
 
 ## Verifying
 
-- `npm test` — 130 tests against a real native Postgres, booted per run.
+- `npm test` — 142 tests against a real native Postgres, booted per run.
 - `npm run screenshot` — drives every screen and interaction in headless
   Chromium and fails on any console error.
 - `npm run verify:live [email password]` — access control against the live

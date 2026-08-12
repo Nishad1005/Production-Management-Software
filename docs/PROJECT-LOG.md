@@ -206,6 +206,8 @@ Keep adding to this. Each one was a real dead end.
 | `UPDATE requires a WHERE clause` on Supabase, never locally | Supabase preloads the `safeupdate` library for the roles PostgREST connects as; native Postgres does not. Any UPDATE or DELETE whose **plan** carries no qualifier is refused — including on temp tables, and `security definer` does not help, because the library is loaded at connection time and does not care which role the function runs as. `where true` is not a fix: the planner folds a constant qualifier away and the plan arrives bare regardless. Restructure the statement. Caught by `tests/no-bare-dml.test.ts`, which reads `pg_proc` rather than the migration files, since append-only history still contains the fixed versions. |
 | A model's assumption is hiding in a *second* place | The route being a line was obvious in the runway check and invisible in the yield window, which read as arithmetic rather than as a claim about the shop floor. When an assumption is found to be false, grep for every consumer before fixing the one that surfaced it. |
 | A fixture that uses everything cannot see a bug about subsets | The seed's one article passes through all four departments, so yield-over-all-departments and yield-over-its-own-path give identical answers. 94 tests, none of which could tell them apart. When a test fixture uses the full set, add one that uses a subset. |
+| A demo dataset that decays | Fixed dates in seed data quietly become a factory with nothing left to schedule, weeks after they were written. Seed relative to `current_date`. |
+| A shipment line will not fit however far ahead you put it | Its maximum size is the tightest D-minus window it passes through multiplied by that department's rate — nothing to do with lead time. If the windows are narrow, "can we take this order" stops depending on the date, which is the one thing that screen is for. |
 | A migration that reads a table finds it empty | Migrations run **before** `seed.sql`, so a backfill deriving rows from `departments` got nothing on a fresh database and silently produced a different model than the same migration does live. Backfill for the live project, and declare the same thing in the seed. |
 | `command not found: node` in a tool shell | The shell was started before `~/.zshenv` existed and does not reload it. Prefix commands with `export PATH="$HOME/.nvm/versions/node/v24.19.0/bin:$PATH"`. |
 | npm warns about uncovered install scripts | npm 11 gates them. `npm approve-scripts <pkg>`, then reinstall. Needed for `esbuild`, `fsevents`, `@embedded-postgres/darwin-arm64`. |
@@ -263,7 +265,7 @@ client has seen, then diffs the SQL engine against it cell by cell across the
 prototype's own default scenario and five more. Zero divergence. Any difference
 is a real defect in one implementation or the other.
 
-**130 unit and integration tests** against a real native Postgres, booted per run
+**142 unit and integration tests** against a real native Postgres, booted per run
 from an embedded binary. Covers schema shape, RLS (as the `authenticated` role —
 table owners bypass RLS, so a policy test run as superuser proves nothing), the
 working-day calendar, engine correctness, breaches, pins, overrides, the route
@@ -412,6 +414,53 @@ which is also the first answer to "when am I busy".
 Not built: **WIP value in rupees.** It needs a component cost master that does
 not exist — `costing-sheet.xlsx` has never been loaded. Quantities are real;
 money would have been invented.
+
+### 2026-08-12 — A demonstration, and the factory it runs on
+
+The client has seen none of this. The deliverable is a scenario to walk through
+(`docs/demo-script.html`) plus the data that makes it land.
+
+**The demo ran on a factory that was not theirs.** `seed_demo.sql` built a good
+order book — three customers, orders clustered so the constraint appears, one
+order shipping in two phases — on the four placeholder departments. U&M has
+fourteen, and the first ten minutes would have gone on explaining why the screen
+said "Wood". Rewritten onto their fourteen, the dependency structure PPC
+confirmed, and six of their real article codes, with routes that differ per
+article: a dining chair has no metalwork, an ottoman is fully upholstered so
+nothing in it is sanded or lacquered. `seed.sql` is untouched — it is the parity
+fixture.
+
+Three things that only surfaced by building it:
+
+**Parking the placeholders was not enough.** Two of seed.sql's codes — STITCH and
+ASSY — are U&M's own, so those rows are reused rather than replaced and their
+edges survive. One is `ASSY depends on STITCH`, which left Assembly waiting for
+Stitching and showed up as a real finding on the capacity sheet.
+
+**Dates are now relative to `current_date`.** Fixed dates would have quietly
+become a factory with nothing left to schedule some weeks after they were
+written — a demo that decays without anyone noticing until it is on screen.
+
+**A shipment line can never be larger than its tightest D-minus window.** With
+the first profile, 220 units was refused at every date, because Stitching had six
+working days between its feeders' D-30 and its own D-24: 228 units, ever. So the
+answer to "can we take this order" did not depend on the date at all, which is
+precisely what that screen exists to show. Windows widened until contention
+decides instead — 600 units is now refused at six weeks and accepted at nine.
+
+**The masters file was losing the route graph.** `import_masters` and its export
+predate `department_dependencies` and nobody went back, so the file carried
+departments and not one edge between them. Applying it to a fresh database
+rebuilt a factory where nothing feeds anything: no runway checks, and yield
+collapsing to each department's own. `docs/GUIDE.md` tells people to save that
+file after a session with PPC. The round-trip browser check passed throughout,
+because it changes one number and asserts that number came back — which says
+nothing about the fields it never looks at. Now carried, replaced rather than
+merged (an edge's *absence* is an assertion, and a merge could never remove one),
+and checked both in `tests/api.test.ts` and in the browser.
+
+`tests/seed-demo.test.ts` is new and covers the demonstration data itself: it is
+the only thing between a broken demo and finding out in front of the client.
 
 ### 2026-08-12 — The engine had never once run on Supabase
 

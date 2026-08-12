@@ -43,6 +43,19 @@ const EXPORTS: {
     }),
   },
   {
+    // Immediately after departments, and imported in that order too: an edge is
+    // two department codes and nothing else. Left out of this list until now,
+    // which meant a saved file quietly rebuilt a factory where nothing feeds
+    // anything.
+    table: 'department_dependencies',
+    view: 'department_dependency_list',
+    order: ['route_position', 'depends_on_code'],
+    pick: (r) => ({
+      department_code: r.department_code,
+      depends_on_code: r.depends_on_code,
+    }),
+  },
+  {
     table: 'shifts',
     view: 'shift_master',
     order: ['code'],

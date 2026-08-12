@@ -1,0 +1,724 @@
+<title>Kram — demonstration script</title>
+
+<style>
+  /* Kram's palette and register, carried over from the software and the route
+     note so the whole set reads as one product. */
+  :root {
+    --paper: #e9edf1;
+    --sheet: #ffffff;
+    --ink: #16202e;
+    --mid: #5c6b7a;
+    --faint: #8996a4;
+    --rule: #c9d3dc;
+    --rule-soft: #dfe6ec;
+    --blue: #2c4a6e;
+    --amber: #b07d1a;
+    --flag: #c4462e;
+    --bar-text: #ffffff;
+    --bar-meta: #93a6b8;
+
+    --sans: 'Archivo', ui-sans-serif, -apple-system, BlinkMacSystemFont,
+      'Segoe UI', sans-serif;
+    --mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  }
+
+  :root:not([data-theme='light']) {
+    @media (prefers-color-scheme: dark) {
+      --paper: #0f151d;
+      --sheet: #16202e;
+      --ink: #e6ecf2;
+      --mid: #a3b1c0;
+      --faint: #7e8d9d;
+      --rule: #2c3a4b;
+      --rule-soft: #223040;
+      --blue: #8fb3dc;
+      --amber: #d8a83f;
+      --flag: #e2745c;
+      --bar-text: #0f151d;
+      --bar-meta: #4a6076;
+    }
+  }
+
+  :root[data-theme='dark'] {
+    --paper: #0f151d;
+    --sheet: #16202e;
+    --ink: #e6ecf2;
+    --mid: #a3b1c0;
+    --faint: #7e8d9d;
+    --rule: #2c3a4b;
+    --rule-soft: #223040;
+    --blue: #8fb3dc;
+    --amber: #d8a83f;
+    --flag: #e2745c;
+    --bar-text: #0f151d;
+    --bar-meta: #4a6076;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 0 28px; }
+
+  .sheet-head {
+    background: var(--sheet);
+    border-bottom: 2px solid var(--ink);
+    background-image:
+      linear-gradient(var(--rule-soft) 1px, transparent 1px),
+      linear-gradient(90deg, var(--rule-soft) 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+  .head-inner {
+    display: flex; flex-wrap: wrap; gap: 24px;
+    justify-content: space-between; align-items: flex-start;
+    padding: 30px 28px 26px;
+  }
+  .eyebrow {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--faint); margin: 0 0 8px;
+  }
+  h1 { font-size: 30px; line-height: 1.15; margin: 0; font-weight: 700; }
+  h1 em {
+    display: block; font-style: normal; font-weight: 400; font-size: 14.5px;
+    color: var(--mid); margin-top: 8px; max-width: 46ch;
+  }
+  .refblock {
+    border: 1px solid var(--rule); background: var(--sheet);
+    font-family: var(--mono); font-size: 11px; min-width: 250px;
+  }
+  .refblock > div {
+    display: grid; grid-template-columns: 84px 1fr;
+    border-bottom: 1px solid var(--rule-soft);
+  }
+  .refblock > div:last-child { border-bottom: 0; }
+  .refblock span { padding: 6px 9px; }
+  .refblock span:first-child {
+    color: var(--faint); border-right: 1px solid var(--rule-soft);
+    text-transform: uppercase; letter-spacing: 0.07em; font-size: 10px;
+  }
+
+  main { display: flex; flex-direction: column; gap: 26px; padding: 30px 0 48px; }
+
+  h2 {
+    font-size: 12px; font-family: var(--mono); letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--faint); font-weight: 400;
+    margin: 8px 0 0; padding-bottom: 8px; border-bottom: 1px solid var(--rule);
+  }
+
+  .lead { font-size: 16.5px; line-height: 1.6; max-width: 68ch; margin: 0; }
+
+  .callout {
+    background: var(--sheet); border: 1px solid var(--rule);
+    border-left: 3px solid var(--blue); padding: 18px 20px;
+  }
+  .callout.warn { border-left-color: var(--flag); }
+  .callout h3 {
+    font-size: 15px; font-weight: 600; margin: 0 0 6px;
+  }
+  .callout p { font-size: 14.5px; margin: 0 0 8px; max-width: 74ch; }
+  .callout p:last-child { margin: 0; }
+
+  /* A step: number and title on the bar, then do / say side by side. */
+  .step { background: var(--sheet); border: 1px solid var(--rule); }
+  .step > header {
+    background: var(--ink); color: var(--bar-text);
+    display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
+    padding: 10px 18px;
+  }
+  .step > header .n {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em;
+    color: var(--bar-meta);
+  }
+  .step > header b { font-size: 15px; font-weight: 600; }
+  .step > header .mins {
+    margin-left: auto; font-family: var(--mono); font-size: 10.5px;
+    letter-spacing: 0.09em; text-transform: uppercase; color: var(--bar-meta);
+  }
+  .step > .body { padding: 18px 20px; display: grid; gap: 18px; }
+  @media (min-width: 820px) {
+    .step > .body { grid-template-columns: 300px 1fr; gap: 26px; }
+  }
+
+  .do { border-left: 2px solid var(--rule); padding-left: 14px; }
+  .do h4, .say h4 {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.13em;
+    text-transform: uppercase; color: var(--faint); font-weight: 400;
+    margin: 0 0 9px;
+  }
+  .do ol { margin: 0; padding-left: 17px; }
+  .do li {
+    font-family: var(--mono); font-size: 12px; line-height: 1.5;
+    margin-bottom: 7px;
+  }
+  .do li:last-child { margin-bottom: 0; }
+  .do kbd {
+    font-family: var(--mono); font-size: 11.5px; background: var(--paper);
+    border: 1px solid var(--rule); padding: 1px 5px; white-space: nowrap;
+  }
+
+  .say p { margin: 0 0 10px; max-width: 66ch; }
+  .say p:last-child { margin: 0; }
+  .say .quote {
+    border-left: 2px solid var(--blue); padding-left: 12px;
+    font-size: 15px; color: var(--ink);
+  }
+  .say .aside {
+    font-size: 13px; color: var(--mid);
+  }
+
+  ol.checks { margin: 0; padding-left: 20px; max-width: 76ch; }
+  ol.checks li { margin-bottom: 10px; }
+  ol.checks li:last-child { margin-bottom: 0; }
+
+  ul.plain { margin: 0; padding-left: 18px; max-width: 76ch; }
+  ul.plain li { margin-bottom: 8px; }
+  ul.plain li:last-child { margin-bottom: 0; }
+
+  .qs { display: grid; gap: 14px; }
+  @media (min-width: 760px) { .qs { grid-template-columns: 1fr 1fr; } }
+  .q {
+    background: var(--sheet); border: 1px solid var(--rule);
+    border-top: 2px solid var(--amber); padding: 15px 17px;
+  }
+  .q h3 { font-size: 15px; font-weight: 600; margin: 0 0 6px; }
+  .q p { margin: 0; font-size: 13.5px; color: var(--mid); }
+
+  strong { font-weight: 600; }
+  em.term { font-style: normal; font-family: var(--mono); font-size: 0.92em; }
+
+  footer { border-top: 2px solid var(--ink); background: var(--sheet); }
+  .foot-inner {
+    max-width: 1000px; margin: 0 auto; padding: 20px 28px;
+    font-family: var(--mono); font-size: 11px; color: var(--faint);
+    display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px;
+    letter-spacing: 0.05em;
+  }
+
+  @media print {
+    body { background: #fff; font-size: 11pt; }
+    .sheet-head { background-image: none; }
+    .step, .callout, .q { break-inside: avoid; }
+    main { gap: 18px; padding: 18px 0 0; }
+  }
+</style>
+
+<header class="sheet-head">
+  <div class="wrap head-inner">
+    <div>
+      <p class="eyebrow">Data Brilliance Business Solutions LLP</p>
+      <h1>
+        Demonstration script
+        <em>Thirty minutes through Kram, and the questions worth asking at the
+        end of it</em>
+      </h1>
+    </div>
+    <aside class="refblock">
+      <div><span>Ref</span><span>DBBS/UM/KRAM/03</span></div>
+      <div><span>For</span><span>U&amp;M Designs</span></div>
+      <div><span>Runs on</span><span>Offline draft</span></div>
+      <div><span>Length</span><span>~30 min + questions</span></div>
+    </aside>
+  </div>
+</header>
+
+<div class="wrap">
+  <main>
+    <p class="lead">
+      The order is the arc the software actually has: find a problem, understand
+      it, try a fix, then show where the numbers come from and who keeps them
+      up to date. Steps 5 and 9 are the two worth slowing down for.
+    </p>
+
+    <div class="callout warn">
+      <h3>Say this in the first minute, before anything else</h3>
+      <p>
+        <strong>The departments and the product codes are yours. Every capacity
+        figure, every date and every order on the screen is made up.</strong>
+        They are there so the screens have something to say. Getting your real
+        numbers in is the next piece of work, and part of what today is for.
+      </p>
+      <p class="say aside">
+        Worth being blunt about. The screen will show Ply Cutting making 120 a
+        day, and if that goes unchallenged the whole session becomes an argument
+        about a number nobody entered.
+      </p>
+    </div>
+
+    <h2>Before they arrive</h2>
+    <ol class="checks">
+      <li>
+        <strong>Open the demo and check the badge, top right.</strong> It must
+        read <em class="term">Build — Offline draft</em>. If you get a login
+        screen instead, that is the hosted build and its planning screens are
+        empty until PPC's figures arrive — use the offline one for the
+        walkthrough.
+      </li>
+      <li>
+        <strong>Command centre → Reset demo data.</strong> Puts everything back
+        to a known state, including anything a previous run-through changed.
+        Then <strong>Run the schedule</strong> once so the first screen is not
+        blank.
+      </li>
+      <li>
+        <strong>Have this script on a second screen</strong>, not on the one you
+        are sharing.
+      </li>
+      <li>
+        <strong>Know the one number.</strong> Stitching is the constraint at 38
+        a day. Almost every question about why something is flagged comes back
+        to it.
+      </li>
+    </ol>
+
+    <h2>The walkthrough</h2>
+
+    <section class="step">
+      <header><span class="n">01</span><b>What this is for</b><span class="mins">1 min</span></header>
+      <div class="body">
+        <div class="do">
+          <h4>Do</h4>
+          <ol>
+            <li>Nothing. Do not share the screen yet.</li>
+          </ol>
+        </div>
+        <div class="say">
+          <h4>Say</h4>
+          <p class="quote">
+            “Today you commit a stuffing date from experience — you know roughly
+            what the factory can do. Kram checks that commitment against what
+            each department can actually make, day by day, working backwards
+            from the container. It finds the problem. It does not decide what to
+            do about it.”
+          </p>
+          <p class="aside">
+            That last sentence matters. Everything in the software is built to
+            report and stop there, and saying so early prevents “so it will tell
+            us to do overtime?” half an hour in.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="step">
+      <header><span class="n">02</span><b>Command centre — is the factory on track?</b><span class="mins">4 min</span></header>
+      <div class="body">
+        <div class="do">
+          <h4>Do</h4>
+          <ol>
+            <li>Open <kbd>Command centre</kbd>.</li>
+            <li>Click <kbd>Run the schedule</kbd> with <kbd>Confirmed + probable</kbd> selected.</li>
+            <li>Point at the four figures.</li>
+            <li>Point at <kbd>Bottleneck utilisation</kbd>.</li>
+            <li>Point at <kbd>Flag triage</kbd> — read down the right column.</li>
+          </ol>
+        </div>
+        <div class="say">
+          <h4>Say</h4>
+          <p>
+            The whole order book rescheduled in well under a second, and every
+            run is saved as its own version — nothing is overwritten, so you can
+            always go back to what you promised last week.
+          </p>
+          <p>
+            <strong>Breaches and flagged days are different things.</strong> A
+            breach is work that cannot be made as planned. A flagged day is a
+            department asked for more than it can produce.
+          </p>
+          <p class="quote">
+            “Stitching is the constraint. Capacity above the bottleneck is
+            decorative — if stitching does 38 a day, the factory does 38 a day,
+            whatever fitting can manage.”
+          </p>
+          <p>
+            Flag triage sorts by how much time is left and labels what is still
+            possible at that lead time — hiring, then overtime and resequencing,
+            then only a conversation with the customer. <strong>A label, not a
+            recommendation.</strong>
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="step">
+      <header><span class="n">03</span><b>Load heatmap — which days hurt</b><span class="mins">3 min</span></header>
+      <div class="body">
+        <div class="do">
+          <h4>Do</h4>
+          <ol>
+            <li>Open <kbd>Load heatmap</kbd>.</li>
+            <li>Scroll sideways so they see the shape of it.</li>
+            <li><strong>Click a red cell.</strong></li>
+            <li>Point at an outlined (idle) cell nearby.</li>
+          </ol>
+        </div>
+        <div class="say">
+          <h4>Say</h4>
+          <p>
+            Every department against every day. Red is over capacity. Clicking
+            one shows exactly which orders are on that day and what share of the
+            day each takes — so a flag is never just a colour.
+          </p>
+          <p class="quote">
+            “The empty ones matter as much as the red ones. Because it schedules
+            backwards, work lands as late as it can — so you often get idle days
+            sitting immediately before a department drowns. That is a
+            resequencing opportunity you cannot see on a spreadsheet.”
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="step">
+      <header><span class="n">04</span><b>Schedule — the plan, and overriding it</b><span class="mins">3 min</span></header>
+      <div class="body">
+        <div class="do">
+          <h4>Do</h4>
+          <ol>
+            <li>Open <kbd>Schedule</kbd>.</li>
+            <li>Filter to <kbd>Breaches only</kbd>.</li>
+            <li><strong>Drag one bar</strong> a few days earlier.</li>
+            <li>Type a reason. Save.</li>
+            <li>Point at the pin appearing in the list below.</li>
+          </ol>
+        </div>
+        <div class="say">
+          <h4>Say</h4>
+          <p>
+            One bar per task, per shipment line. The marker is that department's
+            own deadline.
+          </p>
+          <p class="quote">
+            “A planner always knows something the system does not. So you can
+            move anything — but it asks you why, and it makes you answer. A pin
+            with no reason is indistinguishable from a mistake six weeks later.”
+          </p>
+          <p>
+            From then on the engine schedules <em>around</em> that pin and
+            reports whatever it breaks, rather than quietly putting it back.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="step">
+      <header><span class="n">05</span><b>Accept an order — the one that matters</b><span class="mins">5 min</span></header>
+      <div class="body">
+        <div class="do">
+          <h4>Do</h4>
+          <ol>
+            <li>Open <kbd>Accept an order</kbd>.</li>
+            <li>Pick <kbd>Boden Dining Chair</kbd>, quantity <kbd>600</kbd>.</li>
+            <li>Stuffing date about <strong>six weeks out</strong>. Click <kbd>Check</kbd>.</li>
+            <li>Read the refusal and which departments break.</li>
+            <li>Now push the date out by <strong>three weeks</strong> and check again.</li>
+            <li>Go to <kbd>Order book</kbd> — show it is not there.</li>
+          </ol>
+        </div>
+        <div class="say">
+          <h4>Say</h4>
+          <p class="quote">
+            “A customer is on the phone asking for 600 chairs in six weeks. This
+            is the answer, before you give them one.”
+          </p>
+          <p>
+            It schedules the order provisionally against everything already
+            committed, reports which departments break and by how much, then
+            takes it out again. Nothing was added to the order book — check it
+            yourself.
+          </p>
+          <p>
+            Moving the date and re-checking is the part to linger on. It turns
+            “no” into <strong>“not that date, but this one”</strong>, which is a
+            different conversation with a customer.
+          </p>
+          <p class="aside">
+            Everything else in the system finds problems after the commitment.
+            This is the only screen that finds them before.
+          </p>
+          <p class="aside">
+            <strong>If it says yes first time</strong>, the book is quieter than
+            expected on the day — put the quantity up to 800 and try again. The
+            point of the step is watching a no become a yes, not the number.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="step">
+      <header><span class="n">06</span><b>What if — trying it without risking it</b><span class="mins">3 min</span></header>
+      <div class="body">
+        <div class="do">
+          <h4>Do</h4>
+          <ol>
+            <li>Open <kbd>What if</kbd>.</li>
+            <li>Department <kbd>Stitching</kbd>, preset <kbd>Department down</kbd>.</li>
+            <li>A window of about a fortnight. Run it.</li>
+            <li>Click <kbd>Compare</kbd>.</li>
+            <li>Do <strong>not</strong> promote it — say you could, and move on.</li>
+          </ol>
+        </div>
+        <div class="say">
+          <h4>Say</h4>
+          <p>
+            A machine breaks, or you are deciding whether a second shift is worth
+            it. This runs the whole plan again under that assumption and shows
+            you the difference against the live one.
+          </p>
+          <p class="quote">
+            “The masters are never touched. The capacity change is applied for
+            that one run and taken straight back out — so there is no way to
+            experiment and accidentally leave the factory configured wrong.”
+          </p>
+          <p class="aside">
+            If a scenario turns out to be the right answer, one button makes it
+            the live plan.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="step">
+      <header><span class="n">07</span><b>Capacity sheet — where every number comes from</b><span class="mins">4 min</span></header>
+      <div class="body">
+        <div class="do">
+          <h4>Do</h4>
+          <ol>
+            <li>Open <kbd>Capacity sheet</kbd>.</li>
+            <li>Point at the four figures across the top.</li>
+            <li>Switch <kbd>Units per day</kbd> → <kbd>D-minus</kbd>.</li>
+            <li>Click Sanding on the first row, type <kbd>70</kbd>, Enter.</li>
+            <li>Wait for the warning panel. Read it out.</li>
+            <li>Put it back to <kbd>56</kbd>. Watch it clear.</li>
+          </ol>
+        </div>
+        <div class="say">
+          <h4>Say</h4>
+          <p class="quote">
+            “This is your capacity spreadsheet, in the software. Same grid,
+            except the engine reads it. Six articles here; you have seventy-one.”
+          </p>
+          <p>
+            A units figure means the article passes through that department at
+            that rate. A blank means it does not go there at all.
+            <strong>The rate is what that department makes in a day doing nothing
+            else</strong> — that convention is what lets the software add up a
+            mixed day correctly, and it is the number we need from PPC.
+          </p>
+          <p>
+            Then the guard: setting Sanding to finish before Assembly, which
+            feeds it, is a contradiction. It names both departments and says
+            whether it is already causing false warnings.
+            <strong>It does not correct anything</strong> — which of the two
+            figures is wrong is your call, not the software's.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="step">
+      <header><span class="n">08</span><b>Masters — what feeds what</b><span class="mins">3 min</span></header>
+      <div class="body">
+        <div class="do">
+          <h4>Do</h4>
+          <ol>
+            <li>Open <kbd>Masters</kbd>, scroll to <kbd>What feeds what</kbd>.</li>
+            <li>Point at the four <kbd>Entry point</kbd> tags.</li>
+            <li>Trace one row aloud: Stapling waits for Foam Pasting and Stitching.</li>
+          </ol>
+        </div>
+        <div class="say">
+          <h4>Say</h4>
+          <p>
+            This is the structure PPC confirmed. Four departments start on their
+            own; three streams — frame, fabric and metal — come together late.
+          </p>
+          <p class="quote">
+            “This drives two things. A department is held back until everything
+            feeding it is due, so wire a feeder into the wrong place and you get
+            warnings that are not real. And losses compound along these lines
+            only — so a leg is never made in larger numbers to cover stitching's
+            rejects, because a leg never goes near stitching.”
+          </p>
+          <p class="aside">
+            Editable here at any time, and the schedule recalculates as soon as
+            you change it.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="step">
+      <header><span class="n">09</span><b>Production — the daily sheet, replaced</b><span class="mins">4 min</span></header>
+      <div class="body">
+        <div class="do">
+          <h4>Do</h4>
+          <ol>
+            <li>Open <kbd>Production</kbd>.</li>
+            <li>Department <kbd>ASSY — Assembly</kbd>.</li>
+            <li>Point at <kbd>Handed to you, not yet counted in</kbd>.</li>
+            <li>Type a <strong>smaller</strong> number than declared. Watch the
+              short tag appear. Click <kbd>Count in</kbd>.</li>
+            <li>Switch to <kbd>STITCH</kbd> and pick a date from the offered days.</li>
+            <li>Enter a good figure and a rejected figure. Enter.</li>
+          </ol>
+        </div>
+        <div class="say">
+          <h4>Say</h4>
+          <p class="quote">
+            “This replaces the daily production sheet. Two jobs, in the order you
+            actually do them: count in what arrived from the bench before you,
+            then write down what you made.”
+          </p>
+          <p>
+            The department before you says what it made; you count what turned
+            up. If they disagree, <strong>the difference is kept</strong>, not
+            smoothed over. That gap is the reason for counting it twice.
+          </p>
+          <p>
+            Good and rejected go in separately because both are numbers a
+            supervisor can stand behind. The percentage is worked out from them,
+            and gets compared against the yield on Masters — <strong>which is how
+            an assumption slowly turns into a measurement.</strong>
+          </p>
+          <p class="aside">
+            Entering output moves no dates. The plan stays where it is, because
+            it is what everyone is working to today.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="step">
+      <header><span class="n">10</span><b>It is real, and it is shared</b><span class="mins">2 min</span></header>
+      <div class="body">
+        <div class="do">
+          <h4>Do</h4>
+          <ol>
+            <li>Open the <strong>hosted</strong> site in a second tab.</li>
+            <li>Sign in.</li>
+            <li>Open <kbd>Users</kbd>, point at the roles.</li>
+          </ol>
+        </div>
+        <div class="say">
+          <h4>Say</h4>
+          <p>
+            Everything so far ran entirely inside the browser, which is why it is
+            instant and needs nothing installed. This is the same software
+            against the shared database — one plan, everyone looking at it.
+          </p>
+          <p class="quote">
+            “Who can see and change what is enforced in the database, not in the
+            screen. Hiding a menu is a convenience; being unable to read the data
+            is the actual rule.”
+          </p>
+          <p class="aside">
+            It is deliberately empty of capacity figures. That is the ask, and it
+            leads straight into the questions.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <h2>Say what is not there, before they find it</h2>
+    <div class="callout">
+      <ul class="plain">
+        <li>
+          <strong>The MD dashboard from the deck is not built.</strong> Six of its
+          nine figures — OTIF, daily production, WIP value, efficiency,
+          rejections, shortages — need actuals from the floor. Those only start
+          existing now that Production is in. Building it earlier would have
+          meant six invented numbers sitting beside three real ones.
+        </li>
+        <li>
+          <strong>WIP is counted, not valued.</strong> Rupee value needs a
+          component cost master we have not loaded.
+        </li>
+        <li>
+          <strong>Panipuri orders are not imported yet.</strong> Panipuri gives
+          files, not an interface, so it will be a file drop — and the shape of
+          that file is a question for whoever exports it.
+        </li>
+      </ul>
+    </div>
+
+    <h2>The questions — this is the point of the session</h2>
+    <div class="qs">
+      <div class="q">
+        <h3>Is the capacity sheet the right shape?</h3>
+        <p>
+          It is modelled on the one you sent. What is missing from it, and what
+          on it do you not actually use?
+        </p>
+      </div>
+      <div class="q">
+        <h3>Can you give a dedicated-day rate?</h3>
+        <p>
+          “What this department makes in a day doing only this article.” If you
+          only ever think in mixed days, we need to know now — it changes how the
+          arithmetic works.
+        </p>
+      </div>
+      <div class="q">
+        <h3>Who enters production, and when?</h3>
+        <p>
+          End of shift, or as it happens? On a phone on the floor, or on a
+          computer in an office? It changes what that screen should be.
+        </p>
+      </div>
+      <div class="q">
+        <h3>Will the receiving department really count?</h3>
+        <p>
+          Two-sided handovers are the honest model, but they are twice the
+          typing. Is that a step too far for your floor?
+        </p>
+      </div>
+      <div class="q">
+        <h3>What would you open first thing?</h3>
+        <p>
+          If you looked at one screen at 9am, which is it — and what would you
+          want on it that is not there?
+        </p>
+      </div>
+      <div class="q">
+        <h3>What would stop you using this?</h3>
+        <p>
+          The most useful answer of the session, and the one people only give if
+          you ask for it directly.
+        </p>
+      </div>
+    </div>
+
+    <h2>Afterwards</h2>
+    <ol class="checks">
+      <li>
+        <strong>If anything real was entered during the session</strong> —
+        Masters → <em class="term">Save masters to a file</em>. The offline build
+        lives in one browser; the file is how that work travels.
+      </li>
+      <li>
+        <strong>The blocking item is the capacity sheet.</strong> Nothing on the
+        hosted system means anything until PPC's rates and D-minus figures are
+        in it. Everything else can wait; this cannot.
+      </li>
+      <li>
+        <strong>Write down what they said in their words</strong>, the same day.
+        The phrasing is worth as much as the content.
+      </li>
+    </ol>
+  </main>
+</div>
+
+<footer>
+  <div class="foot-inner">
+    <span>Kram — production planning &amp; control</span>
+    <span>Internal — for the presenter</span>
+  </div>
+</footer>
