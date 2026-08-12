@@ -7,6 +7,7 @@ import {
   createUser,
   withRollback,
 } from './helpers/db'
+import { applySeed } from './helpers/fixtures'
 
 // Spec §16: access is enforced at the database, "regardless of how the request
 // is made". These tests run as the `authenticated` API role, because a policy
@@ -181,6 +182,59 @@ describe('anonymous callers', () => {
           relation,
         ).toMatch(/permission denied/)
       }
+    })
+  })
+})
+
+describe('a signed-in account with no roles', () => {
+  /**
+   * Every read policy used to be `to authenticated using (true)`, so any
+   * account could read the factory's capacities, lead times, product structure
+   * and — had there been any — the whole order book. The application refused
+   * such an account and showed it a "no roles yet" screen, which is a screen,
+   * not a boundary. Found against the live project by signing in and reading.
+   */
+  it('can read nothing at all', async () => {
+    await withRollback(async (c) => {
+      await applySeed(c)
+      const user = await createUser(c, 'roleless@example.com', [])
+      await becomeUser(c, user)
+
+      for (const relation of [
+        'departments',
+        'component_rates',
+        'article_dept_dminus',
+        'article_bom',
+        'orders',
+        'customers',
+        'shipment_lines',
+        'schedule_runs',
+      ]) {
+        const { rows } = await c.query(`select * from ${relation}`)
+        expect(rows, `${relation} is readable without a role`).toEqual([])
+      }
+    })
+  })
+
+  it('can still read its own profile, so it can be told why', async () => {
+    await withRollback(async (c) => {
+      const user = await createUser(c, 'roleless2@example.com', [])
+      await becomeUser(c, user)
+
+      const { rows } = await c.query(`select * from my_access`)
+      expect(rows).toHaveLength(1)
+      expect(rows[0].roles).toEqual([])
+    })
+  })
+
+  it('can read again the moment a role is granted', async () => {
+    await withRollback(async (c) => {
+      await applySeed(c)
+      const user = await createUser(c, 'becomes-hod@example.com', ['hod'])
+      await becomeUser(c, user)
+
+      const { rows } = await c.query(`select code from departments`)
+      expect(rows.length).toBeGreaterThan(0)
     })
   })
 })

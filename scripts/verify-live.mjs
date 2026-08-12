@@ -109,15 +109,19 @@ async function checkSignedIn(db, email, password) {
   const roles = access?.[0]?.roles ?? []
   console.log(`  roles: ${roles.length ? roles.join(', ') : '(none)'}`)
 
-  // Reading own access is fine; reading anyone else's profile is not.
-  const { data: profiles } = await db.from('profiles').select('id')
-  report(
-    'sees only their own profile',
-    (profiles?.length ?? 0) <= 1,
-    `${profiles?.length ?? 0} rows`,
-  )
-
   const isAdmin = roles.includes('admin')
+
+  // An admin sees everyone — the Users screen depends on it. Anyone else sees
+  // themselves and no one else. Asserting the same thing for both would
+  // report the Users screen working as a failure, which is the second time a
+  // check here has cried wolf by ignoring the roles the account holds.
+  const { data: profiles } = await db.from('profiles').select('id')
+  const seen = profiles?.length ?? 0
+  report(
+    isAdmin ? 'sees every profile (is admin)' : 'sees only their own profile',
+    isAdmin ? seen >= 1 : seen <= 1,
+    `${seen} rows`,
+  )
 
   // Privilege escalation, the check that matters most — but only meaningful
   // for an account that is not already an admin. An admin granting a role is

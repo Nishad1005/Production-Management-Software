@@ -231,7 +231,10 @@ Keep adding to this. Each one was a real dead end.
 
 **On us:**
 
-6. **Supabase project** — not created, nothing pushed. Deferred deliberately.
+6. **Which roles should read what.** Reads now require *a* role; beyond that,
+   every role reads everything. Whether maintenance should see the customer
+   order book, or store the commercial quantities, is the client's call. Worth
+   settling before U&M's own people have accounts.
 7. **Predictive features cannot come first** (spec §17). Cycle-time, lead-time and
    rejection models need roughly six months of accumulated actuals that do not
    exist. Worth putting to the client in writing now rather than at Phase 10.
@@ -343,6 +346,35 @@ precondition for the planning half being used in anger.
 Newest first. One entry per working session — what changed, and anything a
 future reader would not infer from the diff.
 
+### 2026-08-12 — A role-less account could read the whole factory
+Signing in with an account holding **no roles at all** and reading it back:
+component rates, the D-minus matrix, the bill of materials. Capacities, lead
+times and product structure, to anyone with an account.
+
+Every select policy said `to authenticated using (true)`. The application
+refuses such an account and shows it a "no roles yet" screen — but a screen is
+not a boundary, and the same request through the API answered happily. Orders
+and customers carried the identical policy, so the whole order book with
+quantities, dates and customer names would have gone the same way; there simply
+were no orders yet to demonstrate it with.
+
+Reads now require holding at least one role (`auth_has_a_role()`). Profiles are
+deliberately exempt: an account with no roles must still read its own, or the
+application cannot tell it why it is seeing nothing.
+
+**Which roles should see what beyond that is a client question** — whether
+maintenance has any business reading the customer order book, for instance. Not
+guessed at here; recorded as open in §6.
+
+The same probe found a second thing: **customers could not be created at all**.
+The order form picks from a list and nothing anywhere could add to it, so on a
+fresh database no order could ever be entered. The offline seed ships three
+customers, which hid it completely — the feature worked in every test and in
+every demo, and could not work for a real first user.
+
+Both were invisible to a suite that seeds its own data. Worth remembering when
+the next module gets a seed.
+
 ### 2026-08-12 — Access control checked against the live project
 `npm run verify:live` checks access control over real requests against the real
 project, because the local suite provably cannot catch what matters here — every
@@ -357,7 +389,9 @@ profile, can list users, can edit masters. Confirms the seed applied — four
 departments — and that the Users screen works, since the roles were granted
 through it.
 
-**Still untested: a restricted account.** The escalation check is meaningless
+**Then a restricted account found two more.** See the 12 August entry.
+
+**Previously untested: a restricted account.** The escalation check is meaningless
 for an account that is already an admin, and the script now says so rather than
 reporting a pass. Spec §16's promise — that an HOD cannot reach another
 department's data regardless of how the request is made — has not been exercised

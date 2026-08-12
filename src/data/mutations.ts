@@ -52,6 +52,25 @@ export function useCustomers() {
   })
 }
 
+/**
+ * Until this existed there was no way to add a customer, so on a fresh database
+ * no order could ever be entered — the order form picks from a list that
+ * nothing could fill. The offline seed ships three customers, which hid it
+ * completely.
+ */
+export function useCreateCustomer() {
+  return useWrite<{ code: string; name: string; country?: string }>(
+    async ({ code, name, country }) => {
+      await rpc('create_customer', {
+        p_code: code,
+        p_name: name,
+        p_country: country || null,
+      })
+    },
+    { rerun: false },
+  )
+}
+
 export type NewOrder = {
   erpOrderNo: string
   customerId: string

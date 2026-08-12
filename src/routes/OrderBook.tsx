@@ -7,6 +7,7 @@ import {
 } from '@/data/planning'
 import {
   useAddShipmentLine,
+  useCreateCustomer,
   useCreateOrder,
   useCustomers,
   useDeleteOrder,
@@ -288,6 +289,10 @@ function AddOrder({ onClose }: { onClose: () => void }) {
   const customers = useCustomers()
   const articles = useArticles()
   const create = useCreateOrder()
+  const createCustomer = useCreateCustomer()
+  const [addingCustomer, setAddingCustomer] = useState(false)
+  const [newCustomerCode, setNewCustomerCode] = useState('')
+  const [newCustomerName, setNewCustomerName] = useState('')
 
   const [erpOrderNo, setErpOrderNo] = useState('')
   const [customerId, setCustomerId] = useState('')
@@ -309,12 +314,28 @@ function AddOrder({ onClose }: { onClose: () => void }) {
       onClose={onClose}
     >
       <form
-        onSubmit={(e) => {
+        onSubmit={async (e) => {
           e.preventDefault()
+
+          // A brand new database has no customers, so the first order has to be
+          // able to create one on its way in.
+          let customerId = chosenCustomer
+          if (addingCustomer || !customerId) {
+            await createCustomer.mutateAsync({
+              code: newCustomerCode.trim().toUpperCase(),
+              name: newCustomerName.trim(),
+            })
+            const fresh = await customers.refetch()
+            customerId =
+              fresh.data?.find(
+                (c) => c.code === newCustomerCode.trim().toUpperCase(),
+              )?.id ?? ''
+          }
+
           create.mutate(
             {
               erpOrderNo: erpOrderNo.trim(),
-              customerId: chosenCustomer,
+              customerId,
               articleId: chosenArticle,
               confidence,
               qty: Number(qty),
@@ -338,17 +359,45 @@ function AddOrder({ onClose }: { onClose: () => void }) {
             />
           </Field>
           <Field label="Customer">
-            <select
-              className={inputClass}
-              value={chosenCustomer}
-              onChange={(e) => setCustomerId(e.target.value)}
-            >
-              {customers.data?.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
+            {addingCustomer || customers.data?.length === 0 ? (
+              <div className="flex gap-2">
+                <input
+                  className={inputClass}
+                  value={newCustomerCode}
+                  onChange={(e) => setNewCustomerCode(e.target.value)}
+                  placeholder="Code"
+                  required
+                />
+                <input
+                  className={inputClass}
+                  value={newCustomerName}
+                  onChange={(e) => setNewCustomerName(e.target.value)}
+                  placeholder="Customer name"
+                  required
+                />
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <select
+                  className={inputClass}
+                  value={chosenCustomer}
+                  onChange={(e) => setCustomerId(e.target.value)}
+                >
+                  {customers.data?.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  className="text-blue shrink-0 text-[11.5px] hover:underline"
+                  onClick={() => setAddingCustomer(true)}
+                >
+                  New
+                </button>
+              </div>
+            )}
           </Field>
           <Field label="Article">
             <select
