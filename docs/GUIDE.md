@@ -220,6 +220,30 @@ like before a decision was taken.
 > the rest. The screen tells you when that has happened, because a partial result
 > presented as a whole one would be worse than no result.
 
+### Capacity sheet
+
+The same grid as the capacity spreadsheet — every article against every
+department — writing where the engine reads it.
+
+Pick what you are entering: **Units per day**, **Manpower**, or **D-minus**. One
+number per cell, because three across a thousand cells is not something anyone
+can read. Click a cell, type, press Enter.
+
+- A **units** figure means the article passes through that department at that
+  rate. A blank means it does not go there at all, which is the usual answer.
+- Clearing a figure removes that step from the article's route.
+- Manpower needs a units figure first — it is the crew behind that rate.
+- **Units is what the department makes in a day working only that article.** Not
+  what it makes on a normal mixed day. That is what lets a department's day be
+  added up correctly when it is making several things at once, and entering the
+  everyday figure instead makes a department look like the bottleneck when it is
+  not.
+
+The four figures across the top are the worklist: how many articles have a route
+at all, how many pairings exist, and what is still missing. An article with no
+D-minus cannot be scheduled — deliberately, because a silent zero would produce
+an impossible plan that looks entirely normal.
+
 ### Masters
 
 The figures every schedule run depends on. **Underlined values are editable** —

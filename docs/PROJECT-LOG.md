@@ -54,7 +54,7 @@ material, cash and customer relationships the system cannot see.
 | 2 | Scheduling engine, planning outputs, acceptance check | **Done** |
 | 3–10 | WIP, manpower, material, quality, machines, cost, command centre, predictive | Not started |
 
-**Client**: six screens, all reading from database views. Editable: D-minus
+**Client**: eight screens, all reading from database views. Editable: D-minus
 matrix, component rates, department yield/route/headcount, holidays, orders,
 shipment lines, and pins by dragging a schedule bar.
 
@@ -345,6 +345,49 @@ precondition for the planning half being used in anger.
 
 Newest first. One entry per working session — what changed, and anything a
 future reader would not infer from the diff.
+
+### 2026-08-12 — The real route, and the capacity sheet as a screen
+`Capacity Sheet Final.xlsx` arrived: **14 departments**, not the seven the
+specification estimated, and **70 real SKUs**. Every capacity figure blank — it
+is the template PPC is meant to fill in.
+
+Loaded into the live project. The placeholder route is retired (WOOD and FABCUT
+deactivated; ASSY and STITCH kept, because they are the same departments under
+the same codes). 71 articles, 994 article × department cells.
+
+**The route order is proposed, not given.** The spreadsheet's column order is a
+grouping — sanding before ply cutting, assembly second — which is not how
+upholstered furniture is made. The order applied follows the trade: frame,
+finishes, soft parts, upholstery, fitting, despatch. `route_position` decides
+every date in the system, so this is the first thing for PPC to check, and it is
+editable on Masters without touching code.
+
+**Modelling.** The sheet is article × department; the specification is component
+× department. The schema serves both, because nothing requires a component to be
+a leg: a capacity cell creates a component standing for that department's work on
+that article. If wood is later broken into four legs and a seat frame, those
+components sit alongside and the engine treats them identically. `manpower` was
+added to `component_rates` — the establishment on `department_shifts` is a
+different thing from the crew size behind a particular rate.
+
+Three things this surfaced, each the same shape as the customer gap before it:
+
+- **`create_article` did not exist.** Same cause: the offline seed ships one
+  article, so nothing ever needed to make another.
+- **`create_department` did not upsert**, so loading a route twice failed on the
+  second run. Loading real data is inherently repeated — the sheet comes back
+  corrected — so it updates by code now.
+- **Route positions are unique and the placeholders occupied the numbers the real
+  route wanted.** Each RPC is its own transaction, so the constraint's deferral
+  cannot help across calls; the importer parks everything existing in a spare
+  range first.
+
+The screen shows one measure at a time — units, manpower or D-minus. Three
+numbers in each of 994 cells is not a grid anyone can read.
+
+A green `0` under "Missing D-minus" was reading as *nothing missing* when the
+truth was *nothing entered*: it counts what is absent from routed cells, and
+there were no routed cells. It shows an em dash until something is routed.
 
 ### 2026-08-12 — A role-less account could read the whole factory
 Signing in with an account holding **no roles at all** and reading it back:

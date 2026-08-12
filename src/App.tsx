@@ -18,6 +18,7 @@ import { OrderBook } from '@/routes/OrderBook'
 import { Acceptance } from '@/routes/Acceptance'
 import { Gantt } from '@/routes/Gantt'
 import { Masters } from '@/routes/Masters'
+import { CapacitySheet } from '@/routes/CapacitySheet'
 import { WhatIf } from '@/routes/WhatIf'
 import { Users } from '@/routes/Users'
 import { Login, NoAccess } from '@/routes/Login'
@@ -30,6 +31,7 @@ const NAV: { to: string; label: string; end?: boolean; roles: Role[] }[] = [
   { to: '/orders', label: 'Order book', roles: ['md', 'planner', 'merchandiser', 'admin'] },
   { to: '/accept', label: 'Accept an order', roles: ['planner', 'merchandiser', 'admin'] },
   { to: '/whatif', label: 'What if', roles: ['planner', 'admin'] },
+  { to: '/capacity', label: 'Capacity sheet', roles: ['planner', 'admin'] },
   { to: '/masters', label: 'Masters', roles: ['planner', 'admin'] },
   { to: '/users', label: 'Users', roles: ['admin'] },
 ]
@@ -278,6 +280,7 @@ export function App() {
               <Route path="/orders" element={<OrderBook />} />
               <Route path="/accept" element={<Acceptance />} />
               <Route path="/whatif" element={<WhatIf />} />
+              <Route path="/capacity" element={<CapacitySheet />} />
               <Route path="/masters" element={<Masters />} />
               <Route path="/users" element={<Users />} />
             </Routes>

@@ -236,6 +236,34 @@ await step('drag to reschedule', async () => {
   return 'pin saved and honoured by the next run'
 })
 
+// --- the capacity sheet writes where the engine reads ----------------------
+
+await step('capacity sheet', async () => {
+  await go('#/capacity', 'text=Capacity sheet')
+
+  // The seeded article is worked by named components, not stage components, so
+  // every cell starts blank. Entering one has to route the article through that
+  // department and show up on the schedule.
+  const cell = page.locator('table tbody tr').first().locator('button').first()
+  await cell.click()
+  const input = page.locator('input[type=number]:visible').first()
+  await input.fill('42')
+  await input.press('Enter')
+
+  await page.waitForFunction(
+    () => document.body.textContent?.includes('Department pairings'),
+    undefined,
+    { timeout: 60_000 },
+  )
+  await page.waitForSelector('button:has-text("42")', { timeout: 60_000 })
+
+  // And it survives a reload, which is what proves it reached the database.
+  await go('#/capacity', 'text=Capacity sheet')
+  await page.waitForSelector('button:has-text("42")', { timeout: 60_000 })
+  await page.screenshot({ path: `${outDir}/capacity-sheet.png`, fullPage: true })
+  return 'a rate entered, routed and persisted'
+})
+
 // --- a what-if scenario, compared and promoted ------------------------------
 
 await step('what-if scenario', async () => {
