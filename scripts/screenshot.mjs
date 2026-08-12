@@ -264,6 +264,55 @@ await step('capacity sheet', async () => {
   return 'a rate entered, routed and persisted'
 })
 
+// --- a D-minus that contradicts the route order is caught -------------------
+
+await step('route order guard', async () => {
+  await go('#/capacity', 'text=Capacity sheet')
+  await page.click('button:has-text("D-minus")')
+  await page.waitForTimeout(400)
+
+  // Fabric cutting sits after wood but is about to be told to finish ten days
+  // before it — which holds it behind work that is not due, and raises a runway
+  // breach that is not real.
+  const grid = page.locator('[data-testid="capacity-grid"]')
+  const fabcutColumn = await page.evaluate(() => {
+    const table = document.querySelector('[data-testid="capacity-grid"]')
+    const heads = [...(table?.querySelectorAll('thead th') ?? [])].map((h) =>
+      h.textContent?.trim(),
+    )
+    return heads.indexOf('FABCUT')
+  })
+  if (fabcutColumn < 1) throw new Error('FABCUT column not found')
+
+  // Scoped to the grid: once the warning appears it brings its own table, and
+  // an unanchored "first table" locator quietly moves to it.
+  const cellAt = () =>
+    grid.locator('tbody tr').first().locator('td').nth(fabcutColumn).locator('button')
+
+  await cellAt().click()
+  const input = page.locator('input[type=number]:visible').first()
+  await input.fill('70')
+  await input.press('Enter')
+
+  await page.waitForSelector('text=Route order and D-minus disagree', {
+    timeout: 60_000,
+  })
+  await page.waitForSelector('text=Causing breaches', { timeout: 60_000 })
+  await page.screenshot({ path: `${outDir}/route-conflict.png`, fullPage: true })
+
+  // Correcting it clears the warning rather than leaving it to be dismissed.
+  await cellAt().click()
+  const fix = page.locator('input[type=number]:visible').first()
+  await fix.fill('50')
+  await fix.press('Enter')
+  await page.waitForFunction(
+    () => !document.body.textContent?.includes('Route order and D-minus disagree'),
+    undefined,
+    { timeout: 60_000 },
+  )
+  return 'contradiction flagged, then cleared when corrected'
+})
+
 // --- a what-if scenario, compared and promoted ------------------------------
 
 await step('what-if scenario', async () => {

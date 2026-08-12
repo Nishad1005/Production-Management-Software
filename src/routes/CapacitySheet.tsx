@@ -1,11 +1,13 @@
 import { useMemo, useState } from 'react'
 import {
   useCapacitySheet,
+  useRouteConflicts,
   useSetCapacityCell,
   useSetCellDminus,
   type CapacityCell,
+  type RouteConflict,
 } from '@/data/capacity'
-import { Empty, Metric, Panel, Tag } from '@/components/ui'
+import { Empty, Metric, Panel, Table, Tag, Td, Th } from '@/components/ui'
 import { inputClass } from '@/components/format'
 import { EditableNumber } from '@/components/edit'
 
@@ -41,6 +43,7 @@ const MEASURES = [
 
 export function CapacitySheet() {
   const sheet = useCapacitySheet()
+  const conflicts = useRouteConflicts()
   const setCell = useSetCapacityCell()
   const setDminus = useSetCellDminus()
 
@@ -175,6 +178,8 @@ export function CapacitySheet() {
         />
       </div>
 
+      {conflicts.data?.length ? <RouteConflicts rows={conflicts.data} /> : null}
+
       <Panel
         title="Capacity sheet"
         meta={`${model.articleCodes.length} articles × ${model.departments.length} departments`}
@@ -225,7 +230,10 @@ export function CapacitySheet() {
           </Empty>
         ) : (
           <div className="border-rule overflow-x-auto border">
-            <table className="nums min-w-max border-collapse text-[12px]">
+            <table
+              data-testid="capacity-grid"
+              className="nums min-w-max border-collapse text-[12px]"
+            >
               <thead>
                 <tr>
                   <th className="bg-sheet border-rule-soft sticky left-0 z-10 border-r border-b px-2 py-2 text-left">
@@ -312,5 +320,85 @@ export function CapacitySheet() {
         </p>
       </Panel>
     </div>
+  )
+}
+
+
+/**
+ * The route is a single line, so the engine treats whichever department sits at
+ * the previous position as the one that must finish first. When a D-minus says
+ * otherwise, it holds work back behind something not yet due and raises breaches
+ * that are not real — on a screen whose whole job is raising breaches.
+ *
+ * Reported, never corrected. Two figures a person entered disagree, and which of
+ * them is wrong is not ours to decide.
+ */
+function RouteConflicts({ rows }: { rows: RouteConflict[] }) {
+  const biting = rows.filter((r) => r.affects_scheduling)
+
+  return (
+    <Panel
+      title="Route order and D-minus disagree"
+      meta={`${rows.length} to look at`}
+    >
+      <p className="text-mid mb-4 max-w-[85ch] text-[12px]">
+        Each row below has a department that must finish <em>before</em> one
+        placed ahead of it in the route. Either the route order is wrong, or the
+        D-minus is — the software will not guess which.
+        {biting.length ? (
+          <>
+            {' '}
+            <strong>{biting.length}</strong> of these affect scheduling now and
+            will show as runway breaches that are not real.
+          </>
+        ) : (
+          ' None of them affects scheduling yet, because the articles do not pass through both departments.'
+        )}
+      </p>
+
+      <Table>
+        <thead>
+          <tr>
+            <Th>Article</Th>
+            <Th>Comes first in the route</Th>
+            <Th>But must finish before it</Th>
+            <Th />
+          </tr>
+        </thead>
+        <tbody>
+          {rows.slice(0, 30).map((r) => (
+            <tr key={`${r.article_code}-${r.later_department_code}`}>
+              <Td className="font-semibold">{r.article_code}</Td>
+              <Td>
+                {r.earlier_department_name}
+                <span className="text-faint"> · D-{r.earlier_dminus}</span>
+              </Td>
+              <Td>
+                {r.later_department_name}
+                <span className="text-flag"> · D-{r.later_dminus}</span>
+              </Td>
+              <Td align="right">
+                {r.affects_scheduling ? (
+                  <Tag tone="flag">Causing breaches</Tag>
+                ) : (
+                  <Tag tone="mid">Not routed through both</Tag>
+                )}
+              </Td>
+            </tr>
+          ))}
+        </tbody>
+      </Table>
+
+      {rows.length > 30 ? (
+        <p className="text-faint mt-3 text-[11.5px]">
+          Showing 30 of {rows.length}.
+        </p>
+      ) : null}
+
+      <p className="text-faint mt-4 max-w-[85ch] text-[11.5px]">
+        The rule: a department that has to finish earlier belongs earlier in the
+        route. Move it on Masters → Production route, or change the D-minus here.
+      </p>
+    </Panel>
   )
 }

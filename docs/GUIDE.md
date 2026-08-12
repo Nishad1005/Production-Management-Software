@@ -239,6 +239,13 @@ can read. Click a cell, type, press Enter.
   everyday figure instead makes a department look like the bottleneck when it is
   not.
 
+If a **Route order and D-minus disagree** panel appears, a department has been
+told to finish before one placed ahead of it in the route. Either the order is
+wrong or the D-minus is, and the software will not guess which — but while it
+stands, the engine holds that work back behind something not yet due and reports
+breaches that are not real. The rule: a department that finishes earlier belongs
+earlier in the route.
+
 The four figures across the top are the worklist: how many articles have a route
 at all, how many pairings exist, and what is still missing. An article with no
 D-minus cannot be scheduled — deliberately, because a silent zero would produce

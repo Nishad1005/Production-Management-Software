@@ -195,6 +195,7 @@ Keep adding to this. Each one was a real dead end.
 | Dragging selects the row text | Use `select-none` on the row. **Not** `preventDefault` on pointerdown — that also suppresses the `pointermove` stream the drag depends on. |
 | Tests deadlock | Files ran in parallel against one database, contending on the same master rows. `fileParallelism: false`. |
 | Anon can call your functions on Supabase | Postgres grants `EXECUTE` to `PUBLIC` on every new function, *and* Supabase's default privileges grant it to `anon` explicitly. Revoking from `PUBLIC` alone leaves the explicit grant standing. Revoke from both. Tell the two apart by the error: "permission denied for **function**" means blocked at the door, "for **table**" means it ran until it hit RLS. |
+| A browser check breaks when a panel appears | An unanchored locator — `table` first match, `getByRole` by substring — silently retargets when the page gains an element. Anchor grids and controls by `data-testid`, and use `exact: true` on names. Twice now. |
 | A Playwright check passes when the feature is broken | `getByRole(role, { name })` matches the accessible name by **substring** by default, so `name: 'Running'` also matches every `'Not running'`. Pass `exact: true` whenever one label is a substring of another. Cost a full diagnosis of a feature that was working. |
 | `command not found: node` in a tool shell | The shell was started before `~/.zshenv` existed and does not reload it. Prefix commands with `export PATH="$HOME/.nvm/versions/node/v24.19.0/bin:$PATH"`. |
 | npm warns about uncovered install scripts | npm 11 gates them. `npm approve-scripts <pkg>`, then reinstall. Needed for `esbuild`, `fsevents`, `@embedded-postgres/darwin-arm64`. |
@@ -345,6 +346,40 @@ precondition for the planning half being used in anger.
 
 Newest first. One entry per working session — what changed, and anything a
 future reader would not infer from the diff.
+
+### 2026-08-12 — Route order: a note for PPC, and a guard
+The 14-department route was loaded in an order **we inferred**, not one U&M gave.
+Two things followed from that.
+
+**A one-page note for PPC** — `docs/route-order-for-confirmation.html`, published
+as a link to forward. The order with reasoning, the two questions that matter (is
+this the sequence, and does anything run in parallel), and how to change it.
+Written for a production manager: no schema, no jargon, and honest that the order
+is a reading of the trade rather than anything they said.
+
+**A guard**, `route_order_conflicts`, surfaced on the capacity sheet. The route is
+a single line and the engine compares each department against whichever sits at
+the previous position — so "must finish earlier ⇒ sits earlier" is load-bearing
+and, until now, unenforced. Violate it and the engine holds work behind
+something not yet due, raising runway breaches that are not real, on a screen
+whose entire job is raising breaches.
+
+Stated accurately, because I had overstated it: **`route_position` sets no
+dates.** Due dates come from D-minus, start dates from capacity. Order affects
+the runway comparison and yield compounding — so a wrong order gives wrong
+*warnings*, not wrong dates.
+
+The guard found a flaw in `capacity_sheet` while being tested: it decided
+"routed" by looking for a stage component named `<article>::<department>`, which
+is only how the sheet writes rates. An article broken into real components — a
+leg, a stitched cover — is routed through a department with no stage component
+at all, and read as unrouted. It now uses the engine's own test: does any
+component of this article have a rate there.
+
+A browser check failed for the same reason twice in this project now: **a
+locator that took the first match moved when the page changed.** The warning
+panel renders above the grid and brings its own table, so "first table" quietly
+became the warning. The grid carries a test id now.
 
 ### 2026-08-12 — The real route, and the capacity sheet as a screen
 `Capacity Sheet Final.xlsx` arrived: **14 departments**, not the seven the

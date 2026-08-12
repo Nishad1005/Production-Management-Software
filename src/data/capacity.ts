@@ -75,3 +75,33 @@ export function useSetCellDminus() {
     })
   })
 }
+
+export type RouteConflict = {
+  article_code: string
+  article_name: string
+  earlier_department_code: string
+  earlier_department_name: string
+  earlier_position: number
+  earlier_dminus: number
+  later_department_code: string
+  later_department_name: string
+  later_position: number
+  later_dminus: number
+  affects_scheduling: boolean
+}
+
+/**
+ * Departments whose D-minus contradicts the route order — the later one has to
+ * finish first. The engine compares each department against whichever sits at
+ * the previous position, so this is what produces runway breaches that are not
+ * real.
+ */
+export function useRouteConflicts() {
+  return useQuery({
+    queryKey: ['route-conflicts'],
+    queryFn: () =>
+      select<RouteConflict>('route_order_conflicts', {
+        order: ['article_code', 'later_position'],
+      }),
+  })
+}
