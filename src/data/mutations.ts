@@ -289,6 +289,29 @@ export function useSetDepartmentShift() {
   })
 }
 
+/**
+ * Adds or removes one edge of the route graph. Every date in every plan moves
+ * with it, so the schedule reruns — which is why this goes through useWrite
+ * rather than a bare rpc.
+ *
+ * An edge that would close a loop is refused by the database, not checked here.
+ * The rule belongs where the data is, and a check in the browser would be a
+ * second opinion that could disagree with it.
+ */
+export function useSetDependency() {
+  return useWrite<{
+    departmentCode: string
+    feederCode: string
+    feeds: boolean
+  }>(async ({ departmentCode, feederCode, feeds }) => {
+    await rpc('set_department_dependency', {
+      p_department_code: departmentCode,
+      p_depends_on_code: feederCode,
+      p_enabled: feeds,
+    })
+  })
+}
+
 // ---------------------------------------------------------------------------
 // Calendar
 // ---------------------------------------------------------------------------

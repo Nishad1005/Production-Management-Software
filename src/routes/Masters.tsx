@@ -6,6 +6,7 @@ import {
   useDepartments,
   useDminus,
   useRates,
+  useRouteGraph,
   useShifts,
 } from '@/data/planning'
 import {
@@ -13,6 +14,7 @@ import {
   useCreateDepartment,
   useDeleteHoliday,
   useHolidays,
+  useSetDependency,
   useSetDepartmentActive,
   useSetDminus,
   useSetDepartmentShift,
@@ -86,9 +88,9 @@ export function Masters() {
         meta={`${departments.data?.length ?? 0} departments`}
       >
         <p className="text-mid mb-3 max-w-[80ch] text-[12px]">
-          Departments are a configurable master, not hardcoded. The route below
-          is the illustrative one from the capacity-flagging prototype and is
-          meant to be replaced — U&M's real route is around seven departments.
+          Departments are a configurable master, not hardcoded. The number on the
+          left is only the order they are listed in — what has to finish before
+          what is the next panel down, and that is the one the engine reads.
         </p>
         <Table>
           <thead>
@@ -168,11 +170,14 @@ export function Masters() {
 
         <p className="text-faint mt-3 max-w-[80ch] text-[11.5px]">
           Yield compounds backwards: a department must make the shipped quantity
-          divided by its own yield and the yield of every department after it.
-          Five departments at 98% each cost roughly a tenth of factory capacity.
+          divided by its own yield and the yield of every department the material
+          passes through after it — the path below, not everything further down
+          this list. Five departments at 98% each cost roughly a tenth of factory
+          capacity.
         </p>
       </Panel>
 
+      <RouteDependencyGrid />
       <ShiftsPanel />
       <DepartmentShiftGrid />
 
@@ -571,6 +576,128 @@ function ShiftsPanel() {
  * Which shifts each department actually works, and with how many people.
  * Capacity is the sum across the shifts switched on here.
  */
+/**
+ * What must finish before what. The route position above only decides the order
+ * departments are listed in; this is the part the engine walks, and it is the
+ * difference between a factory that runs in a line and one that does not.
+ */
+function RouteDependencyGrid() {
+  const graph = useRouteGraph()
+  const setDependency = useSetDependency()
+
+  const cells = graph.data ?? []
+  const departments = [
+    ...new Map(cells.map((c) => [c.department_code, c.department_position])),
+  ]
+    .sort((a, b) => a[1] - b[1])
+    .map(([code]) => code)
+
+  const feeds = new Map(
+    cells.map((c) => [`${c.department_code}|${c.feeder_code}`, c.feeds]),
+  )
+  const entryPoints = departments.filter(
+    (d) => !departments.some((f) => feeds.get(`${d}|${f}`)),
+  )
+
+  return (
+    <Panel
+      title="What feeds what"
+      meta={
+        entryPoints.length === 1
+          ? '1 department starts the route'
+          : `${entryPoints.length} departments start the route`
+      }
+    >
+      <p className="text-mid mb-3 max-w-[80ch] text-[12px]">
+        Read a row as “this department cannot start until…”, and tick the columns
+        it waits for. A row with nothing ticked is an entry point — it waits for
+        no one, which is what a feeder like metal finishing or fibre processing
+        is. Departments not connected to each other run alongside each other.
+      </p>
+
+      <div data-testid="route-dependency-grid">
+        <Table>
+          <thead>
+            <tr>
+              <Th>Cannot start until…</Th>
+              {departments.map((code) => (
+                <Th key={code} align="right">
+                  {code}
+                </Th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {departments.map((department) => (
+              <tr key={department}>
+                <Td className="font-semibold">
+                  {department}
+                  {entryPoints.includes(department) ? (
+                    <span className="ml-2">
+                      <Tag tone="blue">Entry point</Tag>
+                    </span>
+                  ) : null}
+                </Td>
+                {departments.map((feeder) => {
+                  if (feeder === department)
+                    return (
+                      <Td key={feeder} align="right">
+                        <span className="text-faint">—</span>
+                      </Td>
+                    )
+                  const on = feeds.get(`${department}|${feeder}`) ?? false
+                  return (
+                    <Td key={feeder} align="right">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setDependency.mutate({
+                            departmentCode: department,
+                            feederCode: feeder,
+                            feeds: !on,
+                          })
+                        }
+                        className={
+                          on
+                            ? 'text-clear text-[13px] font-semibold'
+                            : 'text-faint hover:text-blue text-[13px]'
+                        }
+                        title={
+                          on
+                            ? `${feeder} must finish before ${department} starts — click to remove`
+                            : `Make ${department} wait for ${feeder}`
+                        }
+                      >
+                        {on ? '●' : '·'}
+                      </button>
+                    </Td>
+                  )
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </Table>
+      </div>
+
+      {setDependency.isError ? (
+        <p className="text-flag mt-3 max-w-[80ch] text-[11.5px]">
+          {String(setDependency.error).includes('cycle')
+            ? 'That would make two departments wait for each other. One of them already runs after the other, so it cannot also run before it.'
+            : String(setDependency.error)}
+        </p>
+      ) : null}
+
+      <p className="text-faint mt-3 max-w-[80ch] text-[11.5px]">
+        This drives two things. A department is held back until everything
+        feeding it is due — so a feeder wired into the wrong place produces
+        runway breaches that are not real. And yield compounds along these edges,
+        so a component is only inflated by the losses of the departments its
+        material actually passes through.
+      </p>
+    </Panel>
+  )
+}
+
 function DepartmentShiftGrid() {
   const grid = useDepartmentShiftGrid()
   const setDepartmentShift = useSetDepartmentShift()

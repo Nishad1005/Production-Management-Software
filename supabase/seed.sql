@@ -26,7 +26,8 @@ on conflict (code) do nothing;
 update public.shifts set is_active = false where code in ('A', 'B');
 
 -- ---------------------------------------------------------------------------
--- Route. route_position ascending is the order work flows.
+-- Route. route_position is the order departments are listed in; what must
+-- finish before what is department_dependencies, declared below.
 -- ---------------------------------------------------------------------------
 
 insert into public.departments (code, name, route_position, yield_pct)
@@ -36,6 +37,25 @@ values
   ('STITCH', 'Stitching',      30, 98),
   ('ASSY',   'Assembly',       40, 99)
 on conflict (code) do nothing;
+
+-- Declared here rather than left to the backfill in 20260812120000: migrations
+-- run before this file, so on a fresh database there were no departments for it
+-- to derive edges from. The backfill is for the live project, where they exist.
+--
+-- Deliberately a single line, wood → fabric cutting → stitching → assembly, even
+-- though wood does not really feed fabric cutting. This is the fixture the
+-- parity harness runs against, and the prototype it reproduces is a single-line
+-- model; a truer graph here would break the most valuable test in the project to
+-- make a four-department demo tidier. Parallelism is declared in the fixtures
+-- that test it. The real fourteen-department structure is applied by
+-- scripts/apply-route-graph.mjs.
+insert into public.department_dependencies (department_id, depends_on_department_id)
+select d.id, prev.id
+  from (values ('FABCUT', 'WOOD'), ('STITCH', 'FABCUT'), ('ASSY', 'STITCH'))
+       as v (dept_code, depends_on_code)
+  join public.departments d on d.code = v.dept_code
+  join public.departments prev on prev.code = v.depends_on_code
+on conflict do nothing;
 
 insert into public.department_shifts (department_id, shift_id, sanctioned_headcount)
 select d.id, s.id, v.headcount

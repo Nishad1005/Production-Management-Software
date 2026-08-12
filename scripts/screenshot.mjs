@@ -294,7 +294,7 @@ await step('route order guard', async () => {
   await input.fill('70')
   await input.press('Enter')
 
-  await page.waitForSelector('text=Route order and D-minus disagree', {
+  await page.waitForSelector('text=A department is due before something that feeds it', {
     timeout: 60_000,
   })
   await page.waitForSelector('text=Causing breaches', { timeout: 60_000 })
@@ -306,11 +306,114 @@ await step('route order guard', async () => {
   await fix.fill('50')
   await fix.press('Enter')
   await page.waitForFunction(
-    () => !document.body.textContent?.includes('Route order and D-minus disagree'),
+    () => !document.body.textContent?.includes('A department is due before something that feeds it'),
     undefined,
     { timeout: 60_000 },
   )
   return 'contradiction flagged, then cleared when corrected'
+})
+
+// --- saying two departments are parallel clears a false breach --------------
+
+await step('parallel feeders', async () => {
+  // Put the contradiction back: fabric cutting due ten days before wood, while
+  // waiting on it. The disagreement is real only because we claim wood feeds
+  // fabric cutting, which it does not.
+  await go('#/capacity', 'text=Capacity sheet')
+  await page.click('button:has-text("D-minus")')
+  await page.waitForTimeout(400)
+
+  const grid = page.locator('[data-testid="capacity-grid"]')
+  const fabcutColumn = await page.evaluate(() => {
+    const table = document.querySelector('[data-testid="capacity-grid"]')
+    const heads = [...(table?.querySelectorAll('thead th') ?? [])].map((h) =>
+      h.textContent?.trim(),
+    )
+    return heads.indexOf('FABCUT')
+  })
+  const cell = grid
+    .locator('tbody tr')
+    .first()
+    .locator('td')
+    .nth(fabcutColumn)
+    .locator('button')
+  await cell.click()
+  const dminus = page.locator('input[type=number]:visible').first()
+  await dminus.fill('70')
+  await dminus.press('Enter')
+  await page.waitForSelector(
+    'text=A department is due before something that feeds it',
+    { timeout: 60_000 },
+  )
+
+  // Say what is true on Masters — fabric cutting waits for nothing.
+  await go('#/masters', 'text=What feeds what')
+  const dependencies = page.locator('[data-testid="route-dependency-grid"]')
+  const columns = await page.evaluate(() => {
+    const table = document.querySelector('[data-testid="route-dependency-grid"]')
+    return [...(table?.querySelectorAll('thead th') ?? [])].map((h) =>
+      h.textContent?.trim(),
+    )
+  })
+  const rowFor = (code) =>
+    dependencies.locator('tbody tr').filter({ hasText: code }).first()
+
+  // Anchored by testid and by row text, not by position: this panel sits above
+  // two other grids on the same screen.
+  await rowFor('FABCUT')
+    .locator('td')
+    .nth(columns.indexOf('WOOD'))
+    .locator('button')
+    .click()
+  await page.waitForTimeout(1200)
+  await rowFor('STITCH')
+    .locator('td')
+    .nth(columns.indexOf('WOOD'))
+    .locator('button')
+    .click()
+  await page.waitForTimeout(1200)
+  await page.screenshot({
+    path: `${outDir}/route-dependencies.png`,
+    fullPage: true,
+  })
+
+  // The warning goes, because there is no longer anything to disagree about.
+  await go('#/capacity', 'text=Capacity sheet')
+  await page.waitForFunction(
+    () =>
+      !document.body.textContent?.includes(
+        'A department is due before something that feeds it',
+      ),
+    undefined,
+    { timeout: 60_000 },
+  )
+
+  // And so does the runway breach it was predicting.
+  await go('#/gantt', 'text=Schedule')
+  await page.waitForTimeout(1500)
+  const runway = await page.evaluate(() =>
+    document.body.textContent?.includes('runway'),
+  )
+  if (runway) throw new Error('runway breach survived the parallel declaration')
+
+  // Put it back, so the steps after this one see the schedule they expect.
+  await go('#/capacity', 'text=Capacity sheet')
+  await page.click('button:has-text("D-minus")')
+  await page.waitForTimeout(400)
+  const restore = page
+    .locator('[data-testid="capacity-grid"]')
+    .locator('tbody tr')
+    .first()
+    .locator('td')
+    .nth(fabcutColumn)
+    .locator('button')
+  await restore.click()
+  const back = page.locator('input[type=number]:visible').first()
+  await back.fill('50')
+  await back.press('Enter')
+  await page.waitForTimeout(1200)
+
+  return 'declaring two departments parallel cleared the false breach'
 })
 
 // --- a what-if scenario, compared and promoted ------------------------------

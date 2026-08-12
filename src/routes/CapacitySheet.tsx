@@ -338,13 +338,13 @@ function RouteConflicts({ rows }: { rows: RouteConflict[] }) {
 
   return (
     <Panel
-      title="Route order and D-minus disagree"
+      title="A department is due before something that feeds it"
       meta={`${rows.length} to look at`}
     >
       <p className="text-mid mb-4 max-w-[85ch] text-[12px]">
-        Each row below has a department that must finish <em>before</em> one
-        placed ahead of it in the route. Either the route order is wrong, or the
-        D-minus is — the software will not guess which.
+        Each row below has a department due no later than something that must
+        finish <em>before</em> it can start. Either the D-minus is wrong, or the
+        two are not really dependent — the software will not guess which.
         {biting.length ? (
           <>
             {' '}
@@ -360,8 +360,8 @@ function RouteConflicts({ rows }: { rows: RouteConflict[] }) {
         <thead>
           <tr>
             <Th>Article</Th>
-            <Th>Comes first in the route</Th>
-            <Th>But must finish before it</Th>
+            <Th>Has to finish first</Th>
+            <Th>But is due no later</Th>
             <Th />
           </tr>
         </thead>
@@ -396,8 +396,9 @@ function RouteConflicts({ rows }: { rows: RouteConflict[] }) {
       ) : null}
 
       <p className="text-faint mt-4 max-w-[85ch] text-[11.5px]">
-        The rule: a department that has to finish earlier belongs earlier in the
-        route. Move it on Masters → Production route, or change the D-minus here.
+        The rule: a department's D-minus must be larger than that of everything
+        feeding it, larger meaning earlier. Change the D-minus here, or change
+        what feeds it on Masters → What feeds what.
       </p>
     </Panel>
   )

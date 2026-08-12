@@ -55,15 +55,20 @@ material, cash and customer relationships the system cannot see.
 | 3–10 | WIP, manpower, material, quality, machines, cost, command centre, predictive | Not started |
 
 **Client**: eight screens, all reading from database views. Editable: D-minus
-matrix, component rates, department yield/route/headcount, holidays, orders,
-shipment lines, and pins by dragging a schedule bar.
+matrix, component rates, department yield/route/headcount, what feeds what,
+holidays, orders, shipment lines, and pins by dragging a schedule bar.
+
+**The route is a graph, not a line.** `department_dependencies` says what must
+finish before what; `route_position` only orders the display. The engine reads
+ancestors for the runway check and descendants for yield, both restricted to the
+departments an article actually passes through.
 
 **Runs offline.** PGlite (Postgres 18 compiled to WASM) applies every migration
 unmodified in the browser, so the demo runs the real engine with no backend.
 `npm run build` produces a static folder.
 
 **Online.** Supabase project `fiqfbbnmksppbpxmhnbv` — *kram*, Mumbai
-(ap-south-1), Postgres 17.6. All seventeen migrations applied.
+(ap-south-1), Postgres 17.6. All twenty-five migrations applied.
 
 > **Migrations are append-only from here.** Editing one now means the file and
 > the live database disagree, silently, until something breaks in a way that
@@ -197,6 +202,9 @@ Keep adding to this. Each one was a real dead end.
 | Anon can call your functions on Supabase | Postgres grants `EXECUTE` to `PUBLIC` on every new function, *and* Supabase's default privileges grant it to `anon` explicitly. Revoking from `PUBLIC` alone leaves the explicit grant standing. Revoke from both. Tell the two apart by the error: "permission denied for **function**" means blocked at the door, "for **table**" means it ran until it hit RLS. |
 | A browser check breaks when a panel appears | An unanchored locator — `table` first match, `getByRole` by substring — silently retargets when the page gains an element. Anchor grids and controls by `data-testid`, and use `exact: true` on names. Twice now. |
 | A Playwright check passes when the feature is broken | `getByRole(role, { name })` matches the accessible name by **substring** by default, so `name: 'Running'` also matches every `'Not running'`. Pass `exact: true` whenever one label is a substring of another. Cost a full diagnosis of a feature that was working. |
+| A model's assumption is hiding in a *second* place | The route being a line was obvious in the runway check and invisible in the yield window, which read as arithmetic rather than as a claim about the shop floor. When an assumption is found to be false, grep for every consumer before fixing the one that surfaced it. |
+| A fixture that uses everything cannot see a bug about subsets | The seed's one article passes through all four departments, so yield-over-all-departments and yield-over-its-own-path give identical answers. 94 tests, none of which could tell them apart. When a test fixture uses the full set, add one that uses a subset. |
+| A migration that reads a table finds it empty | Migrations run **before** `seed.sql`, so a backfill deriving rows from `departments` got nothing on a fresh database and silently produced a different model than the same migration does live. Backfill for the live project, and declare the same thing in the seed. |
 | `command not found: node` in a tool shell | The shell was started before `~/.zshenv` existed and does not reload it. Prefix commands with `export PATH="$HOME/.nvm/versions/node/v24.19.0/bin:$PATH"`. |
 | npm warns about uncovered install scripts | npm 11 gates them. `npm approve-scripts <pkg>`, then reinstall. Needed for `esbuild`, `fsevents`, `@embedded-postgres/darwin-arm64`. |
 
@@ -253,11 +261,11 @@ client has seen, then diffs the SQL engine against it cell by cell across the
 prototype's own default scenario and five more. Zero divergence. Any difference
 is a real defect in one implementation or the other.
 
-**53 unit and integration tests** against a real native Postgres, booted per run
+**108 unit and integration tests** against a real native Postgres, booted per run
 from an embedded binary. Covers schema shape, RLS (as the `authenticated` role —
 table owners bypass RLS, so a policy test run as superuser proves nothing), the
-working-day calendar, engine correctness, breaches, pins, overrides and the
-planning views.
+working-day calendar, engine correctness, breaches, pins, overrides, the route
+graph and the planning views.
 
 **Scale**, at the workload spec §11 states — 324 orders, two shipment lines each,
 seven departments, three components, three shifts:
@@ -266,10 +274,16 @@ Note the task count is lower than the spec's ~40,000 estimate; three components
 across seven departments gives 21 pairs. The row count matches. Worth checking
 against the real route.
 
-**Browser** — `npm run screenshot` drives all six screens plus four interactions
+**Browser** — `npm run screenshot` drives every screen plus eleven interactions
 in headless Chromium and fails on any console error. It checks the D-minus edit
 survives a reload, which is what proves it reached the database rather than only
-React state. Three real defects came from this that the build was happy with.
+React state. Seventeen steps. Several real defects came from this that the build
+was happy with.
+
+**Access control against production** — `npm run verify:live`, after any
+migration touching privileges, policies or functions. Local Postgres and Supabase
+differ in their defaults in ways only probing the live project catches: anon
+could call every function on it while all tests were green.
 
 ---
 
@@ -346,6 +360,60 @@ precondition for the planning half being used in anger.
 
 Newest first. One entry per working session — what changed, and anything a
 future reader would not infer from the diff.
+
+### 2026-08-12 — The route is a graph, and yield was wrong because it wasn't
+
+PPC confirmed the department order **and** that most operations run alongside
+each other. That was the condition set the session before for building a route
+graph rather than guessing at one, so it got built.
+
+**The defect was bigger than the parallelism.** `route_position` carried two
+jobs: the order departments are listed in, and the claim that each follows the
+one before it. Two things rested on the second, and one of them was not the
+runway check.
+
+`_dept` computed cumulative yield with a window over **every active department**
+and joined it to tasks without reference to the article. So a component was
+charged the losses of every department further down the list — including ones
+its material never enters. Visible in the four-department demo: a wooden leg is
+made in Wood and goes into the chair at Assembly, never touching Fabric Cutting
+or Stitching, and was inflated by all four yields. **433.7 legs a hundred chairs
+where 412.3 was right — 5%.** Live, at fourteen departments and 98% each, the
+head of the route inflates 33% where a six-department path warrants 13%:
+quantities out by ~17%, carried into days-needed, utilisation and the bottleneck
+ranking. The factory would have read as a third busier than it is.
+
+That is one defect, not two. Yield compounds over "everything after this one",
+and *after* is exactly what a line gets wrong.
+
+**What was built.** `department_dependencies` — one row per edge, a trigger
+refusing cycles, and a `route_dependency_grid` view behind a "What feeds what"
+panel on Masters. The engine closes the graph once into `_reach` and reads both
+directions off it: ancestors for the runway check (`max(due_date)`, so a
+department with none waits for nothing), descendants for yield, **both
+intersected with the departments the article actually passes through**.
+
+**The safety property that made it landable.** The migration seeds the edges
+linearly from `route_position`, which is arithmetically identical to what it
+replaced for any article passing through every department — so the parity
+harness and all 94 existing tests stayed green on the migration alone, with no
+expectation edited. Numbers move only when someone declares parallelism. The
+seed keeps its single line for the same reason: the prototype parity reproduces
+is a single-line model, and a truer four-department graph would break the most
+valuable test in the project to make a demo tidier.
+
+**The guard had to move with it.** `route_order_conflicts` compared departments
+consecutively by position and said so in its own comment — "because that is what
+the runway check does". One migration later that was false, and it would have
+reported pairs the engine never compares. It now walks transitive ancestors
+(matching `max(due_date)`, which skips a blank D-minus and falls through to the
+one behind it) and flags **equal** D-minus, which the old view let past even
+though the engine raises a runway breach for it. A guard quieter than the thing
+it guards is worse than none.
+
+`scripts/apply-route-graph.mjs` holds the proposed structure — four entry points,
+three streams converging at stitching, stapling and fitting. Our reading again,
+not U&M's, and editable on Masters.
 
 ### 2026-08-12 — Route order: a note for PPC, and a guard
 The 14-department route was loaded in an order **we inferred**, not one U&M gave.

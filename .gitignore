@@ -28,6 +28,10 @@ supabase/.branches
 # Generated
 src/lib/database.types.ts
 
+# npm run screenshot writes these. They are evidence for the run that produced
+# them and stale the moment anything changes, so they are not committed.
+screenshots/
+
 # Claude Code — shared project config is committed, per-machine state is not
 .claude/settings.local.json
 

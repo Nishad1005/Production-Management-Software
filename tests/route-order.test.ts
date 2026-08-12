@@ -5,9 +5,13 @@ import { withRollback } from './helpers/db'
 import { applySeed, createOrder, runSchedule } from './helpers/fixtures'
 
 /**
- * The engine's runway check compares a department against whichever one sits at
- * the previous route position. That makes "must finish earlier ⇒ sits earlier"
- * a rule the whole check depends on, and one nothing enforced.
+ * The engine's runway check holds a department behind the departments that feed
+ * it. That makes "a feeder must be due earlier than what it feeds" a rule the
+ * whole check depends on, and one nothing enforced.
+ *
+ * The seeded graph is a single line, so these read as though they were about
+ * route order. They are not — see the block at the bottom, where two departments
+ * contradict each other and it does not matter because neither feeds the other.
  */
 
 const conflicts = (c: pg.Client) =>
@@ -106,6 +110,54 @@ describe('route order against D-minus', () => {
       const { rows } = await conflicts(c)
       const part = rows.find((r) => r.article_code === 'PART')
       expect(part?.affects_scheduling).toBe(false)
+    })
+  })
+})
+
+describe('what the graph changes about the guard', () => {
+  it('says nothing about two departments that merely sit near each other', async () => {
+    await withRollback(async (c) => {
+      await applySeed(c)
+      // Fabric cutting becomes an entry point, alongside wood rather than after
+      // it. Its D-minus now contradicts wood's exactly as before — and no longer
+      // matters, because neither one feeds the other. Under the old consecutive
+      // comparison this was a flag, and the flag was noise.
+      await c.query(`select set_department_dependency('FABCUT', 'WOOD', false)`)
+      await c.query(`select set_department_dependency('STITCH', 'WOOD', true)`)
+      await c.query(`select set_dminus('AARA-LC', 'FABCUT', 70)`)
+
+      const { rows } = await conflicts(c)
+      expect(rows).toEqual([])
+    })
+  })
+
+  it('flags a feeder due on the same day as what it feeds', async () => {
+    await withRollback(async (c) => {
+      await applySeed(c)
+      // Same due date means stitching starts before fabric cutting has finished,
+      // and the engine raises a runway breach for it. The old view wanted
+      // strictly earlier and stayed quiet here.
+      await c.query(`select set_dminus('AARA-LC', 'STITCH', 50)`)
+
+      const { rows } = await conflicts(c)
+      expect(rows).toHaveLength(1)
+      expect(rows[0].earlier_department_code).toBe('FABCUT')
+      expect(rows[0].later_department_code).toBe('STITCH')
+      expect(rows[0].earlier_dminus).toBe(50)
+      expect(rows[0].later_dminus).toBe(50)
+    })
+  })
+
+  it('names the binding feeder when several contradict', async () => {
+    await withRollback(async (c) => {
+      await applySeed(c)
+      // Assembly pushed past all three upstream departments. The one that
+      // actually holds it back is stitching, due latest of them.
+      await c.query(`select set_dminus('AARA-LC', 'ASSY', 65)`)
+
+      const { rows } = await conflicts(c)
+      expect(rows).toHaveLength(1)
+      expect(rows[0].earlier_department_code).toBe('STITCH')
     })
   })
 })

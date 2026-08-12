@@ -14,16 +14,15 @@ believed.
 
 Production planning for U&M Designs, against specification `DBBS/UM/KRAM/01`
 Rev B. Schedules every order backwards from its container stuffing date through a
-configurable department route, at component granularity, and flags the days a
-department is asked for more than it can make.
+configurable department **graph**, at component granularity, and flags the days a
+department is asked for more than it can make. Departments run in parallel where
+nothing connects them; `route_position` only orders the display.
 
 Phases 0–2 are done. The client runs against either backend, chosen by whether
 `VITE_SUPABASE_URL` is set: PGlite in the browser for the offline demo, Supabase
 for the hosted system. Both use the same views and functions.
 
-**Supabase is live.** Every migration is applied. Auth is the next piece — until
-it exists, the hosted build shows nothing, because anon is correctly denied
-everything.
+**Supabase is live.** Every migration is applied, and auth is in.
 
 ## Conventions that matter
 
@@ -42,10 +41,13 @@ everything.
 - **Migrations are append-only.** The schema has been pushed to the live
   Supabase project (`fiqfbbnmksppbpxmhnbv`), so editing an existing migration
   now means the file and the database disagree. Add a new one.
+- **Migrations run before `seed.sql`.** A backfill that derives rows from another
+  table gets nothing on a fresh database. Backfill for the live project *and*
+  declare the same thing in the seed, or the two diverge silently.
 
 ## Verifying
 
-- `npm test` — 77 tests against a real native Postgres, booted per run.
+- `npm test` — 108 tests against a real native Postgres, booted per run.
 - `npm run screenshot` — drives every screen and interaction in headless
   Chromium and fails on any console error.
 - `npm run verify:live [email password]` — access control against the live

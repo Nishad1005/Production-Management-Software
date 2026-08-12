@@ -63,6 +63,7 @@ async function checkAnonymous(db) {
     'schedule_gantt',
     'run_history',
     'my_access',
+    'route_dependency_grid',
   ]) {
     const { error } = await db.from(view).select('*').limit(1)
     report(
@@ -78,6 +79,10 @@ async function checkAnonymous(db) {
     ['list_users', {}],
     ['set_dminus', { p_article_code: 'X', p_department_code: 'Y', p_days: 1 }],
     ['import_masters', { p_file: { kram_masters: 1, tables: {} } }],
+    [
+      'set_department_dependency',
+      { p_department_code: 'X', p_depends_on_code: 'Y', p_enabled: true },
+    ],
   ]) {
     const { error } = await db.rpc(fn, args)
     const blockedAtDoor = error?.message?.includes('function')

@@ -239,12 +239,14 @@ can read. Click a cell, type, press Enter.
   everyday figure instead makes a department look like the bottleneck when it is
   not.
 
-If a **Route order and D-minus disagree** panel appears, a department has been
-told to finish before one placed ahead of it in the route. Either the order is
-wrong or the D-minus is, and the software will not guess which — but while it
-stands, the engine holds that work back behind something not yet due and reports
-breaches that are not real. The rule: a department that finishes earlier belongs
-earlier in the route.
+If **A department is due before something that feeds it** appears, a department
+has been given a deadline no later than something that must finish before it can
+start. Either the D-minus is wrong or the two are not really dependent, and the
+software will not guess which — but while it stands, the engine holds that work
+back behind something not yet due and reports breaches that are not real. The
+rule: a department's D-minus must be larger than that of everything feeding it,
+larger meaning earlier. Change the D-minus here, or change what feeds it on
+Masters → What feeds what.
 
 The four figures across the top are the worklist: how many articles have a route
 at all, how many pairings exist, and what is still missing. An article with no
@@ -268,10 +270,26 @@ how they will be loaded into the hosted system later.
 Loading **merges by code** and never wipes what is already there, so a partly
 filled file is safe to apply.
 
-**Production route.** Departments in the order work flows through them. Yield is
-the percentage that survives each step, and it compounds backwards: five
-departments at 98% each cost roughly a tenth of factory capacity. Deactivating a
-department never deletes it — one with history keeps it.
+**Production route.** Every department, and the yield — the percentage that
+survives each step. The number on the left is only the order they are listed in.
+Deactivating a department never deletes it; one with history keeps it.
+
+**What feeds what.** The part the engine reads. Read a row as "this department
+cannot start until…" and tick the columns it waits for. A row with nothing ticked
+is an **entry point** — it waits for no one, which is what a feeder like metal
+finishing or fibre processing is. Departments not connected to each other run
+alongside each other, and that is how most of a furniture factory works.
+
+This drives two things:
+
+- A department is held back until everything feeding it is due. Wire a feeder
+  into the wrong place and it produces runway breaches that are not real.
+- Yield compounds along these edges, so a component is only inflated by the
+  losses of the departments its material actually passes through. A wooden leg
+  charged for stitching is a leg you make and never need.
+
+Two departments cannot wait for each other — the software refuses the edge and
+says so.
 
 **Shifts.** Each shift's clock hours, its **net production hours** — time
 actually available for work, excluding breaks, setup and cleanup — and its
@@ -339,7 +357,7 @@ is a ratio rather than a count.
 | Reason | Meaning |
 |---|---|
 | **Material** | The work would have to start before material is available. Arithmetically valid, physically impossible. |
-| **Runway** | Fewer working days between this department's deadline and the one before it than the work needs. **Overtime cannot fix this** — under batch handoff the department physically cannot start earlier. |
+| **Runway** | Fewer working days between this department's deadline and the latest of the departments feeding it than the work needs. **Overtime cannot fix this** — under batch handoff the department physically cannot start earlier. If the department it is waiting for does not really feed it, say so on Masters → What feeds what. |
 | **Pin** | A manual pin has pushed the work past its due date. Reported, not corrected. |
 | **D-minus missing** | The article × department offset has never been entered, so it cannot be scheduled. |
 | **No capacity** | No rate for this component in this department. |

@@ -358,6 +358,31 @@ export function useDepartmentShiftGrid() {
   })
 }
 
+/**
+ * One cell per ordered pair of departments: does the feeder have to finish
+ * before the department can start. This is what the engine walks — route
+ * position only decides what order things are listed in.
+ */
+export type RouteDependencyCell = {
+  department_code: string
+  department_name: string
+  department_position: number
+  feeder_code: string
+  feeder_name: string
+  feeder_position: number
+  feeds: boolean
+}
+
+export function useRouteGraph() {
+  return useQuery({
+    queryKey: ['route-graph'],
+    queryFn: () =>
+      select<RouteDependencyCell>('route_dependency_grid', {
+        order: ['department_position', 'feeder_position'],
+      }),
+  })
+}
+
 export type RateRow = {
   department_code: string
   component_code: string
