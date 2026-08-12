@@ -1,5 +1,6 @@
 import { PGlite } from '@electric-sql/pglite'
 import { btree_gist } from '@electric-sql/pglite/contrib/btree_gist'
+import { schemaVersion } from '@/lib/schema-version'
 
 /**
  * Kram's database, running in the browser.
@@ -36,8 +37,12 @@ const seeds = import.meta.glob('/supabase/seed*.sql', {
   eager: true,
 }) as Record<string, string>
 
-/** Bumped whenever the schema or demo data changes, to force a rebuild. */
-const SCHEMA_VERSION = '1'
+/**
+ * Derived from the SQL above rather than declared, so it changes exactly when
+ * the schema or the demonstration data changes and never needs remembering.
+ * See schema-version.ts for what the constant it replaces cost.
+ */
+const SCHEMA_VERSION = schemaVersion({ ...migrations, ...authShim, ...seeds })
 const STORAGE_KEY = `kram-schema-version`
 const DATA_DIR = 'idb://kram'
 
@@ -78,9 +83,8 @@ export function getDatabase(): Promise<PGlite> {
   booting = (async () => {
     // The schema moved on since this browser last loaded. Rebuilding from
     // scratch beats migrating a demo database.
-    if (localStorage.getItem(STORAGE_KEY) !== SCHEMA_VERSION) {
-      await dropLocalDatabase()
-    }
+    const stale = localStorage.getItem(STORAGE_KEY) !== SCHEMA_VERSION
+    if (stale) await dropLocalDatabase()
 
     const db = await PGlite.create({
       dataDir: DATA_DIR,
@@ -94,7 +98,18 @@ export function getDatabase(): Promise<PGlite> {
        ) as present`,
     )
 
-    if (!rows[0]?.present) {
+    // Deleting the store can be *blocked* — by another tab, or by a connection
+    // the page it replaced has not finished closing — and the request resolves
+    // either way rather than reporting it. When that happens the old schema is
+    // still sitting there, and the check above finds it and skips the rebuild:
+    // the browser keeps a database it has already decided is out of date, and
+    // nothing says so. Clearing it in SQL depends on nothing but the connection
+    // we are holding.
+    if (stale && rows[0]?.present) {
+      await db.exec(`drop schema public cascade; create schema public;`)
+    }
+
+    if (stale || !rows[0]?.present) {
       await applySchema(db)
       localStorage.setItem(STORAGE_KEY, SCHEMA_VERSION)
     }

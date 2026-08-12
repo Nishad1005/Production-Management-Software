@@ -588,6 +588,65 @@ await step('promote a scenario', async () => {
   return 'scenario is now the live plan'
 })
 
+// --- a browser that has been here before gets the current database ----------
+//
+// Last, because it rebuilds the database and would pull the ground out from
+// under any step after it.
+//
+// This is the case no run of this script could previously reach. Playwright
+// opens a fresh context each time, so localStorage is always empty, the version
+// check always mismatches and the database is always rebuilt — twenty green
+// steps over a build that was stale for every returning visitor. Within one
+// context, though, localStorage survives navigation, which is enough to play a
+// returning visitor.
+
+await step('a returning browser', async () => {
+  await go('', 'text=Bottleneck utilisation')
+
+  const stored = await page.evaluate(() =>
+    localStorage.getItem('kram-schema-version'),
+  )
+
+  // The version has to be derived from the SQL. Pinned back to a constant — as
+  // it was for thirty migrations — a returning browser keeps its old database
+  // for good, and nothing downstream of this can tell.
+  if (!stored || !/^[0-9a-f]+-[0-9a-z]+$/.test(stored)) {
+    throw new Error(
+      `schema version is not derived from the SQL: ${JSON.stringify(stored)}`,
+    )
+  }
+
+  // Now be a browser built by an older Kram: same stored database, a version
+  // from SQL that no longer exists.
+  await page.goto(`${baseUrl}/#/capacity`)
+  await page.waitForSelector('text=Capacity sheet', { timeout: 60_000 })
+  await page.evaluate(() =>
+    localStorage.setItem('kram-schema-version', 'stale-from-an-older-build'),
+  )
+
+  // reload(), not goto(): a URL that differs only by its fragment is a
+  // same-document navigation, so the module never re-runs and the boot code
+  // under test never executes.
+  await page.reload()
+  await page.waitForSelector('text=Capacity sheet', { timeout: 60_000 })
+  // Lowercased first: the panel reads "14 DEPARTMENTS" on screen only because
+  // CSS uppercases it, and textContent gives what is actually in the DOM.
+  await page.waitForFunction(
+    () => /6 articles × 14 departments/i.test(document.body.textContent ?? ''),
+    undefined,
+    { timeout: 90_000 },
+  )
+
+  const rebuilt = await page.evaluate(() =>
+    localStorage.getItem('kram-schema-version'),
+  )
+  if (rebuilt !== stored) {
+    throw new Error(`stored version did not return to ${stored}: ${rebuilt}`)
+  }
+
+  return `rebuilt on a stale version, ${stored}`
+})
+
 await browser.close()
 
 if (errors.length) {

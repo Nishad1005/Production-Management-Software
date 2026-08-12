@@ -206,6 +206,9 @@ Keep adding to this. Each one was a real dead end.
 | `UPDATE requires a WHERE clause` on Supabase, never locally | Supabase preloads the `safeupdate` library for the roles PostgREST connects as; native Postgres does not. Any UPDATE or DELETE whose **plan** carries no qualifier is refused — including on temp tables, and `security definer` does not help, because the library is loaded at connection time and does not care which role the function runs as. `where true` is not a fix: the planner folds a constant qualifier away and the plan arrives bare regardless. Restructure the statement. Caught by `tests/no-bare-dml.test.ts`, which reads `pg_proc` rather than the migration files, since append-only history still contains the fixed versions. |
 | A model's assumption is hiding in a *second* place | The route being a line was obvious in the runway check and invisible in the yield window, which read as arithmetic rather than as a claim about the shop floor. When an assumption is found to be false, grep for every consumer before fixing the one that surfaced it. |
 | A fixture that uses everything cannot see a bug about subsets | The seed's one article passes through all four departments, so yield-over-all-departments and yield-over-its-own-path give identical answers. 94 tests, none of which could tell them apart. When a test fixture uses the full set, add one that uses a subset. |
+| The offline database never rebuilds for a returning browser | `SCHEMA_VERSION` was a constant with a comment asking whoever changed the schema to bump it. It stayed `'1'` through thirty migrations. Derive it from the SQL instead — a comment asking someone to remember is not a mechanism. Playwright cannot catch this: a fresh context per run means the version always mismatches and the database always rebuilds. |
+| `indexedDB.deleteDatabase` silently does nothing | It can be **blocked** — by another tab, or a connection the previous page has not finished closing — and the request resolves either way. The old schema is then still there, the "is it built?" check finds it, and the rebuild is skipped. Clear the schema in SQL as well; that depends on nothing but the connection you hold. |
+| `page.goto` does not reload the page | A URL differing only by its fragment is a same-document navigation, so the module never re-runs. `page.reload()` when the boot code is what you are testing. |
 | A demo dataset that decays | Fixed dates in seed data quietly become a factory with nothing left to schedule, weeks after they were written. Seed relative to `current_date`. |
 | A shipment line will not fit however far ahead you put it | Its maximum size is the tightest D-minus window it passes through multiplied by that department's rate — nothing to do with lead time. If the windows are narrow, "can we take this order" stops depending on the date, which is the one thing that screen is for. |
 | A migration that reads a table finds it empty | Migrations run **before** `seed.sql`, so a backfill deriving rows from `departments` got nothing on a fresh database and silently produced a different model than the same migration does live. Backfill for the live project, and declare the same thing in the seed. |
@@ -265,7 +268,7 @@ client has seen, then diffs the SQL engine against it cell by cell across the
 prototype's own default scenario and five more. Zero divergence. Any difference
 is a real defect in one implementation or the other.
 
-**142 unit and integration tests** against a real native Postgres, booted per run
+**148 unit and integration tests** against a real native Postgres, booted per run
 from an embedded binary. Covers schema shape, RLS (as the `authenticated` role —
 table owners bypass RLS, so a policy test run as superuser proves nothing), the
 working-day calendar, engine correctness, breaches, pins, overrides, the route
@@ -278,10 +281,10 @@ Note the task count is lower than the spec's ~40,000 estimate; three components
 across seven departments gives 21 pairs. The row count matches. Worth checking
 against the real route.
 
-**Browser** — `npm run screenshot` drives every screen plus thirteen interactions
+**Browser** — `npm run screenshot` drives every screen plus fourteen interactions
 in headless Chromium and fails on any console error. It checks the D-minus edit
 survives a reload, which is what proves it reached the database rather than only
-React state. Twenty steps. Several real defects came from this that the build
+React state. Twenty-one steps. Several real defects came from this that the build
 was happy with.
 
 **Access control against production** — `npm run verify:live`, after any
@@ -414,6 +417,46 @@ which is also the first answer to "when am I busy".
 Not built: **WIP value in rupees.** It needs a component cost master that does
 not exist — `costing-sheet.xlsx` has never been loaded. Quantities are real;
 money would have been invented.
+
+### 2026-08-12 — The offline database never rebuilt for anyone who had been here before
+
+Found while setting up the demonstration: the capacity sheet came up empty on
+localhost — *0 articles, 0 departments*. Not a mis-step in the script. The
+browser was holding a database built weeks earlier.
+
+`SCHEMA_VERSION` in `src/lib/database.ts` was a constant, with a comment asking
+whoever changed the schema to bump it. `git log -S` says it had not moved since
+the day the offline build was written — **thirty migrations and a complete
+rewrite of the demonstration data ago**, including several changes I made to the
+very seed it exists to protect, that same afternoon. A first-ever visitor got
+everything; anyone returning kept what they had, permanently.
+
+**No browser check could see it.** Playwright opens a fresh context per run, so
+localStorage is empty, the comparison always mismatches, and the database is
+always rebuilt. Twenty green steps over a build that was stale for every
+returning user. The third time this shape has appeared — after `safeupdate` and
+the masters file that carried departments but no edges — and the pattern is now
+explicit: *ask what the check structurally cannot observe.*
+
+It is derived from the SQL now (`src/lib/schema-version.ts`), so it changes when
+and only when the schema or seed does. Removing the human step is the fix;
+restating it in a comment is what failed.
+
+Two more defects surfaced while writing a check that could actually fail:
+
+**`indexedDB.deleteDatabase` can be blocked and still resolve.** Another tab, or
+a connection the previous page has not finished closing, and the deletion never
+happens — the request reports nothing. The old schema is then found by the
+"already built?" query and the rebuild is skipped, so a browser that has decided
+its database is out of date keeps it anyway. The teardown now also clears the
+schema in SQL, which depends on nothing outside the connection.
+
+**`page.goto` to a different fragment does not reload the page.** Same-document
+navigation, so the module never re-runs — the check passed against boot code
+that had not executed. `page.reload()` where the boot is the subject.
+
+The new step was verified by pinning the version back to a constant and watching
+it go red. A check that has never failed has not been tested.
 
 ### 2026-08-12 — A demonstration, and the factory it runs on
 
