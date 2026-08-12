@@ -52,7 +52,8 @@ material, cash and customer relationships the system cannot see.
 | 0 | Masters, shifts, roles, RLS, working-day calendar | **Done** |
 | 1 | Order book schema | **Done**. ERP import UI **outstanding** (blocked, §6) |
 | 2 | Scheduling engine, planning outputs, acceptance check | **Done** |
-| 3–10 | WIP, manpower, material, quality, machines, cost, command centre, predictive | Not started |
+| 3 | WIP tracking — declarations, two-sided handovers, measured yield | **Done** |
+| 4–10 | Manpower, material, quality, machines, cost, command centre, predictive | Not started |
 
 **Client**: eight screens, all reading from database views. Editable: D-minus
 matrix, component rates, department yield/route/headcount, what feeds what,
@@ -68,7 +69,7 @@ unmodified in the browser, so the demo runs the real engine with no backend.
 `npm run build` produces a static folder.
 
 **Online.** Supabase project `fiqfbbnmksppbpxmhnbv` — *kram*, Mumbai
-(ap-south-1), Postgres 17.6. All twenty-five migrations applied.
+(ap-south-1), Postgres 17.6. All twenty-nine migrations applied.
 
 > **Migrations are append-only from here.** Editing one now means the file and
 > the live database disagree, silently, until something breaks in a way that
@@ -262,7 +263,7 @@ client has seen, then diffs the SQL engine against it cell by cell across the
 prototype's own default scenario and five more. Zero divergence. Any difference
 is a real defect in one implementation or the other.
 
-**114 unit and integration tests** against a real native Postgres, booted per run
+**130 unit and integration tests** against a real native Postgres, booted per run
 from an embedded binary. Covers schema shape, RLS (as the `authenticated` role —
 table owners bypass RLS, so a policy test run as superuser proves nothing), the
 working-day calendar, engine correctness, breaches, pins, overrides, the route
@@ -275,10 +276,10 @@ Note the task count is lower than the spec's ~40,000 estimate; three components
 across seven departments gives 21 pairs. The row count matches. Worth checking
 against the real route.
 
-**Browser** — `npm run screenshot` drives every screen plus eleven interactions
+**Browser** — `npm run screenshot` drives every screen plus thirteen interactions
 in headless Chromium and fails on any console error. It checks the D-minus edit
 survives a reload, which is what proves it reached the database rather than only
-React state. Seventeen steps. Several real defects came from this that the build
+React state. Twenty steps. Several real defects came from this that the build
 was happy with.
 
 **Access control against production** — `npm run verify:live`, after any
@@ -361,6 +362,56 @@ precondition for the planning half being used in anger.
 
 Newest first. One entry per working session — what changed, and anything a
 future reader would not infer from the diff.
+
+### 2026-08-12 — Phase 3: the WIP ledger
+
+The first table in Kram that records what happened rather than what somebody
+asserted. Everything before it — rates, yields, D-minus — is a claim; this is
+what the factory did, and it is the only thing that can eventually contradict
+them.
+
+Two decisions, both the client's:
+
+**Entries land on the scheduled job**, carrying their shipment line, so
+actual-against-plan is a direct comparison and "where is order SO-1234" is
+answerable. A department daily total would have been faster to enter and could
+never have answered it — and WIP by order, OTIF and delayed orders are five of
+the deck's nine dashboard KPIs.
+
+**Handovers are two-sided.** The producing department declares; the department it
+feeds counts in what arrived. The shortfall is kept rather than reconciled away,
+because the count between two benches is exactly the thing people disagree about
+and a ledger that cannot hold the disagreement is not a ledger.
+
+**Who hands to whom is not derivable from components.** The capacity sheet writes
+one stage component per article per department (`AARA-LC::STITCH`), so no
+component is ever worked by two departments and a component-level handover finds
+nothing at all. It comes from the route graph instead — restricted to the
+departments that article passes through, then **transitively reduced** to nearest
+neighbours. Without the reduction Ply Cutting hands over to everything downstream
+of it, and a supervisor is asked to count in work from six benches that never
+touched theirs.
+
+Five views: `production_worklist` (the day's jobs with whatever has been said
+about them), `wip_pending_acceptance`, `wip_by_order`, `production_vs_plan` — a
+*full* join, so a day worked with nothing planned is as visible as the reverse —
+and `measured_yield`, which puts the counted yield beside the one someone typed
+on Masters. Nothing is corrected automatically: a master that edits itself is one
+nobody can account for.
+
+**A declaration deliberately does not re-run the schedule**, unlike every masters
+edit. Rescheduling the factory because someone typed the morning's output would
+move the plan under people all day, and the plan is what they are working to.
+
+The Production screen does the two jobs in the order a supervisor does them:
+count in what arrived, then write down what you made. It opens on today, which is
+right — and a department with nothing planned today used to get an empty panel,
+indistinguishable from a broken one. It now offers the days there *is* work,
+which is also the first answer to "when am I busy".
+
+Not built: **WIP value in rupees.** It needs a component cost master that does
+not exist — `costing-sheet.xlsx` has never been loaded. Quantities are real;
+money would have been invented.
 
 ### 2026-08-12 — The engine had never once run on Supabase
 

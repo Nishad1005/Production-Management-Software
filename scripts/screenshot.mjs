@@ -22,6 +22,7 @@ const SCREENS = [
   { hash: '#/orders', name: 'order-book', waitFor: 'text=Order book' },
   { hash: '#/accept', name: 'acceptance', waitFor: 'text=Can we take this order?' },
   { hash: '#/masters', name: 'masters', waitFor: 'text=Production route' },
+  { hash: '#/production', name: 'production', waitFor: 'text=What you were asked for' },
 ]
 
 await mkdir(outDir, { recursive: true })
@@ -414,6 +415,76 @@ await step('parallel feeders', async () => {
   await page.waitForTimeout(1200)
 
   return 'declaring two departments parallel cleared the false breach'
+})
+
+// --- declaring output, and the next bench counting it in --------------------
+
+await step('declare production', async () => {
+  await go('#/production', 'text=What you were asked for')
+  await page.selectOption('[data-testid="production-department"]', 'STITCH')
+  await page.waitForTimeout(800)
+
+  // The screen opens on today, which the seeded plan does not reach, so it
+  // offers the days there *is* work. Clicking one is both the check that the
+  // offer works and how this step gets to a day with jobs on it.
+  const empty = page.locator('[data-testid="production-empty"]')
+  if (await empty.count()) {
+    await empty.locator('button').first().click()
+    await page.waitForTimeout(800)
+  }
+
+  const list = page.locator('[data-testid="production-worklist"]')
+  if (!(await list.count())) throw new Error('no planned work found for STITCH')
+  const workDate = await page.inputValue('[data-testid="production-date"]')
+
+  // Anchored by testid: the acceptance panel renders above this one and brings
+  // its own table, which is how a "first table" locator has broken twice.
+  const good = list.locator('input[type=number]').first()
+  await good.fill('26')
+  await good.press('Enter')
+
+  await page.waitForSelector('text=Entered', { timeout: 60_000 })
+  await page.screenshot({ path: `${outDir}/production.png`, fullPage: true })
+
+  // And it survives a reload, which is what proves it reached the database.
+  await go('#/production', 'text=What you were asked for')
+  await page.selectOption('[data-testid="production-department"]', 'STITCH')
+  await page.fill('[data-testid="production-date"]', workDate)
+  await page.waitForTimeout(800)
+  const saved = await page
+    .locator('[data-testid="production-worklist"] input[type=number]')
+    .first()
+    .inputValue()
+  if (Number(saved) !== 26) throw new Error(`reload lost the entry: ${saved}`)
+
+  return '26 declared by stitching, persisted across reload'
+})
+
+await step('count in a handover', async () => {
+  // Assembly is fed by stitching in the seeded graph, so what stitching just
+  // declared is now sitting in assembly's queue.
+  await go('#/production', 'text=What you were asked for')
+  await page.selectOption('[data-testid="production-department"]', 'ASSY')
+  await page.waitForSelector('[data-testid="pending-acceptance"]', {
+    timeout: 60_000,
+  })
+
+  const received = page
+    .locator('[data-testid="pending-acceptance"] input[type=number]')
+    .first()
+  await received.fill('24')
+  await page.waitForSelector('text=2 short', { timeout: 10_000 })
+  await page.screenshot({ path: `${outDir}/wip-handover.png`, fullPage: true })
+
+  await page.click('button:has-text("Count in")')
+
+  // Counted in, so it leaves the queue rather than sitting there confirmed.
+  await page.waitForFunction(
+    () => !document.querySelector('[data-testid="pending-acceptance"]'),
+    undefined,
+    { timeout: 60_000 },
+  )
+  return 'assembly counted in 24 of 26, shortfall kept'
 })
 
 // --- a what-if scenario, compared and promoted ------------------------------

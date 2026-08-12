@@ -220,6 +220,35 @@ like before a decision was taken.
 > the rest. The screen tells you when that has happened, because a partial result
 > presented as a whole one would be worse than no result.
 
+### Production
+
+Where the day gets written down. It replaces the daily production sheet, and it
+is the only screen that records what actually happened rather than what the plan
+expects.
+
+Pick your department and the date. If nothing is planned that day the screen says
+so and offers the days there is work — clicking one takes you there.
+
+**Handed to you, not yet counted in** comes first, because it is the first thing
+that happens in a day. The department before you has said what it made; enter
+what actually arrived. If the two disagree, enter what you have. The difference
+is kept, not smoothed over — that is the whole point of counting it.
+
+**What you were asked for** is the day's jobs, one row per order and component,
+with what the plan asks for beside it. Enter **good** and **rejected**
+separately: both are counts you can stand behind, and the percentage is worked
+out from them. That worked-out figure is what the yield on Masters gets compared
+against.
+
+Entering output **does not move any dates**. The plan stays where it is, because
+it is what everyone is working to today. Rescheduling the factory every time
+someone types a number would move the ground under them.
+
+Entering a figure again corrects it rather than adding to it, so there is no way
+to double a day by entering it twice.
+
+---
+
 ### Capacity sheet
 
 The same grid as the capacity spreadsheet — every article against every
@@ -420,5 +449,8 @@ Worth knowing before showing it to anyone:
 - **Nothing is shared, and nothing is backed up.** Each browser holds its own
   copy, so two people running it see different data and a cleared cache loses
   everything. Save the masters to a file after entering anything real.
-- **Phases 3 onwards do not exist** — no WIP tracking, manpower, material,
-  quality, machines or costing yet.
+- **Phases 4 onwards do not exist** — no manpower, material, quality, machines
+  or costing yet.
+- **WIP is counted, not valued.** The ledger records quantities. Rupee value
+  needs a component cost master, which has not been loaded, and inventing it
+  would put a made-up figure beside real ones.

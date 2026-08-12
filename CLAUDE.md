@@ -18,7 +18,7 @@ configurable department **graph**, at component granularity, and flags the days 
 department is asked for more than it can make. Departments run in parallel where
 nothing connects them; `route_position` only orders the display.
 
-Phases 0–2 are done. The client runs against either backend, chosen by whether
+Phases 0–3 are done. The client runs against either backend, chosen by whether
 `VITE_SUPABASE_URL` is set: PGlite in the browser for the offline demo, Supabase
 for the hosted system. Both use the same views and functions.
 
@@ -47,7 +47,7 @@ for the hosted system. Both use the same views and functions.
 
 ## Verifying
 
-- `npm test` — 114 tests against a real native Postgres, booted per run.
+- `npm test` — 130 tests against a real native Postgres, booted per run.
 - `npm run screenshot` — drives every screen and interaction in headless
   Chromium and fails on any console error.
 - `npm run verify:live [email password]` — access control against the live

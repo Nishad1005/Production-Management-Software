@@ -20,6 +20,9 @@ describe('migrations', () => {
       'holidays',
       // Phase 1 — order book
       'orders',
+      // Phase 3 — WIP ledger. Sorts above 'profiles': produ… before profi…
+      'production_acceptances',
+      'production_declarations',
       'profiles',
       // Phase 2 — schedule output
       'schedule_daily_capacity',

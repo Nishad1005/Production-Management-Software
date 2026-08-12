@@ -64,6 +64,9 @@ async function checkAnonymous(db) {
     'run_history',
     'my_access',
     'route_dependency_grid',
+    'production_worklist',
+    'wip_by_order',
+    'wip_pending_acceptance',
   ]) {
     const { error } = await db.from(view).select('*').limit(1)
     report(
@@ -82,6 +85,25 @@ async function checkAnonymous(db) {
     [
       'set_department_dependency',
       { p_department_code: 'X', p_depends_on_code: 'Y', p_enabled: true },
+    ],
+    [
+      'declare_production',
+      {
+        p_shipment_line_id: '00000000-0000-0000-0000-000000000000',
+        p_department_code: 'X',
+        p_component_code: 'Y',
+        p_date: '2026-01-01',
+        p_shift_code: 'GEN',
+        p_good: 1,
+      },
+    ],
+    [
+      'accept_production',
+      {
+        p_declaration_id: '00000000-0000-0000-0000-000000000000',
+        p_department_code: 'X',
+        p_qty: 1,
+      },
     ],
   ]) {
     const { error } = await db.rpc(fn, args)
