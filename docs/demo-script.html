@@ -255,11 +255,27 @@
     <h2>Before they arrive</h2>
     <ol class="checks">
       <li>
-        <strong>Open the demo and check the badge, top right.</strong> It must
-        read <em class="term">Build — Offline draft</em>. If you get a login
-        screen instead, that is the hosted build and its planning screens are
-        empty until PPC's figures arrive — use the offline one for the
-        walkthrough.
+        <strong>The demonstration runs on your laptop, not on the Netlify
+        link.</strong> Open a terminal and start it:
+        <div style="font-family: var(--mono); font-size: 12.5px; background: var(--paper); border: 1px solid var(--rule); padding: 10px 12px; margin: 9px 0; overflow-x: auto;">
+          cd ~/Desktop/PPM<br>npm run dev
+        </div>
+        then open <em class="term">http://localhost:5173</em>. Nothing goes over
+        the network — the database is inside the browser — so nothing can fail
+        live because of wifi.
+      </li>
+      <li>
+        <strong>kraam.netlify.app is the other one.</strong> It is the hosted
+        system, wired to the shared database, and it has no capacity figures in
+        it yet — so its planning screens are empty by design. You use it once,
+        at step&nbsp;10, and its emptiness is the point of that step. Do not run
+        the walkthrough on it.
+      </li>
+      <li>
+        <strong>Sanity check.</strong> On localhost, the small table at the top
+        right of the page should have a row reading
+        <em class="term">Build — Offline draft</em>. That is how the two tell
+        each other apart at a glance.
       </li>
       <li>
         <strong>Command centre → Reset demo data.</strong> Puts everything back
@@ -602,7 +618,7 @@
         <div class="do">
           <h4>Do</h4>
           <ol>
-            <li>Open the <strong>hosted</strong> site in a second tab.</li>
+            <li>Open <kbd>kraam.netlify.app</kbd> in a second tab.</li>
             <li>Sign in.</li>
             <li>Open <kbd>Users</kbd>, point at the roles.</li>
           </ol>

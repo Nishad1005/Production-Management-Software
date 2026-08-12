@@ -1,5 +1,7 @@
 # Kram — production planning & control
 
+[![Netlify Status](https://api.netlify.com/api/v1/badges/3fdc2989-0412-4fd3-8f3d-8997f0150a94/deploy-status)](https://app.netlify.com/projects/kraam/deploys)
+
 Backward scheduling and capacity flagging for **U&M Designs**, built by Data
 Brilliance Business Solutions LLP against specification `DBBS/UM/KRAM/01` Rev B.
 
