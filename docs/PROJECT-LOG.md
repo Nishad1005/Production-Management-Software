@@ -202,6 +202,7 @@ Keep adding to this. Each one was a real dead end.
 | Anon can call your functions on Supabase | Postgres grants `EXECUTE` to `PUBLIC` on every new function, *and* Supabase's default privileges grant it to `anon` explicitly. Revoking from `PUBLIC` alone leaves the explicit grant standing. Revoke from both. Tell the two apart by the error: "permission denied for **function**" means blocked at the door, "for **table**" means it ran until it hit RLS. |
 | A browser check breaks when a panel appears | An unanchored locator — `table` first match, `getByRole` by substring — silently retargets when the page gains an element. Anchor grids and controls by `data-testid`, and use `exact: true` on names. Twice now. |
 | A Playwright check passes when the feature is broken | `getByRole(role, { name })` matches the accessible name by **substring** by default, so `name: 'Running'` also matches every `'Not running'`. Pass `exact: true` whenever one label is a substring of another. Cost a full diagnosis of a feature that was working. |
+| `UPDATE requires a WHERE clause` on Supabase, never locally | Supabase preloads the `safeupdate` library for the roles PostgREST connects as; native Postgres does not. Any UPDATE or DELETE whose **plan** carries no qualifier is refused — including on temp tables, and `security definer` does not help, because the library is loaded at connection time and does not care which role the function runs as. `where true` is not a fix: the planner folds a constant qualifier away and the plan arrives bare regardless. Restructure the statement. Caught by `tests/no-bare-dml.test.ts`, which reads `pg_proc` rather than the migration files, since append-only history still contains the fixed versions. |
 | A model's assumption is hiding in a *second* place | The route being a line was obvious in the runway check and invisible in the yield window, which read as arithmetic rather than as a claim about the shop floor. When an assumption is found to be false, grep for every consumer before fixing the one that surfaced it. |
 | A fixture that uses everything cannot see a bug about subsets | The seed's one article passes through all four departments, so yield-over-all-departments and yield-over-its-own-path give identical answers. 94 tests, none of which could tell them apart. When a test fixture uses the full set, add one that uses a subset. |
 | A migration that reads a table finds it empty | Migrations run **before** `seed.sql`, so a backfill deriving rows from `departments` got nothing on a fresh database and silently produced a different model than the same migration does live. Backfill for the live project, and declare the same thing in the seed. |
@@ -261,7 +262,7 @@ client has seen, then diffs the SQL engine against it cell by cell across the
 prototype's own default scenario and five more. Zero divergence. Any difference
 is a real defect in one implementation or the other.
 
-**108 unit and integration tests** against a real native Postgres, booted per run
+**114 unit and integration tests** against a real native Postgres, booted per run
 from an embedded binary. Covers schema shape, RLS (as the `authenticated` role —
 table owners bypass RLS, so a policy test run as superuser proves nothing), the
 working-day calendar, engine correctness, breaches, pins, overrides, the route
@@ -360,6 +361,47 @@ precondition for the planning half being used in anger.
 
 Newest first. One entry per working session — what changed, and anything a
 future reader would not infer from the diff.
+
+### 2026-08-12 — The engine had never once run on Supabase
+
+Found by the user, from a red line on the Masters screen: `run_schedule: UPDATE
+requires a WHERE clause`. Supabase preloads the `safeupdate` library for the
+roles PostgREST connects as, and refuses any UPDATE or DELETE whose plan carries
+no qualifier. The engine's breach classification was `update _final set breach =
+…` with no WHERE.
+
+**`run_history` held zero rows.** Not "the graph broke it" — `run_schedule` had
+failed on every call since the schema was first pushed, weeks ago. The central
+function of the product had never once succeeded in production, and every screen
+that reads a plan had been reading an empty table.
+
+`rebuild_working_days` fails identically on `delete from public.working_days;`,
+so adding or removing a holiday had never worked either. The calendar exists only
+because migrations run as the table owner, whose session does not preload the
+library. `security definer` does not help — the library loads at connection time
+and does not care which role the body runs as.
+
+**Nothing local could catch it.** Native Postgres does not load `safeupdate`, so
+108 tests and 17 browser steps were green against a build that could not run at
+all on Supabase. Exactly the shape of the anon-execute finding: local Postgres
+and Supabase differ in their defaults, and only production tells you how.
+
+Both fixes are structural, not a qualifier added to satisfy a check — `where
+true` would not have worked, because the planner folds a constant qualifier away
+and the plan reaches the library bare regardless. The breach classification moved
+into the select that builds `_final` (one more CTE, since `available` is derived
+there and so was not addressable until the table existed). The calendar's delete
+is now scoped to the horizon being rebuilt, which is what its own comment already
+claimed it did.
+
+**Two checks added, because the bug was invisible rather than subtle.**
+`tests/no-bare-dml.test.ts` reads function bodies from `pg_proc` — not the
+migration files, which are append-only and still contain the bare statements
+they were later fixed by — and fails on any UPDATE or DELETE without a WHERE.
+And `verify:live` now *calls* `run_schedule` and `rebuild_working_days` rather
+than only reading views. Reading a view proves the door is open; only calling the
+function proves anything is behind it. Its first successful run: 49 ms, zero
+tasks, because there are still no orders or rates on the live project.
 
 ### 2026-08-12 — The route is a graph, and yield was wrong because it wasn't
 

@@ -170,6 +170,29 @@ async function checkSignedIn(db, email, password) {
     writeError?.message?.slice(0, 45),
   )
 
+  // The engine, actually run.
+  //
+  // This is here because everything above it passed for weeks while
+  // run_schedule failed on every single call: Supabase preloads `safeupdate`
+  // for the roles PostgREST connects as, native Postgres does not, and the
+  // engine carried an UPDATE with no WHERE clause. 108 green tests against a
+  // product whose central function had never once worked in production.
+  //
+  // Reading a view proves the door is open. Only calling the function proves
+  // anything is behind it.
+  if (canPlan) {
+    const { error: runError } = await db.rpc('run_schedule', {
+      p_make_current: false,
+      p_note: 'verify:live probe',
+    })
+    report('can run the schedule', !runError, runError?.message?.slice(0, 60))
+
+    // Idempotent — rebuilds the same calendar over the same horizon. Fails the
+    // same way, which meant no holiday could be added or removed.
+    const { error: calError } = await db.rpc('rebuild_working_days', {})
+    report('can rebuild the calendar', !calError, calError?.message?.slice(0, 60))
+  }
+
   await db.auth.signOut()
 }
 

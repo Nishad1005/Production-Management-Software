@@ -47,17 +47,23 @@ for the hosted system. Both use the same views and functions.
 
 ## Verifying
 
-- `npm test` — 108 tests against a real native Postgres, booted per run.
+- `npm test` — 114 tests against a real native Postgres, booted per run.
 - `npm run screenshot` — drives every screen and interaction in headless
   Chromium and fails on any console error.
 - `npm run verify:live [email password]` — access control against the live
   Supabase project, as real requests.
 
 **Run `verify:live` after any migration touching privileges, policies or
-functions.** The local suite cannot catch what it catches: every policy was
-green when a probe found the entire function API callable by anyone holding the
-anon key. Local Postgres and Supabase differ in exactly that way — one arrives
-with permissive defaults the other does not.
+functions.** The local suite cannot catch what it catches, twice over now:
+every policy was green when a probe found the entire function API callable by
+anyone holding the anon key; and 108 tests were green while `run_schedule` had
+never once succeeded on Supabase, because it preloads `safeupdate` and the
+engine held an UPDATE with no WHERE clause. Local Postgres and Supabase differ
+in their defaults, and only production says how.
+
+- **No UPDATE or DELETE without a WHERE clause**, anywhere, including temp
+  tables. `where true` does not count — the planner folds it away and the plan
+  arrives bare. `tests/no-bare-dml.test.ts` reads `pg_proc` and fails on one.
 
 **Run the browser check before claiming a UI change works.** Three defects have
 been found this way that a green build was perfectly happy with, all of them
