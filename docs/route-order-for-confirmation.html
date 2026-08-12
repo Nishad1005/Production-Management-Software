@@ -202,6 +202,55 @@
     letter-spacing: 0.05em;
   }
 
+  /* Three streams that converge. The point of the picture is the white space
+     between the tracks: nothing there waits for anything above it. */
+  .streams { display: flex; flex-direction: column; gap: 4px; }
+  .track {
+    display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
+    padding: 9px 0; border-bottom: 1px dashed var(--rule-soft);
+  }
+  .track:last-of-type { border-bottom: 0; }
+  .track > .tname {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.07em;
+    text-transform: uppercase; color: var(--faint);
+    min-width: 84px; flex-shrink: 0;
+  }
+  .chip {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.04em;
+    text-transform: uppercase; padding: 4px 9px;
+    border: 1px solid var(--rule); background: var(--sheet); color: var(--ink);
+    white-space: nowrap;
+  }
+  .chip.entry { border-color: var(--blue); color: var(--blue); font-weight: 600; }
+  .chip.join { border-color: var(--amber); color: var(--amber); font-weight: 600; }
+  .arrow { color: var(--faint); font-size: 12px; }
+  .legend {
+    display: flex; gap: 18px; flex-wrap: wrap; margin-top: 14px;
+    font-size: 12.5px; color: var(--mid);
+  }
+  .legend span { display: flex; align-items: center; gap: 7px; }
+  .swatch {
+    width: 11px; height: 11px; border: 1px solid var(--rule); flex-shrink: 0;
+  }
+  .swatch.entry { border-color: var(--blue); }
+  .swatch.join { border-color: var(--amber); }
+
+  table.waits { width: 100%; border-collapse: collapse; }
+  table.waits th {
+    text-align: left; font-family: var(--mono); font-size: 10.5px;
+    letter-spacing: 0.07em; text-transform: uppercase; color: var(--faint);
+    font-weight: 400; padding: 0 12px 7px 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  table.waits td {
+    padding: 7px 12px 7px 0; border-bottom: 1px solid var(--rule-soft);
+    font-size: 14px; vertical-align: top;
+  }
+  table.waits tr:last-child td { border-bottom: 0; }
+  table.waits .dept { font-weight: 600; }
+  table.waits .waitfor { font-family: var(--mono); font-size: 12px; }
+  table.waits .nothing { color: var(--blue); font-weight: 600; }
+
   @media print {
     body { background: #fff; font-size: 11pt; }
     .sheet-head { background-image: none; }
@@ -215,13 +264,13 @@
     <div>
       <p class="eyebrow">Data Brilliance Business Solutions LLP</p>
       <h1>
-        Production route
+        What feeds what
         <em>For confirmation by PPC before scheduling is relied on</em>
       </h1>
     </div>
     <aside class="refblock">
       <div><span>Ref</span><span>DBBS/UM/KRAM/02</span></div>
-      <div><span>Relates to</span><span>DBBS/UM/KRAM/01 Rev B</span></div>
+      <div><span>Revision</span><span>B</span></div>
       <div><span>Client</span><span>U&amp;M Designs</span></div>
       <div><span>Status</span><span>Awaiting confirmation</span></div>
     </aside>
@@ -231,107 +280,170 @@
 <div class="wrap">
   <main>
     <p class="lead">
-      Kram now holds all fourteen departments from the capacity sheet. The
-      <strong>order</strong> below is our best reading of how work moves through
-      the factory — it is not something you told us, and we would rather you
-      corrected it than assumed we knew.
+      Thank you for confirming the department order — and for telling us that
+      most of these operations run <strong>alongside</strong> each other rather
+      than one after another. That second point mattered more than it sounded.
+      Kram was treating the route as a single line, and we have changed it. This
+      note is the replacement, and it needs one thing checked.
     </p>
 
     <section class="panel">
       <header>
-        <b>The order as it currently stands</b>
-        <span>14 departments</span>
+        <b>How we think the work actually flows</b>
+        <span>3 streams, 4 starting points</span>
       </header>
       <div class="body">
-        <table class="route">
+        <div class="streams">
+          <div class="track">
+            <span class="tname">Frame</span>
+            <span class="chip entry">Ply Cutting</span>
+            <span class="arrow">→</span>
+            <span class="chip join">Assembly</span>
+            <span class="arrow">→</span>
+            <span class="chip">Sanding</span>
+            <span class="arrow">→</span>
+            <span class="chip">Wood Finishing</span>
+            <span class="arrow">→</span>
+            <span class="chip">Foam Pasting</span>
+          </div>
+          <div class="track">
+            <span class="tname">and</span>
+            <span class="chip entry">Machining</span>
+            <span class="arrow">→</span>
+            <span class="chip join">Assembly</span>
+          </div>
+          <div class="track">
+            <span class="tname">Fabric</span>
+            <span class="chip entry">Cutting</span>
+            <span class="arrow">→</span>
+            <span class="chip join">Stitching</span>
+          </div>
+          <div class="track">
+            <span class="tname">and</span>
+            <span class="chip entry">Fiber Processing</span>
+            <span class="arrow">→</span>
+            <span class="chip join">Stitching</span>
+          </div>
+          <div class="track">
+            <span class="tname">Metal</span>
+            <span class="chip">Machining</span>
+            <span class="arrow">→</span>
+            <span class="chip">Metal Finishing</span>
+            <span class="arrow">→</span>
+            <span class="chip join">Fitting</span>
+          </div>
+          <div class="track">
+            <span class="tname">Together</span>
+            <span class="chip join">Stapling</span>
+            <span class="arrow">→</span>
+            <span class="chip join">Fitting</span>
+            <span class="arrow">→</span>
+            <span class="chip">Final QC</span>
+            <span class="arrow">→</span>
+            <span class="chip">Final Packing</span>
+          </div>
+        </div>
+        <div class="legend">
+          <span><i class="swatch entry"></i> Starts on its own — waits for nothing</span>
+          <span><i class="swatch join"></i> Waits for more than one thing</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <header><b>The same thing, department by department</b><span>What each one waits for</span></header>
+      <div class="body">
+        <table class="waits">
           <thead>
-            <tr>
-              <th>Position</th>
-              <th>Code</th>
-              <th>Department</th>
-              <th>Why it sits here</th>
-            </tr>
+            <tr><th>Department</th><th>Cannot start until…</th></tr>
           </thead>
           <tbody>
-            <tr><td class="pos">10</td><td class="code">plycut</td><td class="dept">Ply Cutting</td><td class="note">Panels cut before anything is built</td></tr>
-            <tr><td class="pos">20</td><td class="code">machine</td><td class="dept">Machining</td><td class="note">Solid timber shaped alongside the panels</td></tr>
-            <tr><td class="pos">30</td><td class="code">assy</td><td class="dept">Assembly</td><td class="note">The frame goes together</td></tr>
-            <tr><td class="pos">40</td><td class="code">sand</td><td class="dept">Sanding</td><td class="note">Frame smoothed before any finish</td></tr>
-            <tr><td class="pos">50</td><td class="code">woodfin</td><td class="dept">Wood Finishing</td><td class="note">Stain and lacquer on bare timber</td></tr>
-            <tr><td class="pos">60</td><td class="code">metalfin</td><td class="dept">Metal Finishing</td><td class="note">Metal parts, ready for fitting later</td></tr>
-            <tr><td class="pos">70</td><td class="code">foam</td><td class="dept">Foam Pasting</td><td class="note">Foam onto the finished frame</td></tr>
-            <tr><td class="pos">80</td><td class="code">fiber</td><td class="dept">Fiber Processing</td><td class="note">Wadding prepared for the cover</td></tr>
-            <tr><td class="pos">90</td><td class="code">cut</td><td class="dept">Cutting</td><td class="note">Fabric cut to the pattern</td></tr>
-            <tr><td class="pos">100</td><td class="code">stitch</td><td class="dept">Stitching</td><td class="note">Covers sewn</td></tr>
-            <tr><td class="pos">110</td><td class="code">staple</td><td class="dept">Stapling</td><td class="note">Cover onto the frame</td></tr>
-            <tr><td class="pos">120</td><td class="code">fit</td><td class="dept">Fitting</td><td class="note">Legs, hardware, final assembly</td></tr>
-            <tr><td class="pos">130</td><td class="code">qc</td><td class="dept">Final QC inspection</td><td class="note">Checked before it is packed</td></tr>
-            <tr><td class="pos">140</td><td class="code">pack</td><td class="dept">Final Packing</td><td class="note">Boxed for the container</td></tr>
+            <tr><td class="dept">Ply Cutting</td><td class="waitfor nothing">nothing — starts on its own</td></tr>
+            <tr><td class="dept">Machining</td><td class="waitfor nothing">nothing — starts on its own</td></tr>
+            <tr><td class="dept">Cutting</td><td class="waitfor nothing">nothing — starts on its own</td></tr>
+            <tr><td class="dept">Fiber Processing</td><td class="waitfor nothing">nothing — starts on its own</td></tr>
+            <tr><td class="dept">Assembly</td><td class="waitfor">Ply Cutting, Machining</td></tr>
+            <tr><td class="dept">Sanding</td><td class="waitfor">Assembly</td></tr>
+            <tr><td class="dept">Wood Finishing</td><td class="waitfor">Sanding</td></tr>
+            <tr><td class="dept">Foam Pasting</td><td class="waitfor">Wood Finishing</td></tr>
+            <tr><td class="dept">Metal Finishing</td><td class="waitfor">Machining</td></tr>
+            <tr><td class="dept">Stitching</td><td class="waitfor">Cutting, Fiber Processing</td></tr>
+            <tr><td class="dept">Stapling</td><td class="waitfor">Foam Pasting, Stitching</td></tr>
+            <tr><td class="dept">Fitting</td><td class="waitfor">Stapling, Metal Finishing</td></tr>
+            <tr><td class="dept">Final QC inspection</td><td class="waitfor">Fitting</td></tr>
+            <tr><td class="dept">Final Packing</td><td class="waitfor">Final QC inspection</td></tr>
           </tbody>
         </table>
       </div>
     </section>
 
     <section>
-      <h2>Two questions, and they are the whole point of this note</h2>
+      <h2>One question, and it is the whole point of this note</h2>
       <div class="questions">
         <div class="q">
-          <h3>Is this the order work actually flows in?</h3>
+          <h3>Is this what actually waits for what?</h3>
           <p>
-            Your capacity sheet listed these departments across the top of the
-            page, but a column order is a layout, not a sequence. We put them in
-            the order the trade normally runs. If anything is out of place —
-            particularly around the finishes — move it.
+            Every line in the table above is our reading of the trade, not
+            anything you told us. The ones we are least sure of are
+            <strong>Foam Pasting</strong> — does it really wait for the finish to
+            be dry, or does it start earlier? — and whether
+            <strong>Fiber Processing</strong> and <strong>Cutting</strong> truly
+            depend on nothing at all.
           </p>
         </div>
         <div class="q">
-          <h3>Does anything here run <em>alongside</em> something else?</h3>
+          <h3>Anything missing in the other direction?</h3>
           <p>
-            Metal Finishing and Fiber Processing look to us like feeder
-            operations that happen while the wood line is running, rather than
-            after it. Kram currently treats the route as one line, so we need to
-            know where that is untrue.
+            The table says a department waits for something. It is just as useful
+            to know where we have said that and it is <em>not</em> true — two
+            departments we have put in sequence that in practice run at the same
+            time on different pieces.
           </p>
         </div>
       </div>
     </section>
 
     <section class="panel">
-      <header><b>What the position number does</b><span>And what it does not</span></header>
+      <header><b>Why this matters more than the order did</b><span>Two things it changes</span></header>
       <div class="body">
         <p>
-          The number is only a <strong>sequence</strong>. It does not set any
-          dates. Every deadline comes from the D-minus figure — how many days
-          before the container stuffing date that department has to be finished —
-          and those you enter yourself, per product, per department.
+          <strong>Warnings.</strong> Kram holds each department back until
+          everything feeding it is due. Wire a feeder into the wrong place and it
+          will warn you that Metal Finishing cannot start because Wood Finishing
+          is not done — which is not true, and not a problem overtime can fix.
+          The warnings stop meaning anything, on a screen whose whole job is
+          warnings.
         </p>
         <p>
-          What the order does decide is which department Kram treats as
-          <strong>the one before</strong>. That is how it warns you when a
-          department is being asked to start before the step feeding it has
-          finished — a problem overtime cannot solve, because the work simply is
-          not there yet.
+          <strong>Quantities.</strong> Losses compound backwards: a department has
+          to make enough that the shipped quantity survives every loss after it.
+          But only the losses on the path its own material takes. A wooden leg
+          goes from Ply Cutting into the frame — it never enters Stitching, so it
+          should not be made in larger numbers to cover Stitching's rejects. When
+          the route was one line it was, by a wide margin. Getting this structure
+          right is what stops the factory reading as busier than it is.
         </p>
         <p class="note" style="margin-bottom:0">
-          So an order that is wrong will not give you wrong dates. It will give
-          you warnings that are not real, and miss ones that are.
+          The position numbers you confirmed are still there, and still decide the
+          order things are listed in. They no longer decide what waits for what —
+          that is this table, and only this table.
         </p>
       </div>
     </section>
 
     <div class="callout">
-      <h3>One rule that keeps the two agreeing</h3>
+      <h3>One rule Kram will hold you to</h3>
       <p>
-        <strong>A department that has to finish earlier should sit earlier in
-        the route.</strong> If Metal Finishing must be done by D-40 and Wood
-        Finishing by D-30, then Metal Finishing belongs above Wood Finishing in
-        this list.
+        <strong>A department's D-minus must be earlier than everything that
+        feeds it.</strong> If Stitching feeds Stapling, Stitching has to be
+        finished first — so its D-minus must be the larger number.
       </p>
       <p>
-        Kram checks this for you. If you enter a D-minus that contradicts the
-        order, it says so on the capacity sheet and names both departments. It
-        will not change anything on your behalf — which of the two figures is
-        wrong is your call, not the software's.
+        Kram checks this as you enter the sheet. If a D-minus contradicts the
+        table above it says so, names both departments, and tells you whether it
+        is already causing false warnings. It will not change anything on your
+        behalf — which of the two figures is wrong is your call, not the
+        software's.
       </p>
     </div>
 
@@ -340,12 +452,17 @@
       <ol class="steps">
         <li>Sign in and open <strong>Masters</strong>.</li>
         <li>
-          In <strong>Production route</strong>, the first column is the position
-          number. Click it, type a new one, press Enter.
+          Find <strong>What feeds what</strong>. It is a grid: read each row as
+          “this department cannot start until…”, and the ticked columns are what
+          it waits for.
         </li>
         <li>
-          Use the tens — 10, 20, 30 — so there is always room to drop a
-          department between two others later without renumbering everything.
+          Click a cell to add or remove one. A row with nothing ticked is a
+          starting point.
+        </li>
+        <li>
+          Two departments cannot wait for each other — if you try, Kram refuses
+          and tells you why.
         </li>
         <li>
           Nothing else needs doing. The schedule recalculates as soon as you
@@ -357,10 +474,15 @@
     <div class="callout">
       <h3>What we need back</h3>
       <p>
-        The corrected order, and a note of anything that runs in parallel. The
-        second one matters more than it sounds: if two departments genuinely work
-        at the same time rather than one after the other, we would rather change
-        how Kram models the route than have you work around it.
+        The corrected table — or a note against the lines that are wrong. If it
+        is easier to mark up a printout than to open the screen, that is
+        completely fine; send it back however suits you.
+      </p>
+      <p>
+        Until then Kram is running on our version of it, which is a guess made
+        carefully rather than a fact. Everything downstream of it — the
+        deadlines, the load on each department, which department is the
+        bottleneck — is only as right as this one table.
       </p>
     </div>
   </main>
