@@ -13,6 +13,7 @@ describe('migrations', () => {
       'component_rates',
       'components',
       'customers',
+      'department_attendance',
       'department_dependencies',
       'department_shifts',
       'departments',

@@ -192,17 +192,22 @@ on conflict (article_id, component_id) do nothing;
 -- stops depending on the date at all — which is exactly the thing the
 -- acceptance screen exists to show.
 -- ---------------------------------------------------------------------------
-insert into public.component_rates (component_id, department_id, shift_id, units_per_day)
-select c.id, r.department_id, s.id, v.units_per_day
+insert into public.component_rates
+  (component_id, department_id, shift_id, units_per_day, manpower)
+select c.id, r.department_id, s.id, v.units_per_day, v.crew
   from _route r
   join public.components c on c.code = r.article_code || '::' || r.department_code
   join public.shifts s on s.code = 'GEN'
   join (values
-    ('PLYCUT', 130), ('MACHINE', 110), ('ASSY', 75), ('SAND', 120),
-    ('WOODFIN', 90), ('METALFIN', 95), ('FOAM', 100), ('FIBER', 160),
-    ('CUT', 120), ('STITCH', 38), ('STAPLE', 90), ('FIT', 120),
-    ('QC', 150), ('PACK', 170)
-  ) as v (dept_code, units_per_day) on v.dept_code = r.department_code
+    -- units/day, and the crew that figure was measured with. The crew matters:
+    -- without it a day's attendance has nothing to scale against, and the
+    -- production screen correctly refuses to pretend otherwise.
+    ('PLYCUT', 130, 8), ('MACHINE', 110, 10), ('ASSY', 75, 14),
+    ('SAND', 120, 6), ('WOODFIN', 90, 9), ('METALFIN', 95, 5),
+    ('FOAM', 100, 7), ('FIBER', 160, 4), ('CUT', 120, 6),
+    ('STITCH', 38, 22), ('STAPLE', 90, 16), ('FIT', 120, 12),
+    ('QC', 150, 4), ('PACK', 170, 6)
+  ) as v (dept_code, units_per_day, crew) on v.dept_code = r.department_code
 on conflict (component_id, department_id, shift_id) do nothing;
 
 -- ---------------------------------------------------------------------------

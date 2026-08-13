@@ -190,3 +190,92 @@ export function useAcceptProduction() {
     })
   })
 }
+
+// ---------------------------------------------------------------------------
+// Today's capacity
+//
+// U&M: "day rate is variable, can we give an option to put it in by the end
+// user." Three things vary and they named all three — the article (the capacity
+// sheet, already editable), the day (an override), and how many people turned
+// up (attendance, which scales the rate in proportion to the crew it was
+// measured with).
+// ---------------------------------------------------------------------------
+
+export type DepartmentDay = {
+  department_code: string
+  department_name: string
+  route_position: number
+  shift_code: string
+  sanctioned: number
+  present: number | null
+  attendance_note: string | null
+  attendance_date: string | null
+  override_units: number | null
+  override_reason: string | null
+  attendance_fraction: number | null
+  rates: number
+  rates_with_crew: number
+}
+
+export function useDepartmentDay(departmentCode: string | null) {
+  return useQuery({
+    queryKey: ['department-day', departmentCode],
+    enabled: Boolean(departmentCode),
+    queryFn: () =>
+      select<DepartmentDay>('department_day', {
+        eq: { department_code: departmentCode! },
+        order: ['shift_code'],
+      }),
+  })
+}
+
+/**
+ * Capacity *is* what the engine reads, so unlike a production declaration these
+ * do move the plan — and the schedule reruns.
+ */
+function useCapacityWrite<TInput>(fn: (input: TInput) => Promise<void>) {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: TInput) => {
+      await fn(input)
+      await rpc('run_schedule', { p_note: "Recomputed after a change to today's capacity" })
+    },
+    onSuccess: () => client.invalidateQueries(),
+  })
+}
+
+export function useSetAttendance() {
+  return useCapacityWrite<{
+    departmentCode: string
+    shiftCode: string
+    date: string
+    present: number | null
+    note?: string | null
+  }>(async ({ departmentCode, shiftCode, date, present, note }) => {
+    await rpc('set_attendance', {
+      p_department_code: departmentCode,
+      p_shift_code: shiftCode,
+      p_date: date,
+      p_present: present,
+      p_note: note ?? null,
+    })
+  })
+}
+
+export function useSetDayCapacity() {
+  return useCapacityWrite<{
+    departmentCode: string
+    shiftCode: string
+    date: string
+    units: number | null
+    reason?: string | null
+  }>(async ({ departmentCode, shiftCode, date, units, reason }) => {
+    await rpc('set_day_capacity', {
+      p_department_code: departmentCode,
+      p_shift_code: shiftCode,
+      p_date: date,
+      p_units: units,
+      p_reason: reason ?? null,
+    })
+  })
+}

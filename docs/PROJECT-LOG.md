@@ -269,7 +269,7 @@ client has seen, then diffs the SQL engine against it cell by cell across the
 prototype's own default scenario and five more. Zero divergence. Any difference
 is a real defect in one implementation or the other.
 
-**148 unit and integration tests** against a real native Postgres, booted per run
+**161 unit and integration tests** against a real native Postgres, booted per run
 from an embedded binary. Covers schema shape, RLS (as the `authenticated` role —
 table owners bypass RLS, so a policy test run as superuser proves nothing), the
 working-day calendar, engine correctness, breaches, pins, overrides, the route
@@ -434,6 +434,21 @@ The demonstration happened. Answers to the six questions, in their words:
    confirmed, which is what is already built.
 5. **Dashboards per department**, as in the deck. Not yet specified in detail.
 6. Deferred.
+
+**Point 2, built.** All three of their reasons, and the order they resolve in is
+the design: a figure someone typed for the day beats one worked out from a
+headcount, which beats the standing rate. `department_attendance` records who
+came in; `resolve_capacity()` scales the rate by present ÷ the crew that rate was
+measured with. A rate with no crew size against it is left alone — there is no
+ratio to apply, and assuming the sanctioned headcount would move every number on
+screen silently. Which finally gives the capacity sheet's "missing manpower"
+count a job: it is now the thing standing between attendance and having any
+effect, and the production screen says so rather than offering a field that does
+nothing.
+
+U&M asked for anyone with a role to be able to enter it. That is a wide door and
+it is theirs to choose; what makes it defensible is that every row carries its
+author and an override will not accept a blank reason.
 
 **Point 2 is nearly built already.** `capacity_overrides` has been in the schema
 since Phase 0 — per department, per shift, per date range, with a mandatory

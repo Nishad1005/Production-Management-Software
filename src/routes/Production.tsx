@@ -2,9 +2,13 @@ import { Fragment, useEffect, useState } from 'react'
 import {
   useAcceptProduction,
   useDeclareProduction,
+  useDepartmentDay,
   usePendingAcceptance,
   useProductionDays,
+  useSetAttendance,
+  useSetDayCapacity,
   useWorklist,
+  type DepartmentDay,
   type WorklistRow,
 } from '@/data/wip'
 import { useDepartments } from '@/data/planning'
@@ -77,6 +81,10 @@ export function Production() {
           it is what everyone is working to today.
         </p>
       </div>
+
+      {departmentCode ? (
+        <TodaysCapacity departmentCode={departmentCode} date={date} />
+      ) : null}
 
       {pending.data?.length ? (
         <AcceptancePanel departmentCode={departmentCode!} rows={pending.data} />
@@ -518,5 +526,209 @@ function AcceptancePanel({
         </p>
       ) : null}
     </Panel>
+  )
+}
+
+/**
+ * What this department can do today, and why.
+ *
+ * The rate on the capacity sheet is what the department makes in a day with the
+ * crew that rate was measured on. Two things move it, and U&M named both: how
+ * many people came in, and someone looking at the day and saying otherwise.
+ * The second beats the first — a person who saw the day beats a ratio.
+ */
+function TodaysCapacity({
+  departmentCode,
+  date,
+}: {
+  departmentCode: string
+  date: string
+}) {
+  const day = useDepartmentDay(departmentCode)
+  const rows = day.data ?? []
+
+  return (
+    <Panel title="What you can do today" meta={formatDateLong(date)}>
+      <div data-testid="todays-capacity" className="space-y-4">
+        {rows.map((row) => (
+          <ShiftCapacity
+            key={row.shift_code}
+            row={row}
+            departmentCode={departmentCode}
+            date={date}
+          />
+        ))}
+      </div>
+
+      <p className="text-faint mt-3 hidden max-w-[80ch] text-[11.5px] sm:block">
+        The standing rate assumes the crew it was measured with. Entering who
+        came in moves the day in proportion; entering a figure overrides it
+        outright, and needs a reason because someone will ask in six weeks.
+        Either one re-runs the plan.
+      </p>
+    </Panel>
+  )
+}
+
+function ShiftCapacity({
+  row,
+  departmentCode,
+  date,
+}: {
+  row: DepartmentDay
+  departmentCode: string
+  date: string
+}) {
+  const setAttendance = useSetAttendance()
+  const setDayCapacity = useSetDayCapacity()
+
+  const [present, setPresent] = useState(
+    row.present === null ? '' : String(row.present),
+  )
+  const [units, setUnits] = useState(
+    row.override_units === null ? '' : String(row.override_units),
+  )
+  const [reason, setReason] = useState(row.override_reason ?? '')
+
+  useEffect(() => {
+    setPresent(row.present === null ? '' : String(row.present))
+    setUnits(row.override_units === null ? '' : String(row.override_units))
+    setReason(row.override_reason ?? '')
+  }, [row.present, row.override_units, row.override_reason])
+
+  const saveAttendance = () =>
+    setAttendance.mutate({
+      departmentCode,
+      shiftCode: row.shift_code,
+      date,
+      present: present === '' ? null : Number(present),
+    })
+
+  const saveOverride = () =>
+    setDayCapacity.mutate({
+      departmentCode,
+      shiftCode: row.shift_code,
+      date,
+      units: units === '' ? null : Number(units),
+      reason: reason.trim() || null,
+    })
+
+  // A rate with no crew size against it cannot be scaled, so saying who came in
+  // would change nothing. Better to say so than to let someone type into a
+  // field that does not do anything.
+  const scalable = row.rates_with_crew > 0
+  const partial = scalable && row.rates_with_crew < row.rates
+
+  return (
+    <div className="border-rule border p-3.5">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <span className="text-[13px] font-semibold">
+          Shift {row.shift_code}
+        </span>
+        <span className="text-faint text-[11.5px]">
+          {row.sanctioned} on the books
+        </span>
+      </div>
+
+      <div className="mt-3 grid gap-3 sm:grid-cols-[200px_1fr]">
+        <label className="flex flex-col gap-1">
+          <span className="text-faint text-[10px] tracking-wider uppercase">
+            Who came in
+          </span>
+          <div className="flex gap-2">
+            <input
+              type="number"
+              inputMode="numeric"
+              min={0}
+              step="1"
+              disabled={!scalable}
+              placeholder={String(row.sanctioned)}
+              className={`${inputClass} h-12 text-[15px] disabled:opacity-50 sm:h-auto sm:text-[13px]`}
+              value={present}
+              onChange={(e) => setPresent(e.target.value)}
+              aria-label={`People present, shift ${row.shift_code}`}
+            />
+            <button
+              type="button"
+              onClick={saveAttendance}
+              disabled={!scalable || setAttendance.isPending}
+              className="border-rule hover:border-blue hover:text-blue h-12 shrink-0 rounded-[2px] border px-3 text-[13px] font-semibold disabled:opacity-40 sm:h-auto sm:py-2"
+            >
+              {setAttendance.isPending ? '…' : 'Save'}
+            </button>
+          </div>
+        </label>
+
+        <div className="text-[12px]">
+          {!scalable ? (
+            <p className="text-amber">
+              No crew size recorded against this department's rates, so who came
+              in cannot change the day. Enter the manpower figures on the
+              capacity sheet, or override the units below.
+            </p>
+          ) : row.present === null ? (
+            <p className="text-mid">
+              Nobody has said. The plan is using the standing rate.
+            </p>
+          ) : (
+            <p className="text-mid">
+              <strong>{row.present}</strong> of {row.sanctioned} in
+              {row.attendance_fraction !== null ? (
+                <> — the day is running at {Math.round(row.attendance_fraction * 100)}% of the rate</>
+              ) : null}
+              .{' '}
+              {partial ? (
+                <span className="text-amber">
+                  {row.rates - row.rates_with_crew} of {row.rates} rates have no
+                  crew size and are unaffected.
+                </span>
+              ) : null}
+            </p>
+          )}
+        </div>
+      </div>
+
+      <details className="mt-3" open={row.override_units !== null}>
+        <summary className="text-blue cursor-pointer text-[12px] font-semibold">
+          Override the figure instead
+        </summary>
+        <div className="mt-2 grid gap-2 sm:grid-cols-[140px_1fr_auto]">
+          <input
+            type="number"
+            inputMode="numeric"
+            min={0}
+            step="any"
+            placeholder="Units"
+            className={`${inputClass} h-12 text-[15px] sm:h-auto sm:text-[13px]`}
+            value={units}
+            onChange={(e) => setUnits(e.target.value)}
+            aria-label={`Units for the day, shift ${row.shift_code}`}
+          />
+          <input
+            type="text"
+            placeholder="Why — a machine down, new operators, a difficult fabric"
+            className={`${inputClass} h-12 text-[15px] sm:h-auto sm:text-[13px]`}
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            aria-label={`Reason, shift ${row.shift_code}`}
+          />
+          <button
+            type="button"
+            onClick={saveOverride}
+            disabled={setDayCapacity.isPending}
+            className="bg-ink h-12 rounded-[2px] px-4 text-[13px] font-semibold text-white disabled:opacity-40 sm:h-auto sm:py-2"
+          >
+            {setDayCapacity.isPending ? 'Saving…' : 'Apply'}
+          </button>
+        </div>
+        {setDayCapacity.isError ? (
+          <p className="text-flag mt-2 text-[11.5px]">
+            {String(setDayCapacity.error).includes('needs a reason')
+              ? 'An override needs a reason — somebody will ask in six weeks.'
+              : String(setDayCapacity.error)}
+          </p>
+        ) : null}
+      </details>
+    </div>
   )
 }

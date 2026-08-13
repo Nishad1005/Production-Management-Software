@@ -50,7 +50,7 @@ for the hosted system. Both use the same views and functions.
 
 ## Verifying
 
-- `npm test` — 148 tests against a real native Postgres, booted per run.
+- `npm test` — 161 tests against a real native Postgres, booted per run.
 - `npm run screenshot` — drives every screen and interaction in headless
   Chromium and fails on any console error.
 - `npm run verify:live [email password]` — access control against the live
