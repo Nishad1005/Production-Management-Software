@@ -19,6 +19,7 @@ describe('migrations', () => {
       'departments',
       'employees',
       'holidays',
+      'kpi_targets',
       // Phase 1 — order book
       'orders',
       // Phase 3 — WIP ledger. Sorts above 'profiles': produ… before profi…

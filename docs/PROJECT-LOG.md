@@ -53,6 +53,7 @@ material, cash and customer relationships the system cannot see.
 | 1 | Order book schema | **Done**. ERP import UI **outstanding** (blocked, §6) |
 | 2 | Scheduling engine, planning outputs, acceptance check | **Done** |
 | 3 | WIP tracking — declarations, two-sided handovers, measured yield | **Done** |
+| — | MD dashboard, department boards, attendance-driven capacity | **Done** |
 | 4–10 | Manpower, material, quality, machines, cost, command centre, predictive | Not started |
 
 **Client**: eight screens, all reading from database views. Editable: D-minus
@@ -269,7 +270,7 @@ client has seen, then diffs the SQL engine against it cell by cell across the
 prototype's own default scenario and five more. Zero divergence. Any difference
 is a real defect in one implementation or the other.
 
-**170 unit and integration tests** against a real native Postgres, booted per run
+**179 unit and integration tests** against a real native Postgres, booted per run
 from an embedded binary. Covers schema shape, RLS (as the `authenticated` role —
 table owners bypass RLS, so a policy test run as superuser proves nothing), the
 working-day calendar, engine correctness, breaches, pins, overrides, the route
@@ -285,7 +286,7 @@ against the real route.
 **Browser** — `npm run screenshot` drives every screen plus fourteen interactions
 in headless Chromium and fails on any console error. It checks the D-minus edit
 survives a reload, which is what proves it reached the database rather than only
-React state. Twenty-five steps, one of them at phone width. Several real defects came from this that the build
+React state. Twenty-seven steps, one of them at phone width. Several real defects came from this that the build
 was happy with.
 
 **Access control against production** — `npm run verify:live`, after any
@@ -310,7 +311,14 @@ could call every function on it while all tests were green.
    to add a new article without SQL. Lower priority than it sounds, since both
    arrive from Panipuri in the real system.
 
-### Why the MD dashboard is not next
+### Why the MD dashboard came last
+
+*(Kept as written; it is now built, and the reasoning is why it took until Phase
+3. Eight of the nine compute. WIP value reports itself unavailable and names
+what it needs, rather than estimating a rupee figure from nothing — it is the
+number an MD would quote first and the only one that would have been invented.)*
+
+### The original note
 
 Slides 5–6 are the client's headline ask, and it is the wrong thing to build
 now. Of its nine KPIs only three — orders running, delayed orders, containers by

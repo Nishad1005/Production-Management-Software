@@ -21,6 +21,7 @@ import { Masters } from '@/routes/Masters'
 import { CapacitySheet } from '@/routes/CapacitySheet'
 import { Production } from '@/routes/Production'
 import { DepartmentBoard } from '@/routes/DepartmentBoard'
+import { Dashboard } from '@/routes/Dashboard'
 import { WhatIf } from '@/routes/WhatIf'
 import { Users } from '@/routes/Users'
 import { Login, NoAccess } from '@/routes/Login'
@@ -28,6 +29,7 @@ import { Login, NoAccess } from '@/routes/Login'
 /** Which roles each screen is for. Cosmetic — RLS is the real boundary. */
 const NAV: { to: string; label: string; end?: boolean; roles: Role[] }[] = [
   { to: '/', label: 'Command centre', end: true, roles: ['md', 'planner', 'merchandiser', 'admin'] },
+  { to: '/dashboard', label: 'Dashboard', roles: ['md', 'planner', 'admin'] },
   { to: '/heatmap', label: 'Load heatmap', roles: ['md', 'planner', 'merchandiser', 'admin'] },
   { to: '/gantt', label: 'Schedule', roles: ['md', 'planner', 'admin'] },
   { to: '/orders', label: 'Order book', roles: ['md', 'planner', 'merchandiser', 'admin'] },
@@ -285,6 +287,7 @@ export function App() {
           <Shell>
             <Routes>
               <Route path="/" element={<CommandCentre />} />
+              <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/heatmap" element={<Heatmap />} />
               <Route path="/gantt" element={<Gantt />} />
               <Route path="/orders" element={<OrderBook />} />

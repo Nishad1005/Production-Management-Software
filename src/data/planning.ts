@@ -436,3 +436,30 @@ export function useBom() {
       }),
   })
 }
+
+/**
+ * Slide 6 — "Is the factory on track today?"
+ *
+ * Every row carries `available`. A KPI with nothing behind it says so and says
+ * why, rather than showing a zero: a zero is a number, and on a dashboard it
+ * will be read as one.
+ */
+export type Kpi = {
+  key: string
+  label: string
+  target: number
+  unit: string
+  higher_is_better: boolean
+  sort_order: number
+  actual: number | null
+  available: boolean
+  unavailable_because: string | null
+  status: 'good' | 'warn' | 'bad' | 'none' | 'unavailable'
+}
+
+export function useMdDashboard() {
+  return useQuery({
+    queryKey: ['md-dashboard'],
+    queryFn: () => select<Kpi>('md_dashboard', { order: ['sort_order'] }),
+  })
+}

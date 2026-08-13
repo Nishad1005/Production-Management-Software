@@ -24,6 +24,7 @@ const SCREENS = [
   { hash: '#/masters', name: 'masters', waitFor: 'text=Production route' },
   { hash: '#/production', name: 'production', waitFor: 'text=What you were asked for' },
   { hash: '#/board', name: 'department-board', waitFor: 'text=What you owe' },
+  { hash: '#/dashboard', name: 'dashboard', waitFor: 'text=Is the factory on track today?' },
 ]
 
 await mkdir(outDir, { recursive: true })
@@ -593,6 +594,28 @@ await step('promote a scenario', async () => {
   )
   await page.screenshot({ path: `${outDir}/whatif-promoted.png`, fullPage: true })
   return 'scenario is now the live plan'
+})
+
+// --- the MD dashboard says what it cannot compute ---------------------------
+
+await step('md dashboard', async () => {
+  await go('#/dashboard', 'text=Is the factory on track today?')
+  const cards = page.locator('[data-testid="md-kpis"] > div')
+  const n = await cards.count()
+  if (n !== 9) throw new Error(`expected slide 6's nine KPIs, found ${n}`)
+
+  // The point of the whole screen. WIP value has no cost master behind it, and
+  // has to say so — a zero here would be read as a rupee figure.
+  const text = await page.locator('[data-testid="md-kpis"]').innerText()
+  if (!/WIP value[\s\S]*?cost per component/i.test(text)) {
+    throw new Error('WIP value is not explaining why it is unavailable')
+  }
+  if (/WIP value\s*\n\s*[₹0]/i.test(text)) {
+    throw new Error('WIP value is showing a number it cannot compute')
+  }
+
+  await page.screenshot({ path: `${outDir}/dashboard.png`, fullPage: true })
+  return "nine KPIs, and the one without data says so"
 })
 
 // --- the department's own board ---------------------------------------------
