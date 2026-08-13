@@ -38,7 +38,7 @@ async function seeded(c: pg.Client) {
 }
 
 describe('the nine figures', () => {
-  it('shows all nine, in the deck’s order', async () => {
+  it('shows the deck’s nine, plus WIP in units, in order', async () => {
     await withRollback(async (c) => {
       await seeded(c)
       const { rows } = await c.query<{ key: string }>(
@@ -48,6 +48,8 @@ describe('the nine figures', () => {
         'orders_running',
         'otif',
         'daily_production',
+        // Added once the client deferred cost: the WIP figure that needs none.
+        'wip_units',
         'wip_value',
         'efficiency',
         'rejections',
@@ -67,7 +69,7 @@ describe('the nine figures', () => {
       expect(k.wip_value.available).toBe(false)
       expect(k.wip_value.actual).toBeNull()
       expect(k.wip_value.status).toBe('unavailable')
-      expect(k.wip_value.unavailable_because).toMatch(/cost per component/i)
+      expect(k.wip_value.unavailable_because).toMatch(/page 33/i)
     })
   })
 

@@ -9,6 +9,7 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "lint": "oxlint",
+    "typecheck": "tsc -b --force",
     "test": "vitest run",
     "test:watch": "vitest",
     "screenshot": "node scripts/screenshot.mjs",

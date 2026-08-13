@@ -25,6 +25,7 @@ const SCREENS = [
   { hash: '#/production', name: 'production', waitFor: 'text=What you were asked for' },
   { hash: '#/board', name: 'department-board', waitFor: 'text=What you owe' },
   { hash: '#/dashboard', name: 'dashboard', waitFor: 'text=Is the factory on track today?' },
+  { hash: '#/wip', name: 'wip', waitFor: 'text=Ready to stuff' },
 ]
 
 await mkdir(outDir, { recursive: true })
@@ -596,18 +597,52 @@ await step('promote a scenario', async () => {
   return 'scenario is now the live plan'
 })
 
+// --- where everything is, without a single rupee ----------------------------
+
+await step('wip', async () => {
+  await go('#/wip', 'text=Ready to stuff')
+
+  // The demo seed leaves the Harper stool part-made, so it belongs under
+  // In progress and not under Ready to stuff.
+  const running = page.locator('[data-testid="wip-running"]')
+  const text = await running.innerText()
+  if (!/SO\/26-27\/0455/.test(text)) {
+    throw new Error(`a part-made line is not showing as in progress: ${text.slice(0, 120)}`)
+  }
+  if (!/through the route|%/i.test(text)) {
+    throw new Error('no progress figure on the line')
+  }
+
+  // Expanding names every department and what it has actually made.
+  await running.locator('button').first().click()
+  await page.waitForTimeout(500)
+  const detail = await running.innerText()
+  for (const d of ['Ply Cutting', 'Stitching', 'Final Packing']) {
+    if (!detail.includes(d)) throw new Error(`route detail is missing ${d}`)
+  }
+  // The bug this step exists for: quantities rendering as em dashes because
+  // the field was named qty_done and the view returns qty_good.
+  if (/—\s*of\s*\d/.test(detail)) {
+    throw new Error('quantities are rendering as dashes — wrong field name')
+  }
+
+  await page.screenshot({ path: `${outDir}/wip.png`, fullPage: true })
+  return 'a part-made line, its route, and real quantities'
+})
+
 // --- the MD dashboard says what it cannot compute ---------------------------
 
 await step('md dashboard', async () => {
   await go('#/dashboard', 'text=Is the factory on track today?')
   const cards = page.locator('[data-testid="md-kpis"] > div')
   const n = await cards.count()
-  if (n !== 9) throw new Error(`expected slide 6's nine KPIs, found ${n}`)
+  // Slide 6's nine, plus WIP in units — the figure that needs no cost data.
+  if (n !== 10) throw new Error(`expected ten KPI cards, found ${n}`)
 
   // The point of the whole screen. WIP value has no cost master behind it, and
   // has to say so — a zero here would be read as a rupee figure.
   const text = await page.locator('[data-testid="md-kpis"]').innerText()
-  if (!/WIP value[\s\S]*?cost per component/i.test(text)) {
+  if (!/WIP value[\s\S]*?page 33/i.test(text)) {
     throw new Error('WIP value is not explaining why it is unavailable')
   }
   if (/WIP value\s*\n\s*[₹0]/i.test(text)) {

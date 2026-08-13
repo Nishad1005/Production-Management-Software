@@ -353,3 +353,36 @@ export function useDepartmentInbound(departmentCode: string | null) {
       }),
   })
 }
+
+/**
+ * Where each shipment line has actually got to.
+ *
+ * wip_by_order has existed since Phase 3 with nothing rendering it — the one
+ * thing U&M say they most want, computed and invisible. This is the per-line
+ * summary the screen reads.
+ */
+export type WipLine = {
+  erp_order_no: string
+  customer_code: string
+  article_code: string
+  shipment_line_id: string
+  line_no: number
+  line_qty: number
+  stuffing_date: string
+  days_to_stuffing: number
+  departments: number
+  departments_done: number
+  departments_running: number
+  last_declared: string | null
+  fraction_done: number
+  started: boolean
+  complete: boolean
+}
+
+export function useWipLines() {
+  return useQuery({
+    queryKey: ['wip-lines'],
+    queryFn: () =>
+      select<WipLine>('wip_lines', { order: ['stuffing_date', 'erp_order_no'] }),
+  })
+}

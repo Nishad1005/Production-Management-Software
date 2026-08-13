@@ -204,6 +204,7 @@ Keep adding to this. Each one was a real dead end.
 | Anon can call your functions on Supabase | Postgres grants `EXECUTE` to `PUBLIC` on every new function, *and* Supabase's default privileges grant it to `anon` explicitly. Revoking from `PUBLIC` alone leaves the explicit grant standing. Revoke from both. Tell the two apart by the error: "permission denied for **function**" means blocked at the door, "for **table**" means it ran until it hit RLS. |
 | A browser check breaks when a panel appears | An unanchored locator — `table` first match, `getByRole` by substring — silently retargets when the page gains an element. Anchor grids and controls by `data-testid`, and use `exact: true` on names. Twice now. |
 | A Playwright check passes when the feature is broken | `getByRole(role, { name })` matches the accessible name by **substring** by default, so `name: 'Running'` also matches every `'Not running'`. Pass `exact: true` whenever one label is a substring of another. Cost a full diagnosis of a feature that was working. |
+| `tsc --noEmit` passes and checks nothing | The root `tsconfig.json` is `"files": []` with project references, so plain `tsc --noEmit` type-checks **zero files** and exits 0. It hid a real error — a field named `qty_done` on a type that has `qty_good` — through several sessions of "tsc clean". Use `npm run typecheck` (`tsc -b --force`). |
 | `UPDATE requires a WHERE clause` on Supabase, never locally | Supabase preloads the `safeupdate` library for the roles PostgREST connects as; native Postgres does not. Any UPDATE or DELETE whose **plan** carries no qualifier is refused — including on temp tables, and `security definer` does not help, because the library is loaded at connection time and does not care which role the function runs as. `where true` is not a fix: the planner folds a constant qualifier away and the plan arrives bare regardless. Restructure the statement. Caught by `tests/no-bare-dml.test.ts`, which reads `pg_proc` rather than the migration files, since append-only history still contains the fixed versions. |
 | A model's assumption is hiding in a *second* place | The route being a line was obvious in the runway check and invisible in the yield window, which read as arithmetic rather than as a claim about the shop floor. When an assumption is found to be false, grep for every consumer before fixing the one that surfaced it. |
 | A fixture that uses everything cannot see a bug about subsets | The seed's one article passes through all four departments, so yield-over-all-departments and yield-over-its-own-path give identical answers. 94 tests, none of which could tell them apart. When a test fixture uses the full set, add one that uses a subset. |
@@ -270,7 +271,7 @@ client has seen, then diffs the SQL engine against it cell by cell across the
 prototype's own default scenario and five more. Zero divergence. Any difference
 is a real defect in one implementation or the other.
 
-**179 unit and integration tests** against a real native Postgres, booted per run
+**188 unit and integration tests** against a real native Postgres, booted per run
 from an embedded binary. Covers schema shape, RLS (as the `authenticated` role —
 table owners bypass RLS, so a policy test run as superuser proves nothing), the
 working-day calendar, engine correctness, breaches, pins, overrides, the route
@@ -286,7 +287,7 @@ against the real route.
 **Browser** — `npm run screenshot` drives every screen plus fourteen interactions
 in headless Chromium and fails on any console error. It checks the D-minus edit
 survives a reload, which is what proves it reached the database rather than only
-React state. Twenty-seven steps, one of them at phone width. Several real defects came from this that the build
+React state. Twenty-nine steps, one of them at phone width. Several real defects came from this that the build
 was happy with.
 
 **Access control against production** — `npm run verify:live`, after any
@@ -426,6 +427,53 @@ which is also the first answer to "when am I busy".
 Not built: **WIP value in rupees.** It needs a component cost master that does
 not exist — `costing-sheet.xlsx` has never been loaded. Quantities are real;
 money would have been invented.
+
+### 2026-08-13 — WIP without a rupee, and a typecheck that checked nothing
+
+U&M: *"What if we don't use cost as of now, since the main thing we want to do is
+WIP — will that interfere with the things we have built?"*
+
+**No, and it was worth checking rather than saying.** There is no cost, price,
+value or amount column anywhere in the schema, and `₹` appears in exactly two
+places: one row of `kpi_targets` and the branch in `Dashboard.tsx` that formats
+it. Every figure built — declarations, two-sided handovers, remaining, measured
+yield, the department board, eight of the nine KPIs — is a count.
+
+**What the check turned up was worse than the question.** `wip_by_order` and
+`measured_yield` were built in Phase 3, tested, given hooks in `src/data/wip.ts`
+— and nothing rendered them. `production_vs_plan` never reached the data layer
+at all. The one thing the client says they most want was computed, correct and
+invisible for a fortnight.
+
+So: a **WIP screen**. One card per shipment line, ordered by container, with the
+route as a strip of segments — green complete, amber running, grey untouched —
+and the departments underneath on expand. `wip_lines` folds the per-department
+rows into per-line progress, weighting each department equally rather than by
+quantity: a department making four legs a chair would otherwise dominate one
+making a single cover, and neither is more finished than the other.
+
+**`wip_units` added to the dashboard** — units on lines started somewhere and
+finished nowhere. "Three containers, 550 chairs, part made." Needs nothing but
+the ledger, and is now the tenth KPI.
+
+**`wip_value` kept, and kept unavailable.** Deleting it would quietly drop
+something the client asked for. Left in, it names the outstanding ask every time
+the MD opens the screen — and its message is now specific, because their costing
+sheet has been read properly: it is a per-product calculator whose **page 33 is
+exactly the per-article category breakdown needed** (wood, plywood, foam,
+fabric, packing, labour → ₹16,759.71 total). The ask is that summary block, one
+row per article. Not 71 workbooks.
+
+**And `tsc --noEmit` has been checking nothing.** The root tsconfig is
+`"files": []` with project references, so it type-checks zero files and exits 0.
+It passed on `r.qty_done` against a type that has `qty_good` — which reached the
+screen as every quantity rendering as an em dash. Proven by putting the bug back
+and watching `tsc -b` catch it and `tsc --noEmit` not. There is an `npm run
+typecheck` now, and §5 has the row.
+
+Third time this shape has appeared in three days: safeupdate, the schema version
+constant, and now this. All three were checks that could not observe the thing
+they appeared to cover.
 
 ### 2026-08-13 — What the client said, and production on a phone
 
