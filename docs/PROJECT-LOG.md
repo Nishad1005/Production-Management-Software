@@ -208,6 +208,9 @@ Keep adding to this. Each one was a real dead end.
 | `UPDATE requires a WHERE clause` on Supabase, never locally | Supabase preloads the `safeupdate` library for the roles PostgREST connects as; native Postgres does not. Any UPDATE or DELETE whose **plan** carries no qualifier is refused — including on temp tables, and `security definer` does not help, because the library is loaded at connection time and does not care which role the function runs as. `where true` is not a fix: the planner folds a constant qualifier away and the plan arrives bare regardless. Restructure the statement. Caught by `tests/no-bare-dml.test.ts`, which reads `pg_proc` rather than the migration files, since append-only history still contains the fixed versions. |
 | A model's assumption is hiding in a *second* place | The route being a line was obvious in the runway check and invisible in the yield window, which read as arithmetic rather than as a claim about the shop floor. When an assumption is found to be false, grep for every consumer before fixing the one that surfaced it. |
 | A fixture that uses everything cannot see a bug about subsets | The seed's one article passes through all four departments, so yield-over-all-departments and yield-over-its-own-path give identical answers. 94 tests, none of which could tell them apart. When a test fixture uses the full set, add one that uses a subset. |
+| A new element silently changes what an old locator means | Adding a cost box to the capacity sheet's row header made it the **first button in the row** — so the rate step went on typing its figure into the cost field and **kept passing**. Green, and testing the wrong thing. Anchor by `data-testid`; when adding anything to a shared container, grep for locators that index into it. Fifth instance. |
+| A cleanup step that quietly does nothing | A browser step that mutates shared state has to *assert* it put things back, not assume. Otherwise the next step fails for a reason that has nothing to do with what it checks, and the hunt starts in the wrong place. |
+| A hash navigation serves a stale query cache | `page.goto('#/other')` is same-document, so the app does not reload and React Query can still answer with the previous result for a moment. Wait for the expected text with `waitForFunction`; do not snapshot `innerText` immediately after navigating. |
 | Two layouts in the DOM at once break every loose locator | Rendering a phone card and a desk row together means `input[type=number]` first-match, and even `text=…`, resolve to the *hidden* one — and `waitForSelector` then waits for it to become visible, forever. Scope to `:visible` and anchor by `data-testid`. Four separate steps broke this way in one afternoon. |
 | The offline database never rebuilds for a returning browser | `SCHEMA_VERSION` was a constant with a comment asking whoever changed the schema to bump it. It stayed `'1'` through thirty migrations. Derive it from the SQL instead — a comment asking someone to remember is not a mechanism. Playwright cannot catch this: a fresh context per run means the version always mismatches and the database always rebuilds. |
 | `indexedDB.deleteDatabase` silently does nothing | It can be **blocked** — by another tab, or a connection the previous page has not finished closing — and the request resolves either way. The old schema is then still there, the "is it built?" check finds it, and the rebuild is skipped. Clear the schema in SQL as well; that depends on nothing but the connection you hold. |
@@ -271,7 +274,7 @@ client has seen, then diffs the SQL engine against it cell by cell across the
 prototype's own default scenario and five more. Zero divergence. Any difference
 is a real defect in one implementation or the other.
 
-**188 unit and integration tests** against a real native Postgres, booted per run
+**198 unit and integration tests** against a real native Postgres, booted per run
 from an embedded binary. Covers schema shape, RLS (as the `authenticated` role —
 table owners bypass RLS, so a policy test run as superuser proves nothing), the
 working-day calendar, engine correctness, breaches, pins, overrides, the route
@@ -287,7 +290,7 @@ against the real route.
 **Browser** — `npm run screenshot` drives every screen plus fourteen interactions
 in headless Chromium and fails on any console error. It checks the D-minus edit
 survives a reload, which is what proves it reached the database rather than only
-React state. Twenty-nine steps, one of them at phone width. Several real defects came from this that the build
+React state. Thirty steps, one of them at phone width. Several real defects came from this that the build
 was happy with.
 
 **Access control against production** — `npm run verify:live`, after any
@@ -427,6 +430,45 @@ which is also the first answer to "when am I busy".
 Not built: **WIP value in rupees.** It needs a component cost master that does
 not exist — `costing-sheet.xlsx` has never been loaded. Quantities are real;
 money would have been invented.
+
+### 2026-08-13 — A box, not a request for a spreadsheet
+
+U&M: *"the page 33 summary will change as per article so i dont understand what
+you want."* Fair. I had asked them to flatten seventy-one costing workbooks into
+a twenty-five column sheet — for a feature they had already asked to defer. Two
+mistakes: pressing on something set aside, and describing the maximum as if it
+were the minimum.
+
+The minimum was always **one number per article**. The category split only says
+*where along the route* the value sits; for a headline figure, total cost × how
+far through the route the work has got is enough, as long as the screen says
+that is what it is.
+
+So there is no ask any more. `articles.unit_cost` and an editable cell on the
+capacity sheet, beside the D-minus and the rates where PPC already works. Never
+required — blank means nobody has said, which is deliberately not zero, because
+zero is a claim and the dashboard would believe it.
+
+`wip_value` computes from whatever has been filled in, and **carries its
+coverage**: "covering 1 of 3 lines in progress", or "all 1 lines in progress". A
+rupee total that silently omits part of the floor is worse than none, and this
+is the figure an MD quotes first. Unlike a rate or a D-minus, entering a cost
+does not re-run the schedule — it moves no dates.
+
+**Three checking failures came out of one small feature**, all in §5:
+
+The cost box became the first button in the capacity sheet's row header, so the
+*rate* step started typing its figure into the cost field — and went on passing.
+A green check testing the wrong thing. Fifth time an unanchored locator has
+moved under a new element.
+
+The cleanup at the end of the new step silently did nothing, and the failure
+surfaced two steps later as an unrelated assertion. Cleanups have to assert.
+
+And the dashboard step read `innerText` straight after a hash navigation, which
+is same-document — so React Query was still serving the previous answer. Waiting
+for the text rather than snapshotting it fixed a race that would have been
+blamed on the database.
 
 ### 2026-08-13 — WIP without a rupee, and a typecheck that checked nothing
 

@@ -454,6 +454,8 @@ export type Kpi = {
   actual: number | null
   available: boolean
   unavailable_because: string | null
+  /** Partial coverage, e.g. "covering 1 of 3 lines in progress". */
+  note: string | null
   status: 'good' | 'warn' | 'bad' | 'none' | 'unavailable'
 }
 

@@ -109,10 +109,11 @@ describe('WIP value, still refused', () => {
       const value = await kpi(c, 'wip_value')
       expect(value.available).toBe(false)
       expect(value.actual).toBeNull()
-      // Names the specific thing, so the ask does not grow back into "send us
-      // your costing".
-      expect(value.unavailable_because).toMatch(/page 33/i)
-      expect(value.unavailable_because).toMatch(/one row per article/i)
+      // Points at the box, not at a spreadsheet. The earlier wording named a
+      // page of a costing workbook and the client could not tell what was
+      // being asked for — which was fair, because it was the wrong ask.
+      expect(value.unavailable_because).toMatch(/capacity sheet/i)
+      expect(value.unavailable_because).toMatch(/one number per article/i)
     })
   })
 
@@ -131,7 +132,7 @@ describe('WIP value, still refused', () => {
       // measure against. That resolves itself the moment work is planned.
       // wip_value never will — it is waiting on data nobody has entered.
       expect(rows.map((r) => r.key)).toContain('wip_value')
-      expect(rows.find((r) => r.key === 'wip_value')!.reason).toMatch(/page 33/i)
+      expect(rows.find((r) => r.key === 'wip_value')!.reason).toMatch(/capacity sheet/i)
       for (const r of rows.filter((x) => x.key !== 'wip_value')) {
         expect(r.reason).toMatch(/nothing (has been|is)/i)
       }

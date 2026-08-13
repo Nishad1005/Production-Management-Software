@@ -288,7 +288,16 @@ await step('capacity sheet', async () => {
   // The seeded article is worked by named components, not stage components, so
   // every cell starts blank. Entering one has to route the article through that
   // department and show up on the schedule.
-  const cell = page.locator('table tbody tr').first().locator('button').first()
+  // nth(1), not first: the row header carries the article name and the cost
+  // box, so column 0 is not a department. "First button in the row" used to
+  // mean a rate and now means a cost — and the step went on passing.
+  const cell = page
+    .locator('[data-testid="capacity-grid"] tbody tr')
+    .first()
+    .locator('td')
+    .nth(1)
+    .locator('button')
+    .first()
   await cell.click()
   const input = page.locator('input[type=number]:visible').first()
   await input.fill('42')
@@ -630,6 +639,85 @@ await step('wip', async () => {
   return 'a part-made line, its route, and real quantities'
 })
 
+// --- a cost typed on one screen becomes a figure on another -----------------
+//
+// The whole feature, and it crosses two screens, so nothing smaller proves it.
+// U&M deferred cost and were then asked for a spreadsheet; this is the box that
+// replaced the ask, and it has to work from typing to reading.
+
+await step('article cost to WIP value', async () => {
+  await go('#/dashboard', 'text=Is the factory on track today?')
+  const before = await page.locator('[data-testid="md-kpis"]').innerText()
+  if (!/WIP value[\s\S]*?capacity sheet/i.test(before)) {
+    throw new Error('WIP value is not pointing at the capacity sheet')
+  }
+
+  // Against the article that is actually in progress — WIP value counts lines
+  // started and not finished, so costing an article nobody has begun changes
+  // nothing, correctly.
+  await go('#/capacity', 'text=Capacity sheet')
+  await page.fill('input[placeholder="Code or name"]', 'UT263')
+  await page.waitForTimeout(600)
+  const cost = page
+    .locator('[data-testid="capacity-grid"] tbody tr')
+    .first()
+    .locator('[data-testid="article-cost"] button')
+    .first()
+  await cost.click()
+  const input = page.locator('input[type=number]:visible').first()
+  await input.fill('16760')
+  await input.press('Enter')
+  await page.waitForTimeout(1500)
+
+  // It survives a reload, which is what proves it reached the database.
+  await go('#/capacity', 'text=Capacity sheet')
+  await page.fill('input[placeholder="Code or name"]', 'UT263')
+  await page.waitForSelector(
+    '[data-testid="article-cost"] button:has-text("16,760"), [data-testid="article-cost"] button:has-text("16760")',
+    { timeout: 60_000 },
+  )
+
+  await go('#/dashboard', 'text=Is the factory on track today?')
+  await page.waitForTimeout(1200)
+  const after = await page.locator('[data-testid="md-kpis"]').innerText()
+  if (/WIP value[\s\S]*?capacity sheet/i.test(after)) {
+    throw new Error('WIP value is still unavailable after a cost was entered')
+  }
+  // Coverage has to be stated either way — "all N" when everything in progress
+  // is costed, "covering X of Y" when it is not. A rupee total that silently
+  // omits part of the floor is worse than no total.
+  if (!/(covering \d+ of \d+|all \d+) lines? in progress/i.test(after)) {
+    throw new Error(`no coverage note beside the figure: ${after.slice(0, 200)}`)
+  }
+
+  await page.screenshot({ path: `${outDir}/wip-value.png`, fullPage: true })
+
+  // Put it back. The next step asserts WIP value is unavailable, which is only
+  // true while nothing in progress has a cost — leaving one behind would make
+  // that step fail for a reason that has nothing to do with what it checks.
+  await go('#/capacity', 'text=Capacity sheet')
+  await page.fill('input[placeholder="Code or name"]', 'UT263')
+  await page.waitForTimeout(600)
+  await page
+    .locator('[data-testid="capacity-grid"] tbody tr')
+    .first()
+    .locator('[data-testid="article-cost"] button')
+    .first()
+    .click()
+  const clear = page.locator('input[type=number]:visible').first()
+  await clear.fill('')
+  await clear.press('Enter')
+
+  // Assert the cleanup, rather than assuming it. A cleanup that quietly does
+  // nothing hands its mess to the next step, which then fails for a reason
+  // that has nothing to do with what it is checking.
+  await page.waitForSelector('[data-testid="article-cost"] button:has-text("cost")', {
+    timeout: 30_000,
+  })
+
+  return 'cost typed on the sheet, rupee figure and coverage on the dashboard'
+})
+
 // --- the MD dashboard says what it cannot compute ---------------------------
 
 await step('md dashboard', async () => {
@@ -639,12 +727,21 @@ await step('md dashboard', async () => {
   // Slide 6's nine, plus WIP in units — the figure that needs no cost data.
   if (n !== 10) throw new Error(`expected ten KPI cards, found ${n}`)
 
-  // The point of the whole screen. WIP value has no cost master behind it, and
+  // The point of the whole screen. WIP value has no cost entered behind it and
   // has to say so — a zero here would be read as a rupee figure.
+  //
+  // Waited for rather than read: navigating between hashes is a same-document
+  // move, so the query cache can still be serving the previous answer for a
+  // moment after a step that changed it.
+  await page.waitForFunction(
+    () => {
+      const kpis = document.querySelector('[data-testid="md-kpis"]')
+      return /WIP value[\s\S]*?capacity sheet/i.test(kpis?.textContent ?? '')
+    },
+    undefined,
+    { timeout: 30_000 },
+  )
   const text = await page.locator('[data-testid="md-kpis"]').innerText()
-  if (!/WIP value[\s\S]*?page 33/i.test(text)) {
-    throw new Error('WIP value is not explaining why it is unavailable')
-  }
   if (/WIP value\s*\n\s*[₹0]/i.test(text)) {
     throw new Error('WIP value is showing a number it cannot compute')
   }

@@ -17,6 +17,7 @@ export type CapacityCell = {
   manpower: number | null
   dminus_days: number | null
   dminus_complete: boolean
+  unit_cost: number | null
 }
 
 export function useCapacitySheet() {
@@ -73,6 +74,31 @@ export function useSetCellDminus() {
       p_department_code: departmentCode,
       p_days: days,
     })
+  })
+}
+
+/**
+ * A cost moves no dates, so unlike a rate or a D-minus this deliberately does
+ * not re-run the schedule — it only changes what one figure on the dashboard
+ * says. Rescheduling the factory because somebody typed a price would be a
+ * surprising amount of work for no change in the plan.
+ */
+export function useSetArticleCost() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: async ({
+      articleCode,
+      cost,
+    }: {
+      articleCode: string
+      cost: number | null
+    }) => {
+      await rpc('set_article_cost', {
+        p_article_code: articleCode,
+        p_cost: cost,
+      })
+    },
+    onSuccess: () => client.invalidateQueries(),
   })
 }
 

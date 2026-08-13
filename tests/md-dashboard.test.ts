@@ -69,7 +69,7 @@ describe('the nine figures', () => {
       expect(k.wip_value.available).toBe(false)
       expect(k.wip_value.actual).toBeNull()
       expect(k.wip_value.status).toBe('unavailable')
-      expect(k.wip_value.unavailable_because).toMatch(/page 33/i)
+      expect(k.wip_value.unavailable_because).toMatch(/capacity sheet/i)
     })
   })
 

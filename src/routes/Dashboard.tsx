@@ -93,6 +93,12 @@ function KpiCard({ kpi }: { kpi: Kpi }) {
           {kpi.unit !== '%' && kpi.unit !== '₹' ? (
             <div className="text-faint text-[11.5px]">{kpi.unit}</div>
           ) : null}
+          {/* A total that quietly omits part of the floor is worse than no
+              total, so the caveat sits with the number rather than in a
+              footnote nobody reads. */}
+          {kpi.note ? (
+            <div className="text-mid mt-1 text-[11.5px]">{kpi.note}</div>
+          ) : null}
         </>
       ) : (
         <>

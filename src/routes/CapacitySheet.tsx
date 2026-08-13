@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import {
   useCapacitySheet,
   useRouteConflicts,
+  useSetArticleCost,
   useSetCapacityCell,
   useSetCellDminus,
   type CapacityCell,
@@ -46,6 +47,7 @@ export function CapacitySheet() {
   const conflicts = useRouteConflicts()
   const setCell = useSetCapacityCell()
   const setDminus = useSetCellDminus()
+  const setArticleCost = useSetArticleCost()
 
   const [measure, setMeasure] = useState<'units' | 'manpower' | 'dminus'>('units')
   const [filter, setFilter] = useState('')
@@ -261,6 +263,24 @@ export function CapacitySheet() {
                         <div className="font-semibold">{code}</div>
                         <div className="text-faint truncate text-[10.5px]">
                           {first?.article_name}
+                        </div>
+                        {/* One value for the whole row, so it lives here rather
+                            than behind the measure switch — that changes what
+                            each cell means, and a cost is not per department.
+                            Never required: blank is "nobody has said". */}
+                        <div className="text-[10.5px]" data-testid="article-cost">
+                          <span className="text-faint">₹</span>
+                          <EditableNumber
+                            value={first?.unit_cost ?? null}
+                            min={0}
+                            step="any"
+                            width="w-24"
+                            placeholder="cost"
+                            allowEmpty
+                            onCommit={(cost) =>
+                              setArticleCost.mutate({ articleCode: code, cost })
+                            }
+                          />
                         </div>
                       </td>
                       {model.departments.map((d) => {
