@@ -23,6 +23,7 @@ const SCREENS = [
   { hash: '#/accept', name: 'acceptance', waitFor: 'text=Can we take this order?' },
   { hash: '#/masters', name: 'masters', waitFor: 'text=Production route' },
   { hash: '#/production', name: 'production', waitFor: 'text=What you were asked for' },
+  { hash: '#/board', name: 'department-board', waitFor: 'text=What you owe' },
 ]
 
 await mkdir(outDir, { recursive: true })
@@ -592,6 +593,37 @@ await step('promote a scenario', async () => {
   )
   await page.screenshot({ path: `${outDir}/whatif-promoted.png`, fullPage: true })
   return 'scenario is now the live plan'
+})
+
+// --- the department's own board ---------------------------------------------
+
+await step('department board', async () => {
+  await go('#/board', 'text=What you owe')
+  // Stapling is fed by two streams, so it has something to wait for. An entry
+  // point would show an empty inbound panel and prove nothing.
+  await page.selectOption('[data-testid="board-department"]', 'STAPLE')
+  await page.waitForTimeout(1200)
+
+  const owed = await page
+    .locator('[data-testid="board-queue"] >> text=/Still to make/i')
+    .count()
+  if (!owed) throw new Error('the department owes nothing — board has no content')
+
+  // "From which department a component has to come so as to I can start my
+  // work" — the feeders have to be named, and named from the route graph.
+  const inbound = page.locator('[data-testid="board-inbound"]')
+  const text = await inbound.innerText()
+  if (!/Foam Pasting|Stitching/.test(text)) {
+    throw new Error(`inbound panel names no feeder: ${text.slice(0, 120)}`)
+  }
+
+  // And it must lead with what is late rather than everything outstanding.
+  if (!/still to come from upstream, none of it due yet/.test(text)) {
+    throw new Error('the board is not separating late work from not-yet-due')
+  }
+
+  await page.screenshot({ path: `${outDir}/board.png`, fullPage: true })
+  return 'feeders named, late work separated from not-yet-due'
 })
 
 // --- production, on a phone, on the floor -----------------------------------

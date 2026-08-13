@@ -279,3 +279,77 @@ export function useSetDayCapacity() {
     })
   })
 }
+
+// ---------------------------------------------------------------------------
+// The department's own board
+//
+// U&M: "what are the pending remaining for that day, work order or according to
+// their shipping date, and from which department a component has to come so as
+// to I can start my work."
+// ---------------------------------------------------------------------------
+
+export type QueueRow = {
+  department_code: string
+  erp_order_no: string
+  customer_code: string
+  article_code: string
+  article_name: string
+  component_code: string
+  shipment_line_id: string
+  line_no: number
+  stuffing_date: string
+  days_to_stuffing: number
+  due_date: string | null
+  days_to_due: number | null
+  qty_required: number
+  qty_done: number
+  qty_remaining: number
+  qty_rejected: number
+  last_declared: string | null
+  breach_reason: string | null
+  state: string
+}
+
+export function useDepartmentQueue(departmentCode: string | null) {
+  return useQuery({
+    queryKey: ['department-queue', departmentCode],
+    enabled: Boolean(departmentCode),
+    queryFn: () =>
+      select<QueueRow>('department_queue', {
+        eq: { department_code: departmentCode! },
+        // The container it ships in, soonest first. Their words: "according to
+        // their shipping date".
+        order: ['stuffing_date', 'erp_order_no'],
+      }),
+  })
+}
+
+export type InboundRow = {
+  department_code: string
+  from_department_code: string
+  from_department_name: string
+  from_route_position: number
+  erp_order_no: string
+  article_code: string
+  shipment_line_id: string
+  stuffing_date: string
+  their_due_date: string | null
+  days_to_their_due: number | null
+  qty_required: number
+  qty_made: number
+  qty_counted_in: number
+  last_declared: string | null
+  state: string
+}
+
+export function useDepartmentInbound(departmentCode: string | null) {
+  return useQuery({
+    queryKey: ['department-inbound', departmentCode],
+    enabled: Boolean(departmentCode),
+    queryFn: () =>
+      select<InboundRow>('department_inbound', {
+        eq: { department_code: departmentCode! },
+        order: ['stuffing_date', 'from_route_position'],
+      }),
+  })
+}

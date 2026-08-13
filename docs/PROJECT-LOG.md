@@ -269,7 +269,7 @@ client has seen, then diffs the SQL engine against it cell by cell across the
 prototype's own default scenario and five more. Zero divergence. Any difference
 is a real defect in one implementation or the other.
 
-**161 unit and integration tests** against a real native Postgres, booted per run
+**170 unit and integration tests** against a real native Postgres, booted per run
 from an embedded binary. Covers schema shape, RLS (as the `authenticated` role —
 table owners bypass RLS, so a policy test run as superuser proves nothing), the
 working-day calendar, engine correctness, breaches, pins, overrides, the route
@@ -285,7 +285,7 @@ against the real route.
 **Browser** — `npm run screenshot` drives every screen plus fourteen interactions
 in headless Chromium and fails on any console error. It checks the D-minus edit
 survives a reload, which is what proves it reached the database rather than only
-React state. Twenty-three steps, one of them at phone width. Several real defects came from this that the build
+React state. Twenty-five steps, one of them at phone width. Several real defects came from this that the build
 was happy with.
 
 **Access control against production** — `npm run verify:live`, after any
@@ -432,7 +432,26 @@ The demonstration happened. Answers to the six questions, in their words:
    the end of a shift.
 4. **"We need receiving for double verification."** Two-sided handovers
    confirmed, which is what is already built.
-5. **Dashboards per department**, as in the deck. Not yet specified in detail.
+5. **Dashboards per department.** Specified since, in their words: "what are the
+   pending remaining for that day, work order or according to their shipping
+   date, and from which department a component has to come so as to I can start
+   my work." Three questions — what is left, in what order, and what am I
+   waiting for. Built as **My department**: `department_queue` and
+   `department_inbound`.
+
+   The third is the one nothing could answer before, and it is the mirror of the
+   acceptance queue — that says what has arrived, this says what has not, and
+   names who owes it. Read off `article_handover`, so it follows the same edges
+   the engine does rather than a second opinion about the route.
+
+   Ordered by the **container**, not by the department's own deadline: a
+   D-minus is derived and moves, a container sails when it sails.
+
+   First version showed all sixteen outstanding feeders and was a wall — every
+   future job reads "not started", which is not a problem, it is just not due
+   yet. It now leads with what is actually late (`days_to_their_due <= 7`) and
+   reduces the rest to a line of text. Two cards to chase instead of sixteen to
+   read.
 6. Deferred.
 
 **Point 2, built.** All three of their reasons, and the order they resolve in is
