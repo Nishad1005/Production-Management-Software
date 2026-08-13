@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import {
   useAcceptProduction,
   useDeclareProduction,
@@ -40,13 +40,13 @@ export function Production() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end gap-4">
-        <label className="flex flex-col gap-1">
+      <div className="flex flex-wrap items-end gap-3 sm:gap-4">
+        <label className="flex min-w-0 flex-1 flex-col gap-1 sm:flex-none">
           <span className="text-faint text-[11px] uppercase tracking-wider">
             Department
           </span>
           <select
-            className={inputClass}
+            className={`${inputClass} h-12 text-[15px] sm:h-auto sm:text-[13px]`}
             value={departmentCode ?? ''}
             onChange={(e) => setDepartmentCode(e.target.value)}
             data-testid="production-department"
@@ -59,20 +59,20 @@ export function Production() {
           </select>
         </label>
 
-        <label className="flex flex-col gap-1">
+        <label className="flex shrink-0 flex-col gap-1">
           <span className="text-faint text-[11px] uppercase tracking-wider">
             Date
           </span>
           <input
             type="date"
-            className={inputClass}
+            className={`${inputClass} h-12 text-[15px] sm:h-auto sm:text-[13px]`}
             value={date}
             onChange={(e) => setDate(e.target.value)}
             data-testid="production-date"
           />
         </label>
 
-        <p className="text-mid max-w-[52ch] text-[12px]">
+        <p className="text-mid hidden max-w-[52ch] text-[12px] sm:block">
           Entering output does not move any dates. The plan stays where it is —
           it is what everyone is working to today.
         </p>
@@ -128,7 +128,7 @@ export function Production() {
         ) : (
           <div data-testid="production-worklist">
             <Table>
-              <thead>
+              <thead className="hidden sm:table-header-group">
                 <tr>
                   <Th>Order</Th>
                   <Th>Component</Th>
@@ -151,7 +151,7 @@ export function Production() {
           </div>
         )}
 
-        <p className="text-faint mt-3 max-w-[80ch] text-[11.5px]">
+        <p className="text-faint mt-3 hidden max-w-[80ch] text-[11.5px] sm:block">
           Good and rejected are counted separately rather than entered as a
           percentage. The two figures are things you can stand behind; the
           percentage is worked out from them, and is what the yield on Masters
@@ -187,58 +187,152 @@ function WorklistEntry({ row, date }: { row: WorklistRow; date: string }) {
       rejected: Number(rejected) || 0,
     })
 
+  const status = dirty ? (
+    <Button onClick={save} disabled={declare.isPending}>
+      {declare.isPending ? 'Saving…' : 'Save'}
+    </Button>
+  ) : row.declaration_id ? (
+    <Tag tone="clear">Entered</Tag>
+  ) : (
+    <span className="text-faint text-[11px]">Not yet entered</span>
+  )
+
   return (
-    <tr>
-      <Td>
-        <span className="font-semibold">{row.erp_order_no}</span>
-        <span className="text-faint"> · {row.article_code}</span>
-        {row.breach_reason ? (
-          <span className="ml-2">
-            <Tag tone="flag">{row.breach_reason}</Tag>
-          </span>
-        ) : null}
-      </Td>
-      <Td>
-        {row.component_code}
-        <span className="text-faint"> · {row.shift_code}</span>
-      </Td>
-      <Td align="right">{formatNumber(row.qty_planned)}</Td>
-      <Td align="right">
-        <input
-          type="number"
-          min={0}
-          step="any"
-          className={`${inputClass} w-24 text-right`}
-          value={good}
-          onChange={(e) => setGood(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && dirty && save()}
-          aria-label={`Good, ${row.erp_order_no} ${row.component_code}`}
-        />
-      </Td>
-      <Td align="right">
-        <input
-          type="number"
-          min={0}
-          step="any"
-          className={`${inputClass} w-24 text-right`}
-          value={rejected}
-          onChange={(e) => setRejected(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && dirty && save()}
-          aria-label={`Rejected, ${row.erp_order_no} ${row.component_code}`}
-        />
-      </Td>
-      <Td align="right">
-        {dirty ? (
-          <Button variant="quiet" onClick={save} disabled={declare.isPending}>
-            {declare.isPending ? 'Saving…' : 'Save'}
-          </Button>
-        ) : row.declaration_id ? (
-          <Tag tone="clear">Entered</Tag>
-        ) : (
-          <span className="text-faint text-[11px]">Not yet entered</span>
-        )}
-      </Td>
-    </tr>
+    <>
+      {/* ---------------------------------------------------------------
+          On a phone. The client's answer to "who enters production, and
+          when" was: on a phone, on the floor, as it happens. A six-column
+          table cannot do that — the Rejected field and the Save button sit
+          off the right-hand edge, reachable only by a sideways scroll
+          nobody knows is there.
+          --------------------------------------------------------------- */}
+      <tr className="sm:hidden">
+        {/* A plain cell rather than <Td>: the card supplies its own frame, and
+            the shared one's padding and rule would sit inside it. */}
+        <td colSpan={6} className="pb-3">
+          <div className="border-rule bg-sheet border p-3.5">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <div className="text-[14px] font-semibold">
+                  {row.erp_order_no}
+                </div>
+                <div className="text-mid text-[12px]">{row.article_code}</div>
+              </div>
+              <div className="text-right">
+                <div className="text-faint text-[10px] tracking-wider uppercase">
+                  Asked for
+                </div>
+                <div className="text-[17px] font-semibold">
+                  {formatNumber(row.qty_planned)}
+                </div>
+              </div>
+            </div>
+
+            {row.breach_reason ? (
+              <div className="mt-2">
+                <Tag tone="flag">{row.breach_reason}</Tag>
+              </div>
+            ) : null}
+
+            <div className="mt-3 grid grid-cols-2 gap-3">
+              <label className="flex flex-col gap-1">
+                <span className="text-faint text-[10px] tracking-wider uppercase">
+                  Good
+                </span>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  step="any"
+                  className={`${inputClass} h-12 w-full text-[17px]`}
+                  value={good}
+                  onChange={(e) => setGood(e.target.value)}
+                  aria-label={`Good, ${row.erp_order_no} ${row.component_code}`}
+                />
+              </label>
+              <label className="flex flex-col gap-1">
+                <span className="text-faint text-[10px] tracking-wider uppercase">
+                  Rejected
+                </span>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  step="any"
+                  className={`${inputClass} h-12 w-full text-[17px]`}
+                  value={rejected}
+                  onChange={(e) => setRejected(e.target.value)}
+                  aria-label={`Rejected, ${row.erp_order_no} ${row.component_code}`}
+                />
+              </label>
+            </div>
+
+            {/* Full width, and always in the card rather than appearing only
+                once something is dirty — a button that materialises under
+                your thumb moves everything below it. */}
+            <button
+              type="button"
+              onClick={save}
+              disabled={!dirty || declare.isPending}
+              className="bg-ink disabled:bg-rule mt-3 h-12 w-full rounded-[2px] text-[15px] font-semibold text-white disabled:cursor-not-allowed"
+            >
+              {declare.isPending
+                ? 'Saving…'
+                : dirty
+                  ? 'Save'
+                  : row.declaration_id
+                    ? 'Entered'
+                    : 'Enter a figure'}
+            </button>
+          </div>
+        </td>
+      </tr>
+
+      {/* On a desk, where the whole grid is worth seeing at once. */}
+      <tr className="hidden sm:table-row">
+        <Td>
+          <span className="font-semibold">{row.erp_order_no}</span>
+          <span className="text-faint"> · {row.article_code}</span>
+          {row.breach_reason ? (
+            <span className="ml-2">
+              <Tag tone="flag">{row.breach_reason}</Tag>
+            </span>
+          ) : null}
+        </Td>
+        <Td>
+          {row.component_code}
+          <span className="text-faint"> · {row.shift_code}</span>
+        </Td>
+        <Td align="right">{formatNumber(row.qty_planned)}</Td>
+        <Td align="right">
+          <input
+            type="number"
+            inputMode="numeric"
+            min={0}
+            step="any"
+            className={`${inputClass} w-24 text-right`}
+            value={good}
+            onChange={(e) => setGood(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && dirty && save()}
+            aria-label={`Good, ${row.erp_order_no} ${row.component_code}`}
+          />
+        </Td>
+        <Td align="right">
+          <input
+            type="number"
+            inputMode="numeric"
+            min={0}
+            step="any"
+            className={`${inputClass} w-24 text-right`}
+            value={rejected}
+            onChange={(e) => setRejected(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && dirty && save()}
+            aria-label={`Rejected, ${row.erp_order_no} ${row.component_code}`}
+          />
+        </Td>
+        <Td align="right">{status}</Td>
+      </tr>
+    </>
   )
 }
 
@@ -262,14 +356,13 @@ function AcceptancePanel({
       meta={`${rows.length} waiting`}
     >
       <p className="text-mid mb-3 max-w-[80ch] text-[12px]">
-        The department before you has said what it made. Count what actually
-        arrived. If the two disagree, enter what you have — the difference is
-        kept rather than smoothed over, and that is the whole point of counting.
+        Count what actually arrived. If it does not match what they said, enter
+        what you have — the difference is kept, not smoothed over.
       </p>
 
       <div data-testid="pending-acceptance">
         <Table>
-          <thead>
+          <thead className="hidden sm:table-header-group">
             <tr>
               <Th>From</Th>
               <Th>Order</Th>
@@ -284,8 +377,81 @@ function AcceptancePanel({
               const entered = counts[row.declaration_id]
               const value = entered ?? String(row.qty_declared)
               const short = Number(value) < row.qty_declared
+              const countIn = () =>
+                accept.mutate({
+                  declarationId: row.declaration_id,
+                  departmentCode,
+                  qty: Number(value) || 0,
+                })
+              const onChange = (v: string) =>
+                setCounts((c) => ({ ...c, [row.declaration_id]: v }))
+
               return (
-                <tr key={row.declaration_id}>
+                <Fragment key={row.declaration_id}>
+                  {/* On a phone: one card, thumb-sized field, full-width
+                      action. Counting in is the first thing that happens in a
+                      shift and it happens standing up. */}
+                  <tr className="sm:hidden">
+                    <td colSpan={6} className="pb-3">
+                      <div className="border-rule bg-sheet border p-3.5">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <div className="text-[14px] font-semibold">
+                              {row.erp_order_no}
+                            </div>
+                            <div className="text-mid text-[12px]">
+                              from {row.from_department_name}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-faint text-[10px] tracking-wider uppercase">
+                              They made
+                            </div>
+                            <div className="text-[17px] font-semibold">
+                              {formatNumber(row.qty_declared)}
+                            </div>
+                          </div>
+                        </div>
+
+                        <label className="mt-3 flex flex-col gap-1">
+                          <span className="text-faint text-[10px] tracking-wider uppercase">
+                            You received
+                          </span>
+                          <input
+                            type="number"
+                            inputMode="numeric"
+                            min={0}
+                            step="any"
+                            className={`${inputClass} h-12 w-full text-[17px]`}
+                            value={value}
+                            onChange={(e) => onChange(e.target.value)}
+                            aria-label={`Received, ${row.erp_order_no} ${row.component_code}`}
+                          />
+                        </label>
+
+                        {short ? (
+                          <p
+                            data-testid="shortfall"
+                            className="text-amber mt-2 text-[12px] font-semibold"
+                          >
+                            {formatNumber(row.qty_declared - Number(value))}{' '}
+                            short of what they declared
+                          </p>
+                        ) : null}
+
+                        <button
+                          type="button"
+                          onClick={countIn}
+                          disabled={accept.isPending}
+                          className="bg-ink disabled:bg-rule mt-3 h-12 w-full rounded-[2px] text-[15px] font-semibold text-white disabled:cursor-not-allowed"
+                        >
+                          {accept.isPending ? 'Saving…' : 'Count in'}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+
+                <tr className="hidden sm:table-row">
                   <Td>
                     {row.from_department_name}
                     <span className="text-faint">
@@ -315,9 +481,11 @@ function AcceptancePanel({
                   <Td align="right">
                     <div className="flex items-center justify-end gap-2">
                       {short ? (
-                        <Tag tone="amber">
-                          {formatNumber(row.qty_declared - Number(value))} short
-                        </Tag>
+                        <span data-testid="shortfall">
+                          <Tag tone="amber">
+                            {formatNumber(row.qty_declared - Number(value))} short
+                          </Tag>
+                        </span>
                       ) : null}
                       <Button
                         variant="quiet"
@@ -335,6 +503,7 @@ function AcceptancePanel({
                     </div>
                   </Td>
                 </tr>
+                </Fragment>
               )
             })}
           </tbody>

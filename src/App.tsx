@@ -166,26 +166,29 @@ function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-full">
       <header className="gridpaper bg-sheet border-ink border-b-2">
-        <div className="mx-auto max-w-[1400px] px-6 pt-7">
+        <div className="mx-auto max-w-[1400px] px-4 pt-3 sm:px-6 sm:pt-7">
           <div className="flex flex-wrap items-end justify-between gap-6">
             <div>
-              <p className="text-blue text-[11px] tracking-[0.18em] uppercase">
+              {/* The masthead is a document convention, and on a phone held on
+                  a factory floor it is 780px of scrolling before any work
+                  appears. Kept whole on a desk, cut to the name on a phone. */}
+              <p className="text-blue hidden text-[11px] tracking-[0.18em] uppercase sm:block">
                 Data Brilliance Business Solutions LLP
               </p>
-              <h1 className="font-sans mt-2 text-[42px] leading-none font-extrabold tracking-[-0.03em]">
+              <h1 className="font-sans text-[24px] leading-none font-extrabold tracking-[-0.03em] sm:mt-2 sm:text-[42px]">
                 Kram{' '}
-                <em className="text-blue text-[22px] font-semibold not-italic">
+                <em className="text-blue text-[13px] font-semibold not-italic sm:text-[22px]">
                   production planning &amp; control
                 </em>
               </h1>
-              <p className="text-mid mt-2 max-w-[62ch] text-[13px]">
+              <p className="text-mid mt-2 hidden max-w-[62ch] text-[13px] sm:block">
                 Backward scheduling from the container stuffing date, load
                 against capacity by component, and the days a department is
                 asked for more than it can make.
               </p>
             </div>
 
-            <div className="border-ink min-w-[240px] border-[1.5px]">
+            <div className="border-ink hidden min-w-[240px] border-[1.5px] sm:block">
               {[
                 ['Ref', 'DBBS/UM/KRAM/01'],
                 ['Revision', 'B'],
@@ -210,15 +213,18 @@ function Shell({ children }: { children: React.ReactNode }) {
             </div>
           </div>
 
-          <div className="mt-6 flex flex-wrap items-end justify-between gap-4">
-            <nav className="flex flex-wrap gap-x-6 gap-y-1">
+          <div className="mt-3 flex flex-wrap items-end justify-between gap-4 sm:mt-6">
+            {/* One line that scrolls sideways on a phone rather than three
+                wrapped rows. -mx-4/px-4 lets it bleed to the screen edges so
+                there is no cut-off item pretending to be the last one. */}
+            <nav className="-mx-4 flex snap-x gap-x-5 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:gap-x-6 sm:gap-y-1 sm:overflow-visible sm:px-0">
               {visible.map((item) => (
                 <NavLink
                   key={item.to}
                   to={item.to}
                   end={item.end}
                   className={({ isActive }) =>
-                    `font-sans border-b-2 pb-2.5 text-[13px] font-semibold ${
+                    `font-sans flex shrink-0 snap-start items-center border-b-2 pb-2.5 text-[13px] font-semibold min-h-11 sm:min-h-0 ${
                       isActive
                         ? 'border-blue text-blue'
                         : 'text-mid hover:text-ink border-transparent'

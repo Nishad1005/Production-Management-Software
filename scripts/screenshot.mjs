@@ -476,7 +476,7 @@ await step('declare production', async () => {
 
   // Anchored by testid: the acceptance panel renders above this one and brings
   // its own table, which is how a "first table" locator has broken twice.
-  const good = list.locator('input[type=number]').first()
+  const good = list.locator('input[type=number]:visible').first()
   await good.fill('26')
   await good.press('Enter')
 
@@ -489,7 +489,7 @@ await step('declare production', async () => {
   await page.fill('[data-testid="production-date"]', workDate)
   await page.waitForTimeout(800)
   const saved = await page
-    .locator('[data-testid="production-worklist"] input[type=number]')
+    .locator('[data-testid="production-worklist"] input[type=number]:visible')
     .first()
     .inputValue()
   if (Number(saved) !== 26) throw new Error(`reload lost the entry: ${saved}`)
@@ -508,13 +508,19 @@ await step('count in a handover', async () => {
   })
 
   const received = page
-    .locator('[data-testid="pending-acceptance"] input[type=number]')
+    .locator('[data-testid="pending-acceptance"] input[type=number]:visible')
     .first()
   await received.fill('24')
-  await page.waitForSelector('text=2 short', { timeout: 10_000 })
+  // Anchored by testid and scoped to visible: both layouts are in the DOM at
+  // once now, and a text selector matches the hidden phone card first — which
+  // waitForSelector then waits to become visible, forever.
+  const shortfall = page.locator('[data-testid="shortfall"]:visible').first()
+  await shortfall.waitFor({ timeout: 10_000 })
+  const said = (await shortfall.innerText()).trim()
+  if (!said.startsWith('2 ')) throw new Error(`shortfall reads "${said}"`)
   await page.screenshot({ path: `${outDir}/wip-handover.png`, fullPage: true })
 
-  await page.click('button:has-text("Count in")')
+  await page.locator('button:visible', { hasText: 'Count in' }).first().click()
 
   // Counted in, so it leaves the queue rather than sitting there confirmed.
   await page.waitForFunction(
@@ -586,6 +592,96 @@ await step('promote a scenario', async () => {
   )
   await page.screenshot({ path: `${outDir}/whatif-promoted.png`, fullPage: true })
   return 'scenario is now the live plan'
+})
+
+// --- production, on a phone, on the floor -----------------------------------
+//
+// U&M's own answer to "who enters production and when" was: on a phone, on the
+// floor, as it happens. Every other step here runs at 1440px, where a
+// six-column table is fine and the fact that Rejected and Save sit off the
+// right-hand edge of a 390px screen is invisible.
+
+await step('production on a phone', async () => {
+  const phone = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    deviceScaleFactor: 2,
+    isMobile: true,
+    hasTouch: true,
+  })
+  const small = await phone.newPage()
+  small.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`))
+
+  try {
+    await small.goto(`${baseUrl}/#/production`)
+    await small.waitForSelector('text=What you were asked for', {
+      timeout: 90_000,
+    })
+    await small.waitForTimeout(1200)
+
+    const empty = small.locator('[data-testid="production-empty"]')
+    if (await empty.count()) {
+      await empty.locator('button').first().click()
+      await small.waitForTimeout(1200)
+    }
+
+    const measured = await small.evaluate(() => {
+      const visible = (el) => el.offsetParent !== null
+      const controls = [
+        ...document.querySelectorAll('button, input, select, a'),
+      ].filter(visible)
+      return {
+        scrollWidth: document.documentElement.scrollWidth,
+        viewport: window.innerWidth,
+        undersized: controls
+          .map((el) => ({
+            label: (
+              el.textContent ||
+              el.getAttribute('aria-label') ||
+              el.tagName
+            )
+              .trim()
+              .slice(0, 30),
+            height: Math.round(el.getBoundingClientRect().height),
+          }))
+          .filter((c) => c.height > 0 && c.height < 44),
+      }
+    })
+
+    // A table that scrolls sideways is allowed; a page that does is not — it
+    // hides the primary action off-screen with nothing to say it is there.
+    if (measured.scrollWidth > measured.viewport) {
+      throw new Error(
+        `page scrolls sideways: ${measured.scrollWidth} > ${measured.viewport}`,
+      )
+    }
+
+    if (measured.undersized.length) {
+      const worst = measured.undersized
+        .map((c) => `${c.label} (${c.height}px)`)
+        .join(', ')
+      throw new Error(`touch targets under 44px: ${worst}`)
+    }
+
+    // The whole job — figures and the action — has to be on screen without
+    // hunting for it.
+    const card = small.locator('[data-testid="production-worklist"]')
+    await card.locator('input[inputmode="numeric"]').first().fill('7')
+    const save = card.locator('button', { hasText: 'Save' }).first()
+    const box = await save.boundingBox()
+    if (!box || box.x + box.width > 390) {
+      throw new Error('the save button is not fully on a 390px screen')
+    }
+    await save.click()
+    await small.waitForSelector('text=Entered', { timeout: 60_000 })
+
+    await small.screenshot({
+      path: `${outDir}/mobile-production.png`,
+      fullPage: true,
+    })
+    return 'declared from a 390px screen, every target ≥44px'
+  } finally {
+    await phone.close()
+  }
 })
 
 // --- a browser that has been here before gets the current database ----------

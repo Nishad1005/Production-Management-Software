@@ -206,6 +206,7 @@ Keep adding to this. Each one was a real dead end.
 | `UPDATE requires a WHERE clause` on Supabase, never locally | Supabase preloads the `safeupdate` library for the roles PostgREST connects as; native Postgres does not. Any UPDATE or DELETE whose **plan** carries no qualifier is refused — including on temp tables, and `security definer` does not help, because the library is loaded at connection time and does not care which role the function runs as. `where true` is not a fix: the planner folds a constant qualifier away and the plan arrives bare regardless. Restructure the statement. Caught by `tests/no-bare-dml.test.ts`, which reads `pg_proc` rather than the migration files, since append-only history still contains the fixed versions. |
 | A model's assumption is hiding in a *second* place | The route being a line was obvious in the runway check and invisible in the yield window, which read as arithmetic rather than as a claim about the shop floor. When an assumption is found to be false, grep for every consumer before fixing the one that surfaced it. |
 | A fixture that uses everything cannot see a bug about subsets | The seed's one article passes through all four departments, so yield-over-all-departments and yield-over-its-own-path give identical answers. 94 tests, none of which could tell them apart. When a test fixture uses the full set, add one that uses a subset. |
+| Two layouts in the DOM at once break every loose locator | Rendering a phone card and a desk row together means `input[type=number]` first-match, and even `text=…`, resolve to the *hidden* one — and `waitForSelector` then waits for it to become visible, forever. Scope to `:visible` and anchor by `data-testid`. Four separate steps broke this way in one afternoon. |
 | The offline database never rebuilds for a returning browser | `SCHEMA_VERSION` was a constant with a comment asking whoever changed the schema to bump it. It stayed `'1'` through thirty migrations. Derive it from the SQL instead — a comment asking someone to remember is not a mechanism. Playwright cannot catch this: a fresh context per run means the version always mismatches and the database always rebuilds. |
 | `indexedDB.deleteDatabase` silently does nothing | It can be **blocked** — by another tab, or a connection the previous page has not finished closing — and the request resolves either way. The old schema is then still there, the "is it built?" check finds it, and the rebuild is skipped. Clear the schema in SQL as well; that depends on nothing but the connection you hold. |
 | `page.goto` does not reload the page | A URL differing only by its fragment is a same-document navigation, so the module never re-runs. `page.reload()` when the boot code is what you are testing. |
@@ -284,7 +285,7 @@ against the real route.
 **Browser** — `npm run screenshot` drives every screen plus fourteen interactions
 in headless Chromium and fails on any console error. It checks the D-minus edit
 survives a reload, which is what proves it reached the database rather than only
-React state. Twenty-one steps. Several real defects came from this that the build
+React state. Twenty-three steps, one of them at phone width. Several real defects came from this that the build
 was happy with.
 
 **Access control against production** — `npm run verify:live`, after any
@@ -417,6 +418,50 @@ which is also the first answer to "when am I busy".
 Not built: **WIP value in rupees.** It needs a component cost master that does
 not exist — `costing-sheet.xlsx` has never been loaded. Quantities are real;
 money would have been invented.
+
+### 2026-08-13 — What the client said, and production on a phone
+
+The demonstration happened. Answers to the six questions, in their words:
+
+1. **The capacity sheet is right.** Nothing missing.
+2. **"Day rate is variable, can we give an option to put it in by the end
+   user."** So a single dedicated rate per article and department is not a
+   figure they can give us. It moves.
+3. **"On a phone on the floor as it happens, as that will give us live data."**
+   Production entry is mobile, on the floor, in real time — not a computer at
+   the end of a shift.
+4. **"We need receiving for double verification."** Two-sided handovers
+   confirmed, which is what is already built.
+5. **Dashboards per department**, as in the deck. Not yet specified in detail.
+6. Deferred.
+
+**Point 2 is nearly built already.** `capacity_overrides` has been in the schema
+since Phase 0 — per department, per shift, per date range, with a mandatory
+reason and an exclusion constraint refusing overlapping entries; and
+`resolve_capacity()` already prefers it over the standing rate. It has never
+been exposed in the UI. "Let the end user put the day rate in" is a screen, not
+a schema change. Waiting on what exactly varies before building it.
+
+**Point 3 is this session's work.** The UX skill the client asked for
+(`ui-ux-pro-max`, MIT, installed under `.claude/skills/`) gives the rules —
+44×44 targets, 8px spacing, `inputmode`, cards instead of wide tables. Measuring
+Kram against them at 390px was the useful part:
+
+- The masthead, description, reference block and a nav wrapping to three rows
+  filled the first **780px**. The first job card began at y≈1180.
+- The Rejected field and the Save button sat **off the right-hand edge**,
+  reachable only by a sideways scroll with nothing to indicate it existed.
+- Every touch target was under 44px — nav links at 32, inputs at 38.
+
+Now: the chrome collapses to a name and one scrolling nav line on a phone, each
+job is a card with two thumb-sized numeric fields and a full-width action, and
+the first card starts at **y=272**. Every control measures ≥44px and the page
+does not scroll sideways. A browser step at 390×844 asserts all three, so it
+cannot quietly come back.
+
+Rendering both layouts also broke four existing steps at once, all the same way
+— see §5. Worth noting the shape: the fix for one screen size is what exposed
+how loosely the checks for the other were written.
 
 ### 2026-08-12 — The offline database never rebuilt for anyone who had been here before
 
