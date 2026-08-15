@@ -22,6 +22,18 @@ built to report, and to stop there.
 
 ---
 
+## On a phone
+
+Every screen works on a phone: nothing scrolls sideways and every control is
+sized for a thumb. Three are built for it — **Production**, **My department**
+and **WIP** — because that is where the work is entered and read on the floor.
+
+The **load heatmap** stays deliberately dense. Its cells are small because the
+point of a heatmap is seeing a whole month at once; thumb-sized cells would show
+a week. Scroll it sideways, or open it at a desk.
+
+---
+
 ## Two ways to run it
 
 **Offline** — `npm run dev`, then http://localhost:5173.

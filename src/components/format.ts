@@ -26,8 +26,16 @@ export const BREACH_EXPLAINER: Record<string, string> = {
     'This article × department offset has never been entered, so it cannot be scheduled.',
 }
 
+/**
+ * Every text, number, date and select control.
+ *
+ * Taller and larger on a phone: 44px is the smallest thing a thumb hits
+ * reliably, and 16px is the smallest iOS will render without zooming the whole
+ * page in when the field takes focus. Both drop back to the desk sizes at `sm`,
+ * where a pointer is doing the aiming and density is worth more.
+ */
 export const inputClass =
-  'w-full border border-rule bg-sheet px-2.5 py-2 text-[13px] rounded-[2px] focus-visible:outline-2 focus-visible:outline-blue'
+  'w-full border border-rule bg-sheet px-2.5 rounded-[2px] focus-visible:outline-2 focus-visible:outline-blue min-h-11 py-2.5 text-[16px] sm:min-h-0 sm:py-2 sm:text-[13px]'
 
 /**
  * Dates are handled as plain ISO strings throughout and formatted in UTC.

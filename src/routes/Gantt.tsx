@@ -112,7 +112,7 @@ export function Gantt() {
               ))}
             </select>
           </label>
-          <label className="flex items-center gap-2 pb-2 text-[12.5px]">
+          <label className="flex min-h-11 items-center gap-2 pb-2 text-[13px] sm:min-h-0 sm:pb-2 sm:text-[12.5px]">
             <input
               type="checkbox"
               checked={onlyBreaches}
@@ -312,7 +312,7 @@ function Bar({
             type="button"
             onClick={onRelease}
             title="Release this pin"
-            className="shrink-0"
+            className="flex min-h-11 shrink-0 items-center sm:min-h-0"
           >
             <Tag tone="blue">Pin ×</Tag>
           </button>

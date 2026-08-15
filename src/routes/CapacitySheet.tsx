@@ -203,7 +203,7 @@ export function CapacitySheet() {
                   type="button"
                   title={m.hint}
                   onClick={() => setMeasure(m.key)}
-                  className={`rounded-[2px] border px-2.5 py-1.5 text-[12px] ${
+                  className={`min-h-11 rounded-[2px] border px-2.5 py-1.5 text-[13px] sm:min-h-0 sm:text-[12px] ${
                     measure === m.key
                       ? 'border-blue text-blue bg-white font-semibold'
                       : 'border-rule text-mid hover:border-blue'

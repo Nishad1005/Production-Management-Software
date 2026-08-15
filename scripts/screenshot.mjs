@@ -781,6 +781,85 @@ await step('department board', async () => {
   return 'feeders named, late work separated from not-yet-due'
 })
 
+// --- every screen is usable with a thumb ------------------------------------
+//
+// One pass over all of them at phone width. Deliberately excludes cells inside
+// a data grid: a heatmap cell is 18px because a heatmap's job is showing the
+// shape of a month at once, and 44px cells would show a week. Density is the
+// feature there. Everything a person actually operates — buttons, fields,
+// selects — has to be thumb-sized.
+
+await step('thumb-sized everywhere', async () => {
+  const phone = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    deviceScaleFactor: 2,
+    isMobile: true,
+    hasTouch: true,
+  })
+  const small = await phone.newPage()
+  small.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`))
+
+  const screens = [
+    ['', 'Bottleneck utilisation'],
+    ['#/dashboard', 'Is the factory on track today?'],
+    ['#/heatmap', 'Load heatmap'],
+    ['#/gantt', 'Manual pins'],
+    ['#/orders', 'Order book'],
+    ['#/accept', 'Can we take this order?'],
+    ['#/whatif', 'Try a change'],
+    ['#/wip', 'Ready to stuff'],
+    ['#/board', 'What you owe'],
+    ['#/production', 'What you were asked for'],
+    ['#/capacity', 'Capacity sheet'],
+    ['#/masters', 'Production route'],
+  ]
+
+  try {
+    const bad = []
+    for (const [hash, waitFor] of screens) {
+      await small.goto(`${baseUrl}/${hash}`)
+      await small.waitForSelector(`text=${waitFor}`, { timeout: 90_000 })
+      await small.waitForTimeout(700)
+
+      const found = await small.evaluate((name) => {
+        const visible = (el) =>
+          el.offsetParent !== null && el.getBoundingClientRect().height > 0
+        const controls = [
+          ...document.querySelectorAll('button, input, select'),
+        ].filter(
+          (el) =>
+            visible(el) &&
+            // A cell in a data grid is not a thumb target. Both exclusions are
+            // declared in the markup — a table, or an explicit
+            // data-dense-grid — so widening them is a visible decision rather
+            // than a quietly generous selector.
+            !el.closest('table') &&
+            !el.closest('[data-dense-grid]') &&
+            el.getAttribute('type') !== 'checkbox',
+        )
+        return {
+          name,
+          sideways: document.documentElement.scrollWidth > window.innerWidth,
+          undersized: controls
+            .filter((el) => el.getBoundingClientRect().height < 44)
+            .map(
+              (el) =>
+                `${el.tagName} ${Math.round(el.getBoundingClientRect().height)}px "${(el.textContent || '').trim().slice(0, 20)}"`,
+            ),
+        }
+      }, hash || 'command centre')
+
+      if (found.sideways) bad.push(`${found.name}: page scrolls sideways`)
+      for (const u of found.undersized) bad.push(`${found.name}: ${u}`)
+    }
+
+    if (bad.length) throw new Error(bad.slice(0, 6).join(' | '))
+    return `${screens.length} screens, no control under 44px, nothing scrolling sideways`
+  } finally {
+    await phone.close()
+  }
+})
+
 // --- production, on a phone, on the floor -----------------------------------
 //
 // U&M's own answer to "who enters production and when" was: on a phone, on the

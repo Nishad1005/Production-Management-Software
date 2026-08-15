@@ -144,8 +144,9 @@ export function Button({
   variant?: 'primary' | 'quiet'
   type?: 'button' | 'submit'
 }) {
+  // Same reasoning as inputClass: thumb-sized on a phone, dense on a desk.
   const base =
-    'font-sans px-3.5 py-2 text-[13px] font-semibold rounded-[2px] disabled:opacity-40 disabled:cursor-not-allowed'
+    'font-sans px-3.5 font-semibold rounded-[2px] disabled:opacity-40 disabled:cursor-not-allowed min-h-11 py-2.5 text-[14px] sm:min-h-0 sm:py-2 sm:text-[13px]'
   const styles =
     variant === 'primary'
       ? 'bg-ink text-white hover:bg-blue'

@@ -114,7 +114,7 @@ export function Production() {
                       key={d.work_date}
                       type="button"
                       onClick={() => setDate(d.work_date)}
-                      className="border-rule hover:border-blue hover:text-blue rounded-[2px] border px-2.5 py-1 text-[11.5px]"
+                      className="border-rule hover:border-blue hover:text-blue min-h-11 rounded-[2px] border px-3 py-1 text-[13px] sm:min-h-0 sm:px-2.5 sm:text-[11.5px]"
                       title={`${formatNumber(d.qty_planned)} planned across ${d.jobs} job${d.jobs === 1 ? '' : 's'}`}
                     >
                       {formatDateLong(d.work_date)}

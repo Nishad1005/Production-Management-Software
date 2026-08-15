@@ -195,7 +195,7 @@ export function WhatIf() {
                 disabled={!departmentCode}
                 onClick={() => setFactor(String(p.factor))}
                 title={p.hint}
-                className={`rounded-[2px] border px-2.5 py-1.5 text-[12px] disabled:opacity-40 ${
+                className={`min-h-11 rounded-[2px] border px-2.5 py-1.5 text-[13px] disabled:opacity-40 sm:min-h-0 sm:text-[12px] ${
                   Number(factor) === p.factor && departmentCode
                     ? 'border-blue text-blue bg-white font-semibold'
                     : 'border-rule text-mid hover:border-blue'
@@ -207,7 +207,7 @@ export function WhatIf() {
             <span className="text-faint text-[11.5px]">
               ×
               <input
-                className="border-rule ml-1 w-16 border px-1.5 py-1 text-[12px]"
+                className="border-rule ml-1 min-h-11 w-20 border px-1.5 py-1 text-[16px] sm:min-h-0 sm:w-16 sm:text-[12px]"
                 type="number"
                 step="0.1"
                 min="0"
@@ -218,7 +218,7 @@ export function WhatIf() {
             </span>
           </div>
 
-          <label className="flex items-center gap-2 text-[12.5px]">
+          <label className="flex min-h-11 items-center gap-2 text-[13px] sm:min-h-0 sm:text-[12.5px]">
             <input
               type="checkbox"
               checked={includeProbable}

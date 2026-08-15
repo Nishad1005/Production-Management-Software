@@ -208,6 +208,7 @@ Keep adding to this. Each one was a real dead end.
 | `UPDATE requires a WHERE clause` on Supabase, never locally | Supabase preloads the `safeupdate` library for the roles PostgREST connects as; native Postgres does not. Any UPDATE or DELETE whose **plan** carries no qualifier is refused — including on temp tables, and `security definer` does not help, because the library is loaded at connection time and does not care which role the function runs as. `where true` is not a fix: the planner folds a constant qualifier away and the plan arrives bare regardless. Restructure the statement. Caught by `tests/no-bare-dml.test.ts`, which reads `pg_proc` rather than the migration files, since append-only history still contains the fixed versions. |
 | A model's assumption is hiding in a *second* place | The route being a line was obvious in the runway check and invisible in the yield window, which read as arithmetic rather than as a claim about the shop floor. When an assumption is found to be false, grep for every consumer before fixing the one that surfaced it. |
 | A fixture that uses everything cannot see a bug about subsets | The seed's one article passes through all four departments, so yield-over-all-departments and yield-over-its-own-path give identical answers. 94 tests, none of which could tell them apart. When a test fixture uses the full set, add one that uses a subset. |
+| "Make everything 44px" is wrong for a data grid | A heatmap cell is 14px wide because the point is seeing a month at once; thumb-sized cells would show a week. The rule applies to things people *operate*, not to cells they read. Mark deliberate exceptions with `data-dense-grid` so the check skips them by declaration rather than by a quietly generous selector. |
 | A new element silently changes what an old locator means | Adding a cost box to the capacity sheet's row header made it the **first button in the row** — so the rate step went on typing its figure into the cost field and **kept passing**. Green, and testing the wrong thing. Anchor by `data-testid`; when adding anything to a shared container, grep for locators that index into it. Fifth instance. |
 | A cleanup step that quietly does nothing | A browser step that mutates shared state has to *assert* it put things back, not assume. Otherwise the next step fails for a reason that has nothing to do with what it checks, and the hunt starts in the wrong place. |
 | A hash navigation serves a stale query cache | `page.goto('#/other')` is same-document, so the app does not reload and React Query can still answer with the previous result for a moment. Wait for the expected text with `waitForFunction`; do not snapshot `innerText` immediately after navigating. |
@@ -290,7 +291,7 @@ against the real route.
 **Browser** — `npm run screenshot` drives every screen plus fourteen interactions
 in headless Chromium and fails on any console error. It checks the D-minus edit
 survives a reload, which is what proves it reached the database rather than only
-React state. Thirty steps, one of them at phone width. Several real defects came from this that the build
+React state. Thirty-one steps, two of them at phone width. Several real defects came from this that the build
 was happy with.
 
 **Access control against production** — `npm run verify:live`, after any
@@ -430,6 +431,39 @@ which is also the first answer to "when am I busy".
 Not built: **WIP value in rupees.** It needs a component cost master that does
 not exist — `costing-sheet.xlsx` has never been loaded. Quantities are real;
 money would have been invented.
+
+### 2026-08-15 — The rest of the screens, on a phone
+
+The last known gap. Measured all twelve at 390px before changing anything, which
+was worth doing: **nothing scrolled sideways**, so the layouts were already
+sound. What was wrong was smaller and everywhere — form controls at 35–38px
+where a thumb needs 44.
+
+Fixed at the source rather than screen by screen: `inputClass` and the `Button`
+base now carry a mobile height and 16px text, dropping back to the desk sizes at
+`sm`. Sixteen pixels specifically — below that, iOS zooms the whole page in when
+a field takes focus, which is a worse bug than a small tap target because it
+also moves everything else. That one change cleared five screens. Four
+hand-rolled controls needed the same treatment: the what-if presets and
+multiplier, the capacity sheet's measure switch, the production day chips, and
+the release-pin button. Checkbox *labels* got the height rather than the
+checkboxes, since the label is the target.
+
+**The heatmap is the interesting one.** 2,674 of its cells are 18px, and making
+them 44 would show a week where a month fits. Density is the feature. So it is
+marked `data-dense-grid` with the reason in the attribute, and the check skips
+what is inside it — a declared exception, visible in the source, rather than a
+selector quietly generous enough to hide it. Its instructions said "Hover any
+cell", which is nothing on a touch screen; now "Tap or hover".
+
+A new browser step walks all twelve screens at phone width and fails on any
+control under 44px or any page that scrolls sideways. Verified it can fail by
+reverting `inputClass` and watching it name six offenders across three screens.
+
+Screens that would actually be used on a phone read well now: **Accept an
+order** — stacked fields and a full-width Check, which is a merchandiser taking
+a customer call — and Production, My department and WIP, which were already
+done.
 
 ### 2026-08-13 — A box, not a request for a spreadsheet
 

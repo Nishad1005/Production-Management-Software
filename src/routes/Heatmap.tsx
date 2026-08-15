@@ -120,7 +120,16 @@ export function Heatmap() {
           <Empty>No schedule run yet. Run one from the command centre.</Empty>
         ) : (
           <>
-            <div className="border-rule overflow-x-auto border">
+            {/* Declared dense, not accidentally so. Every cell here is 14px
+                wide because the point of a heatmap is the shape of a month at
+                once; thumb-sized cells would show a week. The browser check
+                reads this attribute and skips what is inside it, so the
+                exception is visible in the source rather than hidden in a
+                selector. */}
+            <div
+              data-dense-grid="a heatmap is an overview; 44px cells would show a week"
+              className="border-rule overflow-x-auto border"
+            >
               <div className="min-w-max">
                 <div
                   className="grid"
@@ -155,7 +164,7 @@ export function Heatmap() {
 
             <p className="text-faint mt-2 text-[11px]">
               {model.days.length} days across the horizon — scroll sideways for
-              the rest. Hover any cell for its figure.
+              the rest. Tap or hover any cell for its figure.
             </p>
 
             <div className="text-mid mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-[11.5px]">
@@ -214,7 +223,9 @@ export function Heatmap() {
         </Panel>
       ) : (
         <p className="text-faint text-[11.5px]">
-          Select a cell to see which orders and components are on that day.
+          Select a cell to see which orders and components are on that day. The
+          grid stays dense on a phone on purpose — a heatmap is for seeing the
+          shape of a month at once, and thumb-sized cells would show a week.
         </p>
       )}
     </div>
