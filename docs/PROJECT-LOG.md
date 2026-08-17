@@ -382,28 +382,62 @@ advantage: no accounts, no cost, and a build that runs from a folder.
 
 ### What going live actually needs
 
-The schema, engine and API surface are ready — every read is a view and every
-write a function, so nothing needs rewriting. What remains:
+Rewritten 17 Aug. The version this replaces listed creating the Supabase
+project, writing a second backend, and building auth — all three done weeks ago,
+and it still said fifteen migrations when there are thirty-two. It had become a
+list of finished work, which is the most misleading kind of plan.
 
-1. **The project.** Create it, `supabase link`, `npm run db:push`. All fifteen
-   migrations apply unchanged; they have never been edited after being applied
-   anywhere, so there is no drift to reconcile.
-2. **A transport swap.** `src/lib/database.ts` currently sends SQL to PGlite.
-   Add a Supabase implementation that calls `.from(view).select()` and
-   `.rpc(fn)`, chosen by an environment variable. Both use the same views and
-   functions, so the offline demo keeps working — useful for showing people
-   without handing out logins.
-3. **Auth.** A login screen, and admin screens for users and roles. RLS is
-   written and tested but has never been exercised through the app, because the
-   offline build runs as the owner.
-4. **Real masters**, loaded from an export file (see `docs/GUIDE.md`).
-5. **Netlify environment variables** for the project URL and anon key. The
-   service role key never goes near the client.
+**Done, and needing nothing further:** the project and every migration, the two
+backends behind one interface, auth with roles and a Users screen, Netlify
+building from `main`, and the whole planning half of the software.
 
-Only steps 2 and 3 are real work. **Planning is usable by PPC and merchandising
-the day that is done** — order acceptance, the schedule and the heatmap stand on
-their own. WIP tracking makes capacity self-correcting, but it is not a
-precondition for the planning half being used in anger.
+**Blocked on U&M** — all three now have a request note in `docs/` written to be
+forwarded as it stands:
+
+1. **PPC's figures.** The single blocker. The live project holds the real route
+   — fourteen departments, seventy-one SKUs — and not one rate against any of
+   the 994 cells. Until they arrive, every date Kram produces is arithmetic on
+   invented numbers. `DBBS/UM/KRAM/04`, with the workbook from
+   `scripts/make-capacity-workbook.mjs`.
+2. **The route confirmation** still owed against `DBBS/UM/KRAM/02` — what waits
+   for what. Everything else is read through it.
+3. **The Panipuri sample** (`DBBS/UM/KRAM/05`) and **the full Rev B
+   specification** (`DBBS/UM/KRAM/03`). Neither blocks going live: orders can be
+   entered by hand, and the specification is a risk rather than a dependency.
+
+**Ours, before U&M's own people have accounts:**
+
+4. **Point the deployed site at Supabase.** Netlify reads `VITE_SUPABASE_URL`
+   and `VITE_SUPABASE_ANON_KEY` from its own environment; unset, the build is
+   the offline demo and every visitor gets a private copy of invented data. That
+   is the right thing for a demonstration and the wrong thing for a factory.
+5. **Drive the hosted client in a browser.** `npm run screenshot` has only ever
+   run against PGlite — it resets demo data and checks a returning browser
+   rebuilds its local database, both offline-only behaviours. `verify:live`
+   proves the API answers correctly to real requests, and the client uses the
+   same views and functions, but *the application itself has never been operated
+   against Supabase by anything but a person clicking*. This project has twice
+   found production broken while everything local was green; this is the same
+   shape of gap and it is ours to close.
+6. **Accounts, and the roles decision.** Accounts are created in the Supabase
+   dashboard because creating one needs the service role key. Assigning roles is
+   in-app. Before that happens, §6 item 6 needs an answer: today every role
+   reads everything.
+7. **The guide is missing two screens.** *My department* and *WIP* have no
+   section in `docs/GUIDE.md` — the two screens a HOD and a merchandiser open
+   daily. Fine for a demonstration, not for handover.
+8. **A backup answer.** Masters export to a file, which covers the figures. What
+   happens to the order book and the WIP ledger if the project is lost is a
+   question nobody has asked yet.
+
+**Not needed to go live:** Phases 5–10 — material, quality, machines, money,
+predictive — and article costs, which improve one dashboard KPI in proportion to
+how much is filled in.
+
+**Planning is usable by PPC and merchandising the day items 1, 2 and 4–6 are
+done.** Order acceptance, the schedule and the heatmap stand on their own; the
+WIP ledger makes capacity self-correcting but is not a precondition for the
+planning half being used in anger.
 
 ---
 
