@@ -11,9 +11,12 @@ import {
 } from '@/data/planning'
 import {
   useAddHoliday,
+  useArticleMaster,
   useCreateDepartment,
   useDeleteHoliday,
   useHolidays,
+  useSetArticle,
+  useSetArticleActive,
   useSetDependency,
   useSetDepartmentActive,
   useSetDminus,
@@ -178,6 +181,7 @@ export function Masters() {
       </Panel>
 
       <RouteDependencyGrid />
+      <ArticlesPanel />
       <ShiftsPanel />
       <DepartmentShiftGrid />
 
@@ -819,6 +823,218 @@ function DepartmentShiftGrid() {
         what the first one makes.
       </p>
     </Panel>
+  )
+}
+
+/**
+ * Articles.
+ *
+ * The last master that needed a developer. Everything downstream hangs off an
+ * article — its route, its offsets, its rates, its orders — so the one thing
+ * nobody could do without SQL was the first thing anybody entering real data
+ * would have to do. The capacity sheet's empty state has been pointing here for
+ * days.
+ *
+ * The panel leads with what is *stopping* each article being planned rather
+ * than with the fields, because that is the question somebody has after adding
+ * one: a new article is inert until it has a route and its D-minus offsets, and
+ * silence about that reads as the software being broken.
+ */
+function ArticlesPanel() {
+  const articles = useArticleMaster()
+  const setArticle = useSetArticle()
+  const setActive = useSetArticleActive()
+  const [adding, setAdding] = useState(false)
+
+  const rows = articles.data ?? []
+  const active = rows.filter((a) => a.is_active)
+  const blocked = active.filter((a) => !a.can_schedule)
+
+  return (
+    <Panel
+      title="Articles"
+      meta={
+        active.length
+          ? `${active.length} active${blocked.length ? `, ${blocked.length} not schedulable` : ''}`
+          : 'none yet'
+      }
+    >
+      <p className="text-mid mb-3 max-w-[80ch] text-[12px]">
+        In the finished system these arrive from Panipuri. Until then they are
+        entered here, and the route and rates go on the capacity sheet. A new
+        article cannot be planned until it passes through at least one department
+        and every one of those has a D-minus — a blank offset blocks scheduling
+        rather than being read as zero.
+      </p>
+
+      <div data-testid="articles-master">
+        {rows.length === 0 ? (
+          <Empty>No articles yet.</Empty>
+        ) : (
+          <Table>
+            <thead>
+              <tr>
+                <Th>Code</Th>
+                <Th>Name</Th>
+                <Th>Category</Th>
+                <Th align="right">Departments</Th>
+                <Th>Can be planned</Th>
+                <Th align="right">Orders</Th>
+                <Th />
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((a) => (
+                <tr
+                  key={a.code}
+                  className={a.is_active ? '' : 'opacity-50'}
+                  data-testid={`article-${a.code}`}
+                  data-routed={a.departments_routed}
+                  data-missing-dminus={a.missing_dminus}
+                  data-can-schedule={a.can_schedule ? 'yes' : 'no'}
+                >
+                  <Td>{a.code}</Td>
+                  <Td>
+                    <EditableText
+                      value={a.name}
+                      width="w-56"
+                      onCommit={(name) =>
+                        setArticle.mutate({
+                          code: a.code,
+                          name,
+                          category: a.category,
+                        })
+                      }
+                    />
+                  </Td>
+                  <Td>
+                    {a.category ?? <span className="text-faint">—</span>}
+                  </Td>
+                  <Td align="right">{a.departments_routed}</Td>
+                  <Td>
+                    {!a.is_active ? (
+                      <Tag tone="mid">switched off</Tag>
+                    ) : a.can_schedule ? (
+                      <Tag tone="clear">yes</Tag>
+                    ) : a.departments_routed === 0 ? (
+                      <Tag tone="amber">no route</Tag>
+                    ) : (
+                      <Tag tone="flag">
+                        {a.missing_dminus} D-minus missing
+                      </Tag>
+                    )}
+                  </Td>
+                  <Td align="right">{a.open_orders || '—'}</Td>
+                  <Td align="right">
+                    <button
+                      type="button"
+                      className="text-faint hover:text-flag text-[11px]"
+                      onClick={() =>
+                        setActive.mutate({
+                          code: a.code,
+                          isActive: !a.is_active,
+                        })
+                      }
+                      title={
+                        a.is_active
+                          ? 'Switch off — orders already placed keep their plan'
+                          : 'Switch back on'
+                      }
+                    >
+                      {a.is_active ? 'Deactivate' : 'Restore'}
+                    </button>
+                  </Td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        )}
+      </div>
+
+      <div className="mt-4 flex items-center gap-3">
+        <Button variant="quiet" onClick={() => setAdding(true)}>
+          Add an article
+        </Button>
+        <span className="text-faint text-[11.5px]">
+          Switching one off stops it being offered for new orders. Anything
+          already ordered keeps its plan and its history.
+        </span>
+      </div>
+
+      {adding ? <AddArticle onClose={() => setAdding(false)} /> : null}
+    </Panel>
+  )
+}
+
+function AddArticle({ onClose }: { onClose: () => void }) {
+  const setArticle = useSetArticle()
+  const [code, setCode] = useState('')
+  const [name, setName] = useState('')
+  const [category, setCategory] = useState('')
+
+  return (
+    <Modal title="Add an article" subtitle="Product master" onClose={onClose}>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault()
+          setArticle.mutate(
+            {
+              code: code.trim(),
+              name: name.trim(),
+              category: category.trim() || null,
+            },
+            { onSuccess: onClose },
+          )
+        }}
+      >
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Code">
+            <input
+              className={inputClass}
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              placeholder="UD354 SPPL WAL"
+              required
+            />
+          </Field>
+          <Field label="Name">
+            <input
+              className={inputClass}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Betsy Chair — Specter Pearl"
+              required
+            />
+          </Field>
+          <Field label="Category">
+            <input
+              className={inputClass}
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              placeholder="Dining"
+            />
+          </Field>
+        </div>
+
+        <p className="text-mid mt-4 max-w-[60ch] text-[11.5px]">
+          The code is what orders and the capacity sheet refer to, so it is worth
+          matching whatever Panipuri calls it. Adding one that already exists
+          corrects its name rather than creating a second.
+        </p>
+
+        {setArticle.isError ? (
+          <p className="text-flag mt-3 text-[11.5px]">
+            {String(setArticle.error)}
+          </p>
+        ) : null}
+
+        <ModalActions
+          onCancel={onClose}
+          submitLabel="Add article"
+          busy={setArticle.isPending}
+        />
+      </form>
+    </Modal>
   )
 }
 

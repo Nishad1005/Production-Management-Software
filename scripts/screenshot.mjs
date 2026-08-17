@@ -59,6 +59,19 @@ async function step(name, fn) {
   }
 }
 
+/**
+ * waitForFunction, but the failure says what it was waiting for. A bare
+ * "Timeout 60000ms exceeded" has twice sent this file looking in the wrong
+ * place — the wait is never the interesting part, the condition is.
+ */
+async function until(label, fn, arg, timeout = 60_000) {
+  try {
+    await page.waitForFunction(fn, arg, { timeout })
+  } catch {
+    throw new Error(`timed out waiting for ${label}`)
+  }
+}
+
 async function go(hash, waitFor) {
   await page.goto(`${baseUrl}/${hash}`, { waitUntil: 'domcontentloaded' })
   // First load compiles Postgres to WASM and applies the schema.
@@ -801,6 +814,125 @@ await step('department board', async () => {
 
   await page.screenshot({ path: `${outDir}/board.png`, fullPage: true })
   return 'feeders named, late work separated from not-yet-due'
+})
+
+// --- an article, from nothing to schedulable --------------------------------
+//
+// The last master that needed SQL. What matters is not that the row appears —
+// it is that a brand-new article is honestly reported as unplannable until it
+// has a route and its offsets, rather than quietly scheduling on a zero.
+
+await step('add an article', async () => {
+  await go('#/masters', 'text=Production route')
+
+  const table = page.locator('[data-testid="articles-master"]')
+  const before = await table.locator('tbody tr').count()
+
+  await page.click('button:has-text("Add an article")')
+  const modal = page.locator('[data-testid="modal"]')
+  await modal.waitFor()
+  // By placeholder, inside the modal. Indexing into `form` picked up a
+  // different form on the page entirely and submitted three blank fields,
+  // which the database correctly refused — and the step reported a timeout
+  // rather than the refusal.
+  await modal.getByPlaceholder('UD354 SPPL WAL').fill('DEMO-1')
+  await modal.getByPlaceholder('Betsy Chair — Specter Pearl').fill('Bergen Chair')
+  await modal.getByPlaceholder('Dining').fill('Dining')
+  await modal.locator('button:has-text("Add article")').click()
+
+  await until(
+    'the new article to appear in the master',
+    (n) =>
+      document.querySelectorAll('[data-testid="articles-master"] tbody tr')
+        .length === n,
+    before + 1,
+  )
+
+  // State from attributes, not from the sentence. Twice today a /…\b/ against
+  // textContent has matched the wrong thing — textContent runs cells together,
+  // so "1" and "yes" become "1yes" and the word boundary never fires.
+  const row = page.locator('[data-testid="article-DEMO-1"]')
+  const state = async (attr) => row.getAttribute(attr)
+  if ((await state('data-routed')) !== '0') {
+    throw new Error('a brand-new article is claiming a route')
+  }
+  if ((await state('data-can-schedule')) !== 'no') {
+    throw new Error('an article with nowhere to be made says it can be planned')
+  }
+  // And it says so in words, which is the half a user actually reads.
+  const shown = await row.innerText()
+  if (!/no route/i.test(shown)) {
+    throw new Error(`a routeless article is not saying so: ${shown}`)
+  }
+
+  // Give it one department on the capacity sheet. It is still not schedulable —
+  // nobody has said when that department must finish.
+  await go('#/capacity', 'text=Capacity sheet')
+  await page.fill('input[placeholder="Code or name"]', 'DEMO-1')
+  await page.waitForTimeout(400)
+  const cell = page
+    .locator('[data-testid="capacity-grid"] tbody tr')
+    .first()
+    .locator('td')
+    .nth(1)
+    .locator('button')
+    .first()
+  await cell.click()
+  const rate = page.locator('input[type=number]:visible').first()
+  await rate.fill('25')
+  await rate.press('Enter')
+  await page.waitForSelector('button:has-text("25")', { timeout: 60_000 })
+
+  await go('#/masters', 'text=Production route')
+  await until(
+    'the routed article to report its missing D-minus',
+    () => {
+      const r = document.querySelector('[data-testid="article-DEMO-1"]')
+      return (
+        r?.getAttribute('data-routed') === '1' &&
+        r?.getAttribute('data-missing-dminus') === '1' &&
+        r?.getAttribute('data-can-schedule') === 'no'
+      )
+    },
+    undefined,
+  )
+
+  // Now the offset, and only now can it be planned.
+  await go('#/capacity', 'text=Capacity sheet')
+  await page.fill('input[placeholder="Code or name"]', 'DEMO-1')
+  await page.click('button:has-text("D-minus")')
+  await page.waitForTimeout(400)
+  const dcell = page
+    .locator('[data-testid="capacity-grid"] tbody tr')
+    .first()
+    .locator('td')
+    .nth(1)
+    .locator('button')
+    .first()
+  await dcell.click()
+  const days = page.locator('input[type=number]:visible').first()
+  await days.fill('45')
+  await days.press('Enter')
+  await page.waitForTimeout(1500)
+
+  await go('#/masters', 'text=Production route')
+  try {
+    await until(
+      'the article to become schedulable',
+      () =>
+        document
+          .querySelector('[data-testid="article-DEMO-1"]')
+          ?.getAttribute('data-can-schedule') === 'yes',
+      undefined,
+    )
+  } catch {
+    throw new Error(
+      `still not schedulable: ${(await row.innerText()).replace(/\n/g, ' ')}`,
+    )
+  }
+
+  await page.screenshot({ path: `${outDir}/articles.png`, fullPage: true })
+  return 'added, no route → D-minus missing → schedulable'
 })
 
 // --- marking one person moves what the department can make ------------------

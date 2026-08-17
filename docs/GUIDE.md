@@ -359,6 +359,21 @@ filled file is safe to apply.
 survives each step. The number on the left is only the order they are listed in.
 Deactivating a department never deletes it; one with history keeps it.
 
+**Articles.** What the factory makes. In the finished system these come from
+Panipuri; until then, **Add an article** takes a code, a name and a category. The
+code is what orders and the capacity sheet refer to, so it is worth matching
+whatever Panipuri calls it — adding one that already exists corrects its name
+rather than creating a second.
+
+A new article cannot be planned until it passes through at least one department
+*and* every one of those has a D-minus. The **Can be planned** column says which
+of the two is missing; both are entered on the capacity sheet.
+
+Switching an article off stops it being offered for new orders and takes it out
+of the capacity sheet. Orders already placed against it keep their plan and their
+history — switching off means "do not sell it again", not "forget the container
+that is already booked". **Restore** brings it back.
+
 **What feeds what.** The part the engine reads. Read a row as "this department
 cannot start until…" and tick the columns it waits for. A row with nothing ticked
 is an **entry point** — it waits for no one, which is what a feeder like metal
@@ -486,6 +501,10 @@ list tells you which orders it actually touches.
 
 **"These capacity figures are wrong."** → *Masters*, component rates. Read the
 warning above about dedicated rates first.
+
+**"Add a product we have started making."** → *Masters* → **Articles** →
+**Add an article**, then *Capacity sheet* for its rate in each department and its
+D-minus. It cannot be planned until both are in.
 
 **"Start again."** → *Command centre*, **Reset demo data**. This wipes everything
 in the browser and reloads the seed. There is no undo.

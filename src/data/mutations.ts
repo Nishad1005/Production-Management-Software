@@ -234,6 +234,54 @@ export function useSetDepartmentActive() {
 }
 
 // ---------------------------------------------------------------------------
+// Articles
+//
+// In the finished system these arrive from Panipuri. Until that export exists —
+// and U&M say it will take time — somebody has to be able to add one, and the
+// capacity sheet has been telling people to do it from Masters since before
+// there was anything there to do it with.
+// ---------------------------------------------------------------------------
+
+export type ArticleMasterRow = {
+  code: string
+  name: string
+  category: string | null
+  is_active: boolean
+  unit_cost: number | null
+  departments_routed: number
+  missing_dminus: number
+  can_schedule: boolean
+  open_orders: number
+}
+
+export function useArticleMaster() {
+  return useQuery({
+    queryKey: ['article-master'],
+    queryFn: () => select<ArticleMasterRow>('article_master', { order: ['code'] }),
+  })
+}
+
+export function useSetArticle() {
+  return useWrite<{ code: string; name: string; category?: string | null }>(
+    async ({ code, name, category }) => {
+      await rpc('set_article', {
+        p_code: code,
+        p_name: name,
+        p_category: category ?? null,
+      })
+    },
+  )
+}
+
+export function useSetArticleActive() {
+  return useWrite<{ code: string; isActive: boolean }>(
+    async ({ code, isActive }) => {
+      await rpc('set_article_active', { p_code: code, p_is_active: isActive })
+    },
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Shifts
 //
 // Spec §2 calls the multi-shift model Rev B's structural correction: a

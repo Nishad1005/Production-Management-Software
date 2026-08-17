@@ -72,7 +72,7 @@ unmodified in the browser, so the demo runs the real engine with no backend.
 `npm run build` produces a static folder.
 
 **Online.** Supabase project `fiqfbbnmksppbpxmhnbv` — *kram*, Mumbai
-(ap-south-1), Postgres 17.6. Thirty-one migrations applied, the last two on 15 Aug (§9).
+(ap-south-1), Postgres 17.6. Thirty-two migrations applied, the last on 16 Aug (§9).
 
 > **Migrations are append-only from here.** Editing one now means the file and
 > the live database disagree, silently, until something breaks in a way that
@@ -283,7 +283,7 @@ Since 15 Aug it covers **both** of the prototype's modules: the capacity and
 load arithmetic, and the person-hour conversion that turns a shortfall into
 overtime hours and people.
 
-**213 unit and integration tests** against a real native Postgres, booted per run
+**224 unit and integration tests** against a real native Postgres, booted per run
 from an embedded binary. Covers schema shape, RLS (as the `authenticated` role —
 table owners bypass RLS, so a policy test run as superuser proves nothing), the
 working-day calendar, engine correctness, breaches, pins, overrides, the route
@@ -296,11 +296,15 @@ Note the task count is lower than the spec's ~40,000 estimate; three components
 across seven departments gives 21 pairs. The row count matches. Worth checking
 against the real route.
 
-**Browser** — `npm run screenshot` drives every screen plus fifteen interactions
-in headless Chromium and fails on any console error. It checks the D-minus edit
-survives a reload, which is what proves it reached the database rather than only
-React state. Thirty-three steps, two of them at phone width. Several real defects
-came from this that the build was happy with.
+**Browser** — `npm run screenshot` drives every screen plus twenty-two
+interactions in headless Chromium and fails on any console error. It checks the
+D-minus edit survives a reload, which is what proves it reached the database
+rather than only React state. Thirty-three steps, two of them at phone width.
+Several real defects came from this that the build was happy with.
+
+Waits are named: `until('the article to become schedulable', …)` fails with that
+sentence instead of `Timeout 60000ms exceeded`, which twice sent a debugging
+session looking at the wrong stage.
 
 **Access control against production** — `npm run verify:live`, after any
 migration touching privileges, policies or functions. Local Postgres and Supabase
@@ -327,9 +331,9 @@ could call every function on it while all tests were green.
    is blocked on it; it improves one KPI in proportion to how much is entered.
 5. **Phase 5 — material.** The next phase in the spec's own order, and the one
    the deck's "material shortage" alerts need.
-6. **Articles and components as masters.** Currently seeded only; there is no way
-   to add a new article without SQL. Lower priority than it sounds, since both
-   arrive from Panipuri in the real system.
+6. ~~**Articles as masters.**~~ **Done 16 Aug.** Components are still seeded
+   only, but the capacity sheet creates the one component per article per
+   department that the engine actually plans, so nothing is blocked on it.
 
 ### Why the MD dashboard came last
 
@@ -396,6 +400,47 @@ precondition for the planning half being used in anger.
 
 Newest first. One entry per working session — what changed, and anything a
 future reader would not infer from the diff.
+
+### 2026-08-16 — The last master that needed a developer
+
+Articles have been seeded since Phase 0 with no way to add one without SQL. The
+capacity sheet's own empty state has been saying *"add one from Masters"* for
+four days, pointing at a control that did not exist.
+
+It matters more than a missing form usually would. Everything hangs off an
+article — its route, its D-minus offsets, its rates, its orders — so the one
+thing nobody could do without a developer was the first thing anybody entering
+real data would have to do. In the finished system articles arrive from
+Panipuri, but that import is blocked on a file U&M say will take time, and the
+PPC session that fills in the real route cannot wait for it.
+
+`set_article` upserts by code, like every other master here: loading real data
+is something you do more than once, and the second attempt should correct the
+first rather than collide with it. Re-adding a code that was switched off brings
+it back, because the alternative is a unique-violation on a row the sheet no
+longer shows, which reads as a bug rather than as a decision.
+
+**The panel leads with what is stopping each article being planned**, not with
+its fields. A new article is inert until it has a route and its offsets, and
+`article_master` says which of the two is missing — the same two conditions the
+engine applies, rather than a third opinion about them. Silence there would read
+as the software being broken.
+
+**Switching an article off does not unplan the container already booked.** It
+stops it being offered for new orders; orders already against it keep their
+plan and their history. That is asserted rather than assumed — a test switches
+one off, re-runs, and counts the tasks in the current run.
+
+**The same locator bug, twice in two days.** The browser check polled
+`/\byes\b/` against `textContent` and never matched, because textContent runs
+the cells together — "1" and "yes" become "1yes", and the word boundary never
+fires. Yesterday it was "11 in" running into "1 out". The row now carries
+`data-routed`, `data-missing-dminus` and `data-can-schedule`, and the polling
+reads those; the prose is asserted once, separately, because that is the half a
+user actually reads. Waits are also named now: the failure says *"timed out
+waiting for the article to become schedulable"* rather than reporting a bare
+sixty seconds, which is what made both of these take longer than they should
+have.
 
 ### 2026-08-15 — Phase 4: the shortfall said in hours and people
 

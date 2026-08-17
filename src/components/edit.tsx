@@ -170,6 +170,7 @@ export function Modal({
       onClick={onClose}
     >
       <div
+        data-testid="modal"
         className="border-ink bg-sheet mx-auto w-full max-w-2xl border shadow-lg"
         onClick={(e) => e.stopPropagation()}
       >
