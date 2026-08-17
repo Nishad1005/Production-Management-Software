@@ -394,6 +394,44 @@ a quantity into a date.
 
 ---
 
+### Quality
+
+Deck slide 17. The rejection counts have been in the ledger since production
+entry existed; this screen adds the question they could never answer on their
+own — **which two causes would fix half of it**.
+
+**Where the losses come from** ranks every cause by quantity, with a running
+share. Two bars reaching 80% is the finding; a list of rates is not.
+
+**Causes are grouped by who can fix them** — workmanship goes to the department,
+material to purchase, machine to maintenance, design to whoever drew it,
+handling to whoever moved it. That grouping is the whole reason for recording a
+cause at all.
+
+**"Not attributed to a cause" is a bar like any other.** Nobody is required to
+explain every reject — a supervisor who can account for six of ten should not be
+made to invent four — but the unexplained balance is shown at its real size,
+because an unexplained majority makes the rest of the screen a guess.
+
+**By department** puts the counted yield beside the yield that department's
+master claims, and the gap between them. Green means it is doing better than the
+figure on Masters, red worse. Nothing is corrected automatically: a master that
+edits itself is one nobody can account for.
+
+A department that has declared nothing is **absent from the table**, not shown
+at zero. Zero rejections and no reporting look identical on a screen and are
+opposite findings.
+
+**By article** is the same rejections seen from the other side. A department
+having a bad month and one article being genuinely hard to make produce the same
+number above, and only one of them is fixed by talking to the department.
+
+**Entering a cause:** rejections are entered on Production; the cause is
+attributed against that same day's entry. Kram refuses to account for more
+rejects than were recorded — that is arithmetic, not a judgement.
+
+---
+
 ### Capacity sheet
 
 The same grid as the capacity spreadsheet — every article against every
@@ -658,7 +696,7 @@ Worth knowing before showing it to anyone:
   so two people running it see different data and a cleared cache loses
   everything. Save to a file after entering anything real — **Save everything**
   on Masters takes the order book and the production ledger too.
-- **Phases 6 onwards do not exist** — no quality, machines or costing yet.
+- **Phases 7 onwards do not exist** — no machines or costing yet.
 - **Material planning is in, but its data is not.** The engine, the ordering
   dates and the shortage states all work; what no article has yet is a real bill
   of materials. Until one is entered the Material screen has nothing to report.

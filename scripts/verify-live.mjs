@@ -79,6 +79,9 @@ async function checkAnonymous(db) {
     'material_master',
     'material_shortage',
     'material_requirements',
+    'defect_pareto',
+    'quality_by_department',
+    'defect_list',
   ]) {
     const { error } = await db.from(view).select('*').limit(1)
     report(
@@ -125,6 +128,19 @@ async function checkAnonymous(db) {
     ['set_article', { p_code: 'X', p_name: 'Nothing' }],
     ['set_article_active', { p_code: 'X', p_is_active: false }],
     ['set_material', { p_code: 'X', p_name: 'Nothing' }],
+    ['set_defect_type', { p_code: 'X', p_name: 'Nothing' }],
+    [
+      'attribute_defect',
+      {
+        p_shipment_line_id: '00000000-0000-0000-0000-000000000000',
+        p_department_code: 'X',
+        p_component_code: 'Y',
+        p_date: '2026-01-01',
+        p_shift_code: 'GEN',
+        p_defect_code: 'Z',
+        p_qty: 1,
+      },
+    ],
     ['set_material_stock', { p_material_code: 'X', p_qty_on_hand: 1 }],
     [
       'set_article_material',

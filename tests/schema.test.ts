@@ -14,6 +14,8 @@ describe('migrations', () => {
       'component_rates',
       'components',
       'customers',
+      // Phase 6 — quality
+      'defect_types',
       'department_attendance',
       'department_dependencies',
       'department_shifts',
@@ -31,6 +33,7 @@ describe('migrations', () => {
       // Phase 3 — WIP ledger. Sorts above 'profiles': produ… before profi…
       'production_acceptances',
       'production_declarations',
+      'production_defects',
       'profiles',
       // Phase 2 — schedule output
       'schedule_daily_capacity',

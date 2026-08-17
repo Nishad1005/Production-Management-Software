@@ -25,6 +25,7 @@ import { Dashboard } from '@/routes/Dashboard'
 import { Wip } from '@/routes/Wip'
 import { Manpower } from '@/routes/Manpower'
 import { Material } from '@/routes/Material'
+import { Quality } from '@/routes/Quality'
 import { WhatIf } from '@/routes/WhatIf'
 import { Users } from '@/routes/Users'
 import { Login, NoAccess } from '@/routes/Login'
@@ -43,6 +44,7 @@ const NAV: { to: string; label: string; end?: boolean; roles: Role[] }[] = [
   { to: '/production', label: 'Production', roles: ['hod', 'planner', 'md', 'admin'] },
   { to: '/manpower', label: 'Manpower', roles: ['hod', 'hr', 'planner', 'md', 'admin'] },
   { to: '/material', label: 'Material', roles: ['purchase', 'store', 'planner', 'md', 'admin'] },
+  { to: '/quality', label: 'Quality', roles: ['quality', 'hod', 'planner', 'md', 'admin'] },
   { to: '/capacity', label: 'Capacity sheet', roles: ['planner', 'admin'] },
   { to: '/masters', label: 'Masters', roles: ['planner', 'admin'] },
   { to: '/users', label: 'Users', roles: ['admin'] },
@@ -304,6 +306,7 @@ export function App() {
               <Route path="/production" element={<Production />} />
               <Route path="/manpower" element={<Manpower />} />
               <Route path="/material" element={<Material />} />
+              <Route path="/quality" element={<Quality />} />
               <Route path="/capacity" element={<CapacitySheet />} />
               <Route path="/masters" element={<Masters />} />
               <Route path="/users" element={<Users />} />

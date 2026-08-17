@@ -56,9 +56,10 @@ material, cash and customer relationships the system cannot see.
 | — | MD dashboard, department boards, attendance-driven capacity | **Done** |
 | 4 | Manpower — overtime and headcount arithmetic, per-person attendance | **Done** |
 | 5 | Material — bill of materials, ordering dates, shortages | **Done** |
-| 6–10 | Quality, machines, cost, command centre, predictive | Not started |
+| 6 | Quality — defect causes, Pareto, counted yield against claimed | **Done** |
+| 7–10 | Machines, cost, command centre, predictive | Not started |
 
-**Client**: fifteen screens, all reading from database views. Editable: D-minus
+**Client**: sixteen screens, all reading from database views. Editable: D-minus
 matrix, component rates, department yield/route/headcount, what feeds what,
 holidays, orders, shipment lines, article cost, who came in — per person or as a
 head count — and pins by dragging a schedule bar.
@@ -73,7 +74,7 @@ unmodified in the browser, so the demo runs the real engine with no backend.
 `npm run build` produces a static folder.
 
 **Online.** Supabase project `fiqfbbnmksppbpxmhnbv` — *kram*, Mumbai
-(ap-south-1), Postgres 17.6. Thirty-four migrations applied, the last on 17 Aug (§9).
+(ap-south-1), Postgres 17.6. Thirty-five migrations applied, the last on 17 Aug (§9).
 
 > **Migrations are append-only from here.** Editing one now means the file and
 > the live database disagree, silently, until something breaks in a way that
@@ -313,7 +314,7 @@ Since 15 Aug it covers **both** of the prototype's modules: the capacity and
 load arithmetic, and the person-hour conversion that turns a shortfall into
 overtime hours and people.
 
-**251 unit and integration tests** against a real native Postgres, booted per run
+**262 unit and integration tests** against a real native Postgres, booted per run
 from an embedded binary. Covers schema shape, RLS (as the `authenticated` role —
 table owners bypass RLS, so a policy test run as superuser proves nothing), the
 working-day calendar, engine correctness, breaches, pins, overrides, the route
@@ -329,7 +330,7 @@ against the real route.
 **Browser** — `npm run screenshot` drives every screen plus twenty-two
 interactions in headless Chromium and fails on any console error. It checks the
 D-minus edit survives a reload, which is what proves it reached the database
-rather than only React state. Thirty-six steps, two of them at phone width.
+rather than only React state. Thirty-eight steps, two of them at phone width.
 Several real defects came from this that the build was happy with.
 
 Waits are named: `until('the article to become schedulable', …)` fails with that
@@ -584,6 +585,40 @@ traced back to a single line written once and then quoted forward by everything
 that followed, including three documents I wrote yesterday. The log is the
 project's memory and that is exactly what makes an unverified line in it
 expensive.
+
+### 2026-08-17 — Phase 6: quality, and the bar nobody wants to see
+
+Deck slide 17. The quantities were already there — `qty_good` and `qty_rejected`
+have been two counts somebody can stand behind since Phase 3, and
+`measured_yield` has put the counted figure beside the claimed one for as long.
+What the ledger could not say is **why**.
+
+That distinction carried the whole phase. Four rejected at stitching is a
+number; four rejected because the fabric ran short of pattern is a purchase
+conversation, and four because a needle was blunt is a maintenance one. So
+defect types carry a **category chosen for who can fix it** — workmanship,
+material, machine, design, handling — and nothing in this phase re-counts a
+single piece.
+
+**Attribution is deliberately allowed to be partial**, and the balance is a bar.
+A supervisor who can account for six of ten rejects should not be made to invent
+four, which is exactly what a hard requirement buys. `defect_pareto` carries
+"Not attributed to a cause" as a line of its own rather than leaving it out of
+the denominator, where every other cause would show a larger share and the
+screen would look tidier and lie. The demo seeds it unexplained on purpose: a
+demonstration where everything is accounted for hides the panel worth looking
+at.
+
+**What is refused is arithmetic, not judgement.** Attributing twelve causes to
+ten rejects cannot be true, and it fails with both figures named —
+`trim_scale` on the way out, because `numeric(14,3)` renders as "12.000 of only
+10.000", which is accurate and reads like a machine complaining.
+
+**A department that has declared nothing is absent from the table.** Zero
+rejections and no reporting look identical on a screen and are opposite
+findings — the same rule as an unmarked attendance day and an uncounted shelf.
+Third time this exact distinction has decided a design, and it is now the
+project's most reused idea.
 
 ### 2026-08-17 — Phase 5: material, and one number it refuses to invent
 

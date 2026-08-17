@@ -28,6 +28,7 @@ const SCREENS = [
   { hash: '#/wip', name: 'wip', waitFor: 'text=Ready to stuff' },
   { hash: '#/manpower', name: 'manpower', waitFor: 'text=Who is in' },
   { hash: '#/material', name: 'material', waitFor: 'text=Against the store' },
+  { hash: '#/quality', name: 'quality', waitFor: 'text=Where the losses come from' },
 ]
 
 await mkdir(outDir, { recursive: true })
@@ -817,6 +818,33 @@ await step('department board', async () => {
   return 'feeders named, late work separated from not-yet-due'
 })
 
+// --- quality: the unexplained balance stays visible -------------------------
+
+await step('quality pareto', async () => {
+  await go('#/quality', 'text=Where the losses come from')
+  await page.waitForTimeout(900)
+
+  const bars = await page.locator('[data-testid="defect-pareto"] > div > div').count()
+  if (bars < 3) throw new Error(`only ${bars} causes on the Pareto`)
+
+  // The demo deliberately leaves some rejects unexplained, because the panel
+  // that matters is the one saying so. A Pareto that silently dropped them
+  // would show every cause at a larger share and look tidier.
+  const text = await page.locator('[data-testid="defect-pareto"]').innerText()
+  if (!/not attributed/i.test(text)) {
+    throw new Error('the unexplained balance is missing from the Pareto')
+  }
+
+  // And a department that has declared nothing is absent, not shown at zero:
+  // stitching declared 26 earlier in this run, fitting has declared nothing.
+  const rows = await page.locator('[data-testid="quality-by-department"] tbody tr').count()
+  const absent = await page.locator('[data-testid="quality-FIT"]').count()
+  if (absent) throw new Error('a department that has declared nothing is being shown')
+
+  await page.screenshot({ path: `${outDir}/quality.png`, fullPage: true })
+  return `${bars} causes, unexplained balance shown, ${rows} departments reporting`
+})
+
 // --- material: three states, and the date that stops being possible ---------
 
 await step('material shortages', async () => {
@@ -1112,6 +1140,7 @@ await step('thumb-sized everywhere', async () => {
     ['#/capacity', 'Capacity sheet'],
     ['#/manpower', 'Who is in'],
     ['#/material', 'Against the store'],
+    ['#/quality', 'Where the losses come from'],
     ['#/masters', 'Production route'],
   ]
 

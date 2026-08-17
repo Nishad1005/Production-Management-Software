@@ -570,3 +570,39 @@ select m.id, v.qty, current_date - v.days_ago, v.note
   ) as v (code, qty, days_ago, note)
   join public.materials m on m.code = v.code
 on conflict (material_id) do nothing;
+
+-- ---------------------------------------------------------------------------
+-- Quality. Phase 6.
+--
+-- The defect names are the ones an upholstery floor actually uses. The
+-- quantities are invented, and deliberately do not add up to every reject —
+-- the screen's job is to show what is unexplained, and a demonstration where
+-- everything is explained would hide the one panel worth looking at.
+-- ---------------------------------------------------------------------------
+insert into public.defect_types (code, name, category)
+values
+  ('SPLIT',   'Split on the joint',          'workmanship'),
+  ('KNOT',    'Knot or shake in the face',   'material'),
+  ('SAND',    'Sanding marks through finish','workmanship'),
+  ('SHADE',   'Fabric shade variation',      'material'),
+  ('PUCKER',  'Seam puckering',              'workmanship'),
+  ('TENSION', 'Machine tension',             'machine'),
+  ('STAPLE',  'Staple pull-through',         'workmanship'),
+  ('PATTERN', 'Pattern match out',           'design'),
+  ('TRANSIT', 'Damaged between benches',     'handling')
+on conflict (code) do nothing;
+
+-- Against the three declarations the demo already carries.
+insert into public.production_defects (declaration_id, defect_type_id, qty, note)
+select decl.id, dt.id, v.qty, v.note
+  from (values
+    ('PLYCUT',  'KNOT',    2::numeric, 'Two boards from the same bundle'),
+    ('PLYCUT',  'SPLIT',   1,          null),
+    ('MACHINE', 'TENSION', 5,          'Head 3 — belt slipping, maintenance told'),
+    ('MACHINE', 'SPLIT',   2,          null),
+    ('ASSY',    'TRANSIT', 1,          null)
+  ) as v (dept_code, defect_code, qty, note)
+  join public.departments d on d.code = v.dept_code
+  join public.defect_types dt on dt.code = v.defect_code
+  join public.production_declarations decl on decl.department_id = d.id
+on conflict (declaration_id, defect_type_id) do nothing;
