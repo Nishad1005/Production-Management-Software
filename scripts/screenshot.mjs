@@ -818,6 +818,60 @@ await step('department board', async () => {
   return 'feeders named, late work separated from not-yet-due'
 })
 
+// --- machines: booking downtime takes the department's day down -------------
+
+await step('machine downtime', async () => {
+  await go('#/masters', 'text=Machines')
+  await page.waitForTimeout(600)
+
+  const rows = await page.locator('[data-testid="machines-master"] tbody tr').count()
+  if (rows < 5) throw new Error(`only ${rows} machines recorded`)
+
+  // Stitching has eight machines in the demo and one already down. Booking a
+  // second takes the department to six of eight — the point being that a
+  // machine going down is not a note, it moves capacity.
+  const before = await page
+    .locator('[data-testid="machines-down-today"]')
+    .innerText()
+    .catch(() => '')
+
+  await page.click('[data-testid="book-downtime"]')
+  const modal = page.locator('[data-testid="modal"]')
+  await modal.waitFor()
+  await modal.locator('select').first().selectOption('STITCH-05')
+  await modal.getByPlaceholder('Hook timing gone — spares ordered').fill('Needle bar seized')
+  await modal.locator('button:has-text("Book it")').click()
+
+  // Wait on the thing being asserted, not on a neighbour of it. The row and
+  // the department summary come from two different queries, and waiting for
+  // the row to flip then reading the summary caught it one refetch behind —
+  // reporting seven of eight against a screen that was about to say six.
+  //
+  // Attributes rather than the sentence, too: the tag is uppercased in CSS, so
+  // innerText reads "6 OF 8" and a case-sensitive match fails on a correct
+  // screen. Seventh time that has bitten.
+  await until(
+    'stitching to report six of eight running',
+    () => {
+      const el = document.querySelector('[data-testid="machines-short-STITCH"]')
+      return (
+        el?.getAttribute('data-available') === '6' &&
+        el?.getAttribute('data-machines') === '8'
+      )
+    },
+    undefined,
+  )
+
+  const down = await page
+    .locator('[data-testid="machine-STITCH-05"]')
+    .getAttribute('data-down')
+  if (down !== 'yes') throw new Error('the machine is not marked down on its own row')
+  void before
+
+  await page.screenshot({ path: `${outDir}/machines.png`, fullPage: true })
+  return `${rows} machines, and booking downtime took stitching to six of eight`
+})
+
 // --- quality: the unexplained balance stays visible -------------------------
 
 await step('quality pareto', async () => {

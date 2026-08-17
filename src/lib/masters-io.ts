@@ -92,6 +92,21 @@ const EXPORTS: {
     }),
   },
   {
+    // After departments, because a machine belongs to one. Downtime does not
+    // travel in this file — it is an event, and events belong in the backup.
+    table: 'machines',
+    view: 'machine_master',
+    order: ['route_position', 'code'],
+    pick: (r) => ({
+      code: r.code,
+      name: r.name,
+      department_code: r.department_code,
+      machine_type: r.machine_type,
+      asset_no: r.asset_no,
+      is_active: r.is_active,
+    }),
+  },
+  {
     table: 'holidays',
     view: 'holiday_list',
     order: ['holiday_date'],

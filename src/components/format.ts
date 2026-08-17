@@ -43,6 +43,26 @@ export const inputClass =
  * day boundary for anyone west of Greenwich, which is exactly the class of bug
  * that shows up as an off-by-one in a schedule and nowhere else.
  */
+/**
+ * Today, as the calendar on the wall has it.
+ *
+ * `new Date().toISOString()` is UTC, and India is five and a half hours ahead —
+ * so between midnight and half past five in the morning it returns yesterday.
+ * Every screen that defaults a date field to "today" was doing that, and on the
+ * Machines panel it had teeth: booking maintenance for today booked it for
+ * yesterday, the machine stayed available, and capacity did not move.
+ *
+ * Note the database still reads `current_date`, which is UTC on both backends.
+ * The two therefore disagree for five and a half hours a night. Fixing that
+ * properly means giving the factory a timezone and computing "today" in it
+ * everywhere; this at least stops the *entry* being wrong.
+ */
+export function todayIso() {
+  const now = new Date()
+  const local = new Date(now.getTime() - now.getTimezoneOffset() * 60_000)
+  return local.toISOString().slice(0, 10)
+}
+
 export function formatDate(iso: string | null | undefined) {
   if (!iso) return '—'
   const [y, m, d] = iso.split('-').map(Number)

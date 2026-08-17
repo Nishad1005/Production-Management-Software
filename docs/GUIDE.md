@@ -516,6 +516,24 @@ of the capacity sheet. Orders already placed against it keep their plan and thei
 history — switching off means "do not sell it again", not "forget the container
 that is already booked". **Restore** brings it back.
 
+**Machines.** What each department has, and what is down. A department's day is
+scaled by the fraction of its machines running — four with one under maintenance
+is three quarters of a day. Attendance and machines multiply: half the crew on
+half the machines is a quarter of a day.
+
+A department with **no machines recorded** is left exactly as it is. That is not
+a department with none; it is one nobody has told us about, and hand departments
+like fitting genuinely have none.
+
+**Book downtime** takes a machine out for a range of days and re-runs the plan. A
+reason is required, as it is on a capacity override. **Retire** is different from
+down: a retired machine stops counting towards the department altogether, while a
+machine that is down still counts and is simply unavailable.
+
+The machine list travels in the masters file. Downtime does not — it is an event
+that happened in one database, and it belongs in the *Save everything* backup
+rather than in a file merged on top of a live system.
+
 **What feeds what.** The part the engine reads. Read a row as "this department
 cannot start until…" and tick the columns it waits for. A row with nothing ticked
 is an **entry point** — it waits for no one, which is what a feeder like metal

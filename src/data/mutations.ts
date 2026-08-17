@@ -282,6 +282,120 @@ export function useSetArticleActive() {
 }
 
 // ---------------------------------------------------------------------------
+// Machines
+//
+// A machine going down changes what its department can make that day, so unlike
+// a stock count these do re-run the schedule.
+// ---------------------------------------------------------------------------
+
+export type MachineRow = {
+  code: string
+  name: string
+  department_code: string
+  department_name: string
+  route_position: number
+  machine_type: string | null
+  asset_no: string | null
+  is_active: boolean
+  down_today: boolean
+  down_reason: string | null
+  next_down_on: string | null
+}
+
+export function useMachines() {
+  return useQuery({
+    queryKey: ['machines'],
+    queryFn: () =>
+      select<MachineRow>('machine_master', { order: ['route_position', 'code'] }),
+  })
+}
+
+export type MachineStatusRow = {
+  department_code: string
+  department_name: string
+  route_position: number
+  machines: number
+  available: number
+  available_pct: number
+}
+
+export function useMachineStatus() {
+  return useQuery({
+    queryKey: ['machine-status'],
+    queryFn: () =>
+      select<MachineStatusRow>('machine_status', { order: ['route_position'] }),
+  })
+}
+
+export type MachineDowntimeRow = {
+  id: string
+  machine_code: string
+  machine_name: string
+  department_code: string
+  from_date: string
+  to_date: string
+  kind: string
+  reason: string
+  active_today: boolean
+  upcoming: boolean
+  days: number
+}
+
+export function useMachineDowntime() {
+  return useQuery({
+    queryKey: ['machine-downtime'],
+    queryFn: () =>
+      select<MachineDowntimeRow>('machine_downtime_list', { order: ['from_date'] }),
+  })
+}
+
+export function useSetMachine() {
+  return useWrite<{
+    code: string
+    name: string
+    departmentCode: string
+    machineType?: string | null
+  }>(async ({ code, name, departmentCode, machineType }) => {
+    await rpc('set_machine', {
+      p_code: code,
+      p_name: name,
+      p_department_code: departmentCode,
+      p_machine_type: machineType ?? null,
+    })
+  })
+}
+
+export function useSetMachineActive() {
+  return useWrite<{ code: string; isActive: boolean }>(async ({ code, isActive }) => {
+    await rpc('set_machine_active', { p_code: code, p_is_active: isActive })
+  })
+}
+
+export function useSetMachineDowntime() {
+  return useWrite<{
+    machineCode: string
+    fromDate: string
+    toDate: string
+    reason: string
+    kind: string
+  }>(async ({ machineCode, fromDate, toDate, reason, kind }) => {
+    await rpc('set_machine_downtime', {
+      p_machine_code: machineCode,
+      p_from_date: fromDate,
+      p_to_date: toDate,
+      p_reason: reason,
+      p_kind: kind,
+    })
+  })
+}
+
+export function useClearMachineDowntime() {
+  return useWrite<{ id: string }>(async ({ id }) => {
+    await rpc('clear_machine_downtime', { p_id: id })
+  })
+}
+
+// ---------------------------------------------------------------------------
 // Shifts
 //
 // Spec §2 calls the multi-shift model Rev B's structural correction: a

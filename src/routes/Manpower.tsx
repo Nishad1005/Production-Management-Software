@@ -9,7 +9,7 @@ import {
 } from '@/data/manpower'
 import { useCurrentRun, useDepartments } from '@/data/planning'
 import { Empty, Panel, Tag } from '@/components/ui'
-import { formatDateLong, formatNumber, inputClass } from '@/components/format'
+import { formatDateLong, formatNumber, inputClass, todayIso } from '@/components/format'
 
 /**
  * Phase 4 — deck slide 13, "manpower real-time status".
@@ -22,7 +22,7 @@ import { formatDateLong, formatNumber, inputClass } from '@/components/format'
 export function Manpower() {
   const run = useCurrentRun()
   const departments = useDepartments()
-  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10))
+  const [date, setDate] = useState(todayIso)
   const [departmentCode, setDepartmentCode] = useState<string | null>(null)
 
   useEffect(() => {

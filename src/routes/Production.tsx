@@ -13,7 +13,7 @@ import {
 } from '@/data/wip'
 import { useDepartments } from '@/data/planning'
 import { Button, Empty, Panel, Table, Tag, Td, Th } from '@/components/ui'
-import { formatDateLong, formatNumber, inputClass } from '@/components/format'
+import { formatDateLong, formatNumber, inputClass, todayIso } from '@/components/format'
 
 /**
  * The screen that replaces the daily production Google Sheet.
@@ -25,7 +25,7 @@ import { formatDateLong, formatNumber, inputClass } from '@/components/format'
 export function Production() {
   const departments = useDepartments()
   const [departmentCode, setDepartmentCode] = useState<string | null>(null)
-  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10))
+  const [date, setDate] = useState(todayIso)
 
   // First department in route order, once they load. A screen that opens on
   // nothing looks broken even when it is merely waiting.

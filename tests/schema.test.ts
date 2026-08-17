@@ -25,6 +25,9 @@ describe('migrations', () => {
       'employees',
       'holidays',
       'kpi_targets',
+      // Phase 7 — machines
+      'machine_downtime',
+      'machines',
       // Phase 5 — material
       'material_stock',
       'materials',

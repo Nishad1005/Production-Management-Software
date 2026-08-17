@@ -1,7 +1,7 @@
 import { useMdDashboard, type Kpi } from '@/data/planning'
 import { useProductionVsPlan, type ProductionVsPlan } from '@/data/wip'
 import { Empty, Panel, Table, Td, Th } from '@/components/ui'
-import { formatDate, formatNumber } from '@/components/format'
+import { formatDate, formatNumber, todayIso } from '@/components/format'
 
 /**
  * The MD's dashboard, slide 6 of the concept deck.
@@ -62,11 +62,15 @@ export function Dashboard() {
  */
 function ProductionAgainstPlan() {
   const days = 14
-  const to = new Date()
-  const from = new Date(to.getTime() - days * 86_400_000)
-  const iso = (d: Date) => d.toISOString().slice(0, 10)
+  // Local, not UTC. The production screen records against the local date, and a
+  // range ending on UTC-today drops everything entered after midnight here —
+  // which reads on screen as a factory that made nothing.
+  const to = todayIso()
+  const from = new Date(new Date(to).getTime() - days * 86_400_000)
+    .toISOString()
+    .slice(0, 10)
 
-  const vsPlan = useProductionVsPlan(iso(from), iso(to))
+  const vsPlan = useProductionVsPlan(from, to)
   const rows = (vsPlan.data ?? []).filter(
     (r) => r.qty_planned > 0 || r.qty_good > 0 || r.qty_rejected > 0,
   )

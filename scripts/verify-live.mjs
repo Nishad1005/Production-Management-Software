@@ -82,6 +82,9 @@ async function checkAnonymous(db) {
     'defect_pareto',
     'quality_by_department',
     'defect_list',
+    'machine_master',
+    'machine_status',
+    'machine_downtime_list',
   ]) {
     const { error } = await db.from(view).select('*').limit(1)
     report(
@@ -129,6 +132,11 @@ async function checkAnonymous(db) {
     ['set_article_active', { p_code: 'X', p_is_active: false }],
     ['set_material', { p_code: 'X', p_name: 'Nothing' }],
     ['set_defect_type', { p_code: 'X', p_name: 'Nothing' }],
+    ['set_machine', { p_code: 'X', p_name: 'Nothing', p_department_code: 'Y' }],
+    [
+      'set_machine_downtime',
+      { p_machine_code: 'X', p_from_date: '2026-01-01', p_to_date: '2026-01-02', p_reason: 'probe' },
+    ],
     [
       'attribute_defect',
       {

@@ -606,3 +606,48 @@ select decl.id, dt.id, v.qty, v.note
   join public.defect_types dt on dt.code = v.defect_code
   join public.production_declarations decl on decl.department_id = d.id
 on conflict (declaration_id, defect_type_id) do nothing;
+
+-- ---------------------------------------------------------------------------
+-- Machines. Phase 7.
+--
+-- Counts and names are invented; the kinds of machine are the ones an
+-- upholstery factory actually runs. Only the departments that have machines get
+-- them, which is the point — a department with none recorded is left exactly as
+-- it was, and hand departments like fitting genuinely have none.
+-- ---------------------------------------------------------------------------
+insert into public.machines (code, name, department_id, machine_type)
+select v.dept || '-' || lpad(n::text, 2, '0'),
+       v.label || ' ' || n,
+       d.id,
+       v.machine_type
+  from (values
+    ('PLYCUT',  'Panel saw',        'Panel saw',           3),
+    ('MACHINE', 'CNC router',       'CNC router',          2),
+    ('MACHINE', 'Spindle moulder',  'Spindle moulder',     2),
+    ('SAND',    'Wide belt sander', 'Wide belt sander',    2),
+    ('WOODFIN', 'Spray booth',      'Spray booth',         3),
+    ('METALFIN','Buffing lathe',    'Buffing lathe',       2),
+    ('FOAM',    'Foam cutter',      'CNC foam cutter',     2),
+    ('CUT',     'Cutting table',    'Automatic cutter',    2),
+    ('STITCH',  'Lockstitch',       'Juki DDL-8700',       8),
+    ('STAPLE',  'Compressor line',  'Air compressor line', 2)
+  ) as v (dept, label, machine_type, count)
+  join public.departments d on d.code = v.dept and d.is_active
+  cross join lateral generate_series(1, v.count) as n
+on conflict (code) do nothing;
+
+-- One breakdown running today and one service booked, so the screens have both
+-- a problem and a plan. Stitching losing one of eight is deliberately small:
+-- the day drops to 87.5%, which is the sort of figure that is easy to miss and
+-- exactly what the software is for.
+insert into public.machine_downtime (machine_id, from_date, to_date, kind, reason)
+select m.id, current_date + v.from_offset, current_date + v.to_offset,
+       v.kind::public.downtime_kind, v.reason
+  from (values
+    ('STITCH-03', 0,  1,  'breakdown',   'Hook timing gone — spares ordered'),
+    ('SAND-01',   0,  0,  'changeover',  'Belt change, back this afternoon'),
+    ('WOODFIN-02',6,  8,  'maintenance', 'Annual booth service'),
+    ('MACHINE-01',14, 15, 'maintenance', 'Spindle bearings')
+  ) as v (code, from_offset, to_offset, kind, reason)
+  join public.machines m on m.code = v.code
+on conflict do nothing;

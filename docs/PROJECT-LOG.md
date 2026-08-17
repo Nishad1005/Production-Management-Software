@@ -57,7 +57,8 @@ material, cash and customer relationships the system cannot see.
 | 4 | Manpower — overtime and headcount arithmetic, per-person attendance | **Done** |
 | 5 | Material — bill of materials, ordering dates, shortages | **Done** |
 | 6 | Quality — defect causes, Pareto, counted yield against claimed | **Done** |
-| 7–10 | Machines, cost, command centre, predictive | Not started |
+| 7 | Machines — the master, downtime, and capacity that follows it | **Done** |
+| 8–10 | Cost, command centre, predictive | Not started |
 
 **Client**: sixteen screens, all reading from database views. Editable: D-minus
 matrix, component rates, department yield/route/headcount, what feeds what,
@@ -74,7 +75,7 @@ unmodified in the browser, so the demo runs the real engine with no backend.
 `npm run build` produces a static folder.
 
 **Online.** Supabase project `fiqfbbnmksppbpxmhnbv` — *kram*, Mumbai
-(ap-south-1), Postgres 17.6. Thirty-five migrations applied, the last on 17 Aug (§9).
+(ap-south-1), Postgres 17.6. Thirty-six migrations applied, the last on 17 Aug (§9).
 
 > **Migrations are append-only from here.** Editing one now means the file and
 > the live database disagree, silently, until something breaks in a way that
@@ -193,6 +194,29 @@ get abandoned.
 ---
 
 ## 5. Gotchas — things that cost time
+
+**`new Date().toISOString()` is UTC, and India is 5½ hours ahead.** Every screen
+defaulting a date field to "today" returned *yesterday* between midnight and
+05:30. Harmless-looking until Phase 7, where booking machine maintenance "today"
+booked it for yesterday, the machine stayed available and capacity did not move.
+`todayIso()` in `components/format.ts` returns the local date; use it. The
+database still reads `current_date`, which is UTC on both backends, so the two
+disagree for those 5½ hours — fixing that properly means giving the factory a
+timezone. (18 Aug)
+
+**Do not retype a long SQL function to add one thing to it.** Rewriting
+`import_masters` by hand to add machines dropped `coalesce(headcount, 0)` and
+flipped `coalesce(is_active, false)` to `true` — the first refused imports that
+had always worked, the second would have switched on every shift on every
+department and roughly doubled the factory, silently. Regenerate from the
+previous text and insert the new block. (18 Aug)
+
+**Wait on the thing you are about to assert, not on a neighbour of it.** A
+browser check waited for a machine's row to show it was down, then read the
+department summary — two different queries, and the summary was one refetch
+behind. It reported seven of eight against a screen that was about to say six.
+(18 Aug)
+
 
 **Assertions written against rendered prose keep failing on working software.**
 Six times now, in three shapes: a `\b` word boundary against `textContent`,
@@ -314,7 +338,7 @@ Since 15 Aug it covers **both** of the prototype's modules: the capacity and
 load arithmetic, and the person-hour conversion that turns a shortfall into
 overtime hours and people.
 
-**262 unit and integration tests** against a real native Postgres, booted per run
+**278 unit and integration tests** against a real native Postgres, booted per run
 from an embedded binary. Covers schema shape, RLS (as the `authenticated` role —
 table owners bypass RLS, so a policy test run as superuser proves nothing), the
 working-day calendar, engine correctness, breaches, pins, overrides, the route
@@ -330,7 +354,7 @@ against the real route.
 **Browser** — `npm run screenshot` drives every screen plus twenty-two
 interactions in headless Chromium and fails on any console error. It checks the
 D-minus edit survives a reload, which is what proves it reached the database
-rather than only React state. Thirty-eight steps, two of them at phone width.
+rather than only React state. Thirty-nine steps, two of them at phone width.
 Several real defects came from this that the build was happy with.
 
 Waits are named: `until('the article to become schedulable', …)` fails with that
@@ -585,6 +609,54 @@ traced back to a single line written once and then quoted forward by everything
 that followed, including three documents I wrote yesterday. The log is the
 project's memory and that is exactly what makes an unverified line in it
 expensive.
+
+### 2026-08-18 — Phase 7: machines, and three ways to get it wrong quietly
+
+Row four of the scope of work. A machine changes a day the way attendance does —
+by scaling the standing rate — and the denominator is the one thing nobody has
+to type: how many machines the department has. Four machines, one under
+maintenance, three quarters of a day. Attendance and machines **multiply**, so
+half the crew on half the machines is a quarter of a day; taking the worse of
+the two would understate it and either alone would overstate it.
+
+**A department with no machines recorded is left exactly as it was.** This is the
+fourth time the project has had to keep "nobody has said" apart from "zero", and
+the first time it cost nothing: `machine_availability` returns null rather than
+1, so every caller has to decide what to do about not knowing. Had it returned
+zero, the day this migration landed every department in the factory would have
+gone to nothing.
+
+`resolve_capacity` is the function every date in the system rests on, so the
+test that matters most is the one proving what this does *not* do — and the
+parity suite against the client's own prototype passed unchanged.
+
+Machines travel in the masters file; downtime does not. The list is typed once
+by somebody who walked the floor, which is exactly what that file is for.
+Downtime is an event that happened in one database, and belongs in the backup
+beside the production ledger rather than in a file merged on top of a live
+system.
+
+**Three defects, all mine, all quiet.**
+
+*Rewriting a long function by hand.* `import_masters` needed one insert added
+and got retyped instead, which dropped `coalesce(headcount, 0)` and flipped
+`coalesce(is_active, false)` to `true`. The first refused an import that had
+always worked. The second would have switched on every shift on every department
+and roughly doubled the factory's capacity without a word. Regenerated from the
+previous text with only the machines block inserted, and both are now tests.
+
+*UTC.* `new Date().toISOString()` is five and a half hours behind India, so
+every "today" default was yesterday until half past five in the morning. It had
+been harmless on Production and Manpower; on Machines it meant booking
+maintenance for today booked it for yesterday and nothing moved. `todayIso()`
+now returns the local date. The database still reads `current_date`, which is
+UTC on both backends — that divergence is recorded in §5 rather than pretended
+away.
+
+*Waiting on the wrong element.* A browser check waited for a machine's row to
+flip and then read the department summary, which is a different query and was
+one refetch behind. Seventh locator lesson in this file, and the first that was
+about timing rather than text.
 
 ### 2026-08-17 — Phase 6: quality, and the bar nobody wants to see
 
