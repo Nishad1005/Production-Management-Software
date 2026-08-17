@@ -1,9 +1,11 @@
 /**
  * Drives the *hosted* client in a browser, against the live Supabase project.
  *
- *   npm run dev:hosted &
- *   node scripts/verify-hosted-ui.mjs                      # as far as the login screen
- *   node scripts/verify-hosted-ui.mjs <email> <password>   # and every screen behind it
+ *   npm run verify:hosted-ui                      # as far as the login screen
+ *   npm run verify:hosted-ui <email> <password>   # and every screen behind it
+ *
+ * Starts the hosted dev server itself if one is not already running, and stops
+ * it again afterwards. No second terminal, no setup.
  *
  * Why this exists, when `screenshot.mjs` already drives every screen: it drives
  * them against PGlite. It resets demo data and checks that a returning browser
@@ -32,6 +34,7 @@
  * with SO/26-27/0999 is worse than no test at all.
  * ---------------------------------------------------------------------------
  */
+import { spawn } from 'node:child_process'
 import { mkdir } from 'node:fs/promises'
 import { chromium } from 'playwright'
 
@@ -40,6 +43,54 @@ const outDir = 'screenshots/hosted'
 const [email, password] = process.argv.slice(2)
 
 await mkdir(outDir, { recursive: true })
+
+/*
+ * Start the dev server if nobody else has.
+ *
+ * The first version of this told you to run `npm run dev:hosted` in another
+ * terminal first. That is one instruction too many: a dev server prints its
+ * banner and then sits there, which reads as nothing happening, and forgetting
+ * it produced fourteen ERR_CONNECTION_REFUSED lines that said nothing about
+ * what was actually wrong. One command, or it will be got wrong.
+ */
+async function alive(url) {
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(1500) })
+    return res.ok
+  } catch {
+    return false
+  }
+}
+
+let server = null
+if (await alive(baseUrl)) {
+  console.log(`Using the server already on ${baseUrl}\n`)
+} else {
+  console.log('Starting the hosted dev server…')
+  server = spawn('npx', ['vite', '--mode', 'hosted', '--port', '5173'], {
+    stdio: 'ignore',
+    detached: false,
+  })
+  const startedBy = Date.now() + 60_000
+  while (!(await alive(baseUrl))) {
+    if (Date.now() > startedBy) {
+      server.kill()
+      console.error(
+        `\nThe dev server never came up on ${baseUrl}.\n` +
+          'Run `npm run dev:hosted` by hand to see why — most likely\n' +
+          '.env.hosted.local is missing its URL or anon key.',
+      )
+      process.exit(1)
+    }
+    await new Promise((r) => setTimeout(r, 400))
+  }
+  console.log(`Hosted build serving on ${baseUrl}\n`)
+}
+
+/** Always put the server back the way we found it. */
+function stopServer() {
+  if (server && !server.killed) server.kill()
+}
 
 const browser = await chromium.launch({ args: ['--no-sandbox'] })
 const context = await browser.newContext({
@@ -122,6 +173,7 @@ if (!email || !password) {
   console.log('\nNo credentials given — stopped at the login screen.')
   console.log('Everything behind it is unverified: pass <email> <password> to go on.')
   await browser.close()
+  stopServer()
   process.exit(failed ? 1 : 0)
 }
 
@@ -131,9 +183,36 @@ await step('sign in', async () => {
   await page.fill('input[type=email]', email)
   await page.fill('input[type=password]', password)
   await page.click('button:has-text("Sign in")')
-  await page.waitForSelector('text=Bottleneck utilisation', { timeout: 60_000 })
+
+  // Whichever comes first. Waiting only for success meant a wrong password sat
+  // for sixty seconds and then reported a timeout, which says nothing about
+  // the password being wrong.
+  const outcome = await Promise.race([
+    page
+      .waitForSelector('text=Bottleneck utilisation', { timeout: 60_000 })
+      .then(() => 'in'),
+    page
+      .waitForSelector('text=do not match', { timeout: 60_000 })
+      .then(() => 'refused'),
+    page
+      .waitForSelector('text=no roles', { timeout: 60_000 })
+      .then(() => 'no roles'),
+  ])
+  if (outcome === 'refused') throw new Error('that email and password do not match')
+  if (outcome === 'no roles') {
+    throw new Error('the account signed in but has no roles — grant some on Users')
+  }
   return 'session established, command centre rendered'
-})
+}, { allow: /status of 400|auth\/v1\/token/ })
+
+// Nothing below can pass without a session, and fourteen more failures would
+// bury the one line that matters.
+if (failed) {
+  console.log('\nStopped: everything below needs a session.')
+  await browser.close()
+  stopServer()
+  process.exit(1)
+}
 
 const SCREENS = [
   ['', 'command-centre', 'Bottleneck utilisation'],
@@ -204,6 +283,7 @@ await step('sign out', async () => {
 })
 
 await browser.close()
+stopServer()
 console.log(
   failed
     ? `\n${failed} failed. Screenshots in ${outDir}/`
