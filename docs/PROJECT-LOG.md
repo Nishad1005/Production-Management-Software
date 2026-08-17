@@ -55,9 +55,10 @@ material, cash and customer relationships the system cannot see.
 | 3 | WIP tracking — declarations, two-sided handovers, measured yield | **Done** |
 | — | MD dashboard, department boards, attendance-driven capacity | **Done** |
 | 4 | Manpower — overtime and headcount arithmetic, per-person attendance | **Done** |
-| 5–10 | Material, quality, machines, cost, command centre, predictive | Not started |
+| 5 | Material — bill of materials, ordering dates, shortages | **Done** |
+| 6–10 | Quality, machines, cost, command centre, predictive | Not started |
 
-**Client**: fourteen screens, all reading from database views. Editable: D-minus
+**Client**: fifteen screens, all reading from database views. Editable: D-minus
 matrix, component rates, department yield/route/headcount, what feeds what,
 holidays, orders, shipment lines, article cost, who came in — per person or as a
 head count — and pins by dragging a schedule bar.
@@ -72,7 +73,7 @@ unmodified in the browser, so the demo runs the real engine with no backend.
 `npm run build` produces a static folder.
 
 **Online.** Supabase project `fiqfbbnmksppbpxmhnbv` — *kram*, Mumbai
-(ap-south-1), Postgres 17.6. Thirty-three migrations applied, the last on 17 Aug (§9).
+(ap-south-1), Postgres 17.6. Thirty-four migrations applied, the last on 17 Aug (§9).
 
 > **Migrations are append-only from here.** Editing one now means the file and
 > the live database disagree, silently, until something breaks in a way that
@@ -312,7 +313,7 @@ Since 15 Aug it covers **both** of the prototype's modules: the capacity and
 load arithmetic, and the person-hour conversion that turns a shortfall into
 overtime hours and people.
 
-**238 unit and integration tests** against a real native Postgres, booted per run
+**251 unit and integration tests** against a real native Postgres, booted per run
 from an embedded binary. Covers schema shape, RLS (as the `authenticated` role —
 table owners bypass RLS, so a policy test run as superuser proves nothing), the
 working-day calendar, engine correctness, breaches, pins, overrides, the route
@@ -328,7 +329,7 @@ against the real route.
 **Browser** — `npm run screenshot` drives every screen plus twenty-two
 interactions in headless Chromium and fails on any console error. It checks the
 D-minus edit survives a reload, which is what proves it reached the database
-rather than only React state. Thirty-four steps, two of them at phone width.
+rather than only React state. Thirty-six steps, two of them at phone width.
 Several real defects came from this that the build was happy with.
 
 Waits are named: `until('the article to become schedulable', …)` fails with that
@@ -583,6 +584,56 @@ traced back to a single line written once and then quoted forward by everything
 that followed, including three documents I wrote yesterday. The log is the
 project's memory and that is exactly what makes an unverified line in it
 expensive.
+
+### 2026-08-17 — Phase 5: material, and one number it refuses to invent
+
+Second row of the client's own scope of work, and the phase that lights up
+"Material Shortages" on the MD's dashboard with something better than a proxy.
+
+**The whole phase rests on not calculating anything twice.** The engine already
+knows what each department must make on each day, yield-inflated so the shipped
+quantity survives every loss downstream. A material requirement is that number
+times a figure from the bill of materials — so the compounding that took Phase 2
+to get right is *inherited*. If wood must make 104 chairs' worth for 100 to
+ship, the oak is for 104, and nobody has to remember why.
+
+**Material is consumed by a department, not by an article.** Leather is needed
+when cutting starts, ply when ply cutting starts. So the bill of materials
+carries a department, and that is what turns a quantity into a date — the need
+date is that department's own start, and the order date is that less the
+supplier's lead time in **calendar** days, because a supplier does not observe
+our factory holidays. This is exactly what slide 18 asks PPC for: *"material
+ordering date to the supplier"*.
+
+**Three stock states, kept apart.** Covered, short, and **nobody has counted
+it**. The third is the one that matters: a material whose shelf has never been
+counted is not a material there is none of, and reporting it as a shortage would
+bury the real ones under a list of shelves nobody has got round to. Same
+principle as a blank D-minus and an unmarked attendance day, and the same reason.
+
+**A modelling bug the fixture caught and production would not have.** The first
+version joined materials straight to `schedule_tasks`, which is per component —
+and the parity fixture has wood making three components of one chair, so every
+requirement came out tripled. The live capacity-sheet convention writes exactly
+one component per article per department, so this would have looked perfect on
+U&M's data and ordered three times the oak the day an article had two
+components. It now aggregates to one row per department per shipment line,
+recovering "how many chairs' worth" by dividing the task quantity by its own
+bill-of-materials figure. Where two components in one department disagree the
+larger is taken: buying too much is recoverable, being short is not.
+
+**The materials themselves are real.** `costing-sheet.xlsx` was finally read
+rather than shelved — wood, plywood, metal, spring, foam, fibre, fabric,
+leather, packing are U&M's own cost lines, and its total of ₹16,759.71 is where
+the demo's article cost came from. Suppliers, lead times, quantities per chair
+and every stock figure are invented, and the seed says so.
+
+**A test that passed alone and failed in the suite.** `limit 1` with no
+`order by` returns whichever row the plan happens to produce, so an assertion
+comparing against "the WOOD component" compared against a different one
+depending on what else was running. Replaced with an aggregate. Worth
+remembering: in a suite that runs files in parallel, an unordered limit is a
+coin toss.
 
 ### 2026-08-17 — What nobody can type again
 

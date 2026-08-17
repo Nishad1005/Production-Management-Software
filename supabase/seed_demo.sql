@@ -470,3 +470,103 @@ begin
     );
   end loop;
 end $$;
+
+-- ---------------------------------------------------------------------------
+-- Material. Phase 5, and the second row of U&M's own scope of work.
+--
+-- The categories and the material names are real — they are the cost lines in
+-- U&M's own costing sheet: wood, plywood, metal, spring, foam, fibre, fabric,
+-- leather, packing. The suppliers, the lead times, the quantities per chair and
+-- every stock figure are invented like everything else in this file.
+--
+-- Three stock states are represented deliberately, because the screen's whole
+-- job is telling them apart: counted and enough, counted and short, and nobody
+-- has been to the store.
+-- ---------------------------------------------------------------------------
+insert into public.suppliers (code, name, lead_time_days)
+values
+  ('TIMBER',  'Sharma Timber & Ply',      21),
+  ('FOAMCO',  'Agarwal Foam',             10),
+  ('FABRIC',  'Shila Furnishings',        35),
+  ('METALW',  'Nashik Metal Works',       18),
+  ('PACKING', 'Kalpataru Packaging',       7)
+on conflict (code) do nothing;
+
+insert into public.materials (code, name, category, uom, supplier_id, lead_time_days)
+select v.code, v.name, v.category, v.uom,
+       (select id from public.suppliers where code = v.supplier),
+       v.lead_time
+  from (values
+    ('WD-OAK',   'Oak, 25mm',                'Wood',     'CFT', 'TIMBER',  null::integer),
+    ('WD-MANGO', 'Mango, 50mm',              'Wood',     'CFT', 'TIMBER',  null),
+    ('PLY-18',   'Plywood 18mm, 8x4',        'Plywood',  'SHT', 'TIMBER',  null),
+    ('PLY-12',   'Plywood 12mm, 8x4',        'Plywood',  'SHT', 'TIMBER',  null),
+    ('MTL-TUBE', 'MS tube, 25mm',            'Metal',    'MTR', 'METALW',  null),
+    ('SPR-60',   'Spring 60A27.5',           'Spring',   'NOS', 'METALW',  null),
+    ('SPR-CLIP', 'Spring clips',             'Spring',   'NOS', 'METALW',  null),
+    ('FM-25',    'Foam 25mm, 72x36',         'Foam',     'SHT', 'FOAMCO',  null),
+    ('FM-50',    'Foam 50mm, 72x36',         'Foam',     'SHT', 'FOAMCO',  null),
+    ('FIB-WAD',  'Fibre wadding',            'Fibre',    'KG',  'FOAMCO',  null),
+    ('FAB-LIN',  'Linen, natural',           'Fabric',   'MTR', 'FABRIC',  null),
+    ('LTH-01',   'Leather, full grain',      'Leather',  'SQF', 'FABRIC',  56),
+    ('FAB-DACK', 'Dacking fabric',           'Fabric',   'MTR', 'FABRIC',  null),
+    ('THR-01',   'Thread, bonded nylon',     'Thread',   'CON', 'FABRIC',  null),
+    ('PK-BOX',   'Carton, 5 ply',            'Packing',  'NOS', 'PACKING', null)
+  ) as v (code, name, category, uom, supplier, lead_time)
+on conflict (code) do nothing;
+
+-- What each article eats, and where. The department is the point: leather is
+-- needed when cutting starts, not when the container sails.
+insert into public.article_materials (article_id, material_id, department_id, qty_per_unit)
+select a.id, m.id, d.id, v.qty
+  from public.articles a
+  cross join (values
+    ('PLY-18',   'PLYCUT',  0.35),
+    ('WD-OAK',   'MACHINE', 2.10),
+    ('FM-25',    'FOAM',    0.60),
+    ('FIB-WAD',  'FOAM',    0.40),
+    ('FAB-LIN',  'CUT',     3.20),
+    ('THR-01',   'STITCH',  0.08),
+    ('PK-BOX',   'PACK',    1.00)
+  ) as v (material_code, dept_code, qty)
+  join public.materials m on m.code = v.material_code
+  join public.departments d on d.code = v.dept_code and d.is_active
+ where a.is_active
+on conflict (article_id, material_id, department_id) do nothing;
+
+-- Two articles carry metal and leather; the dining chairs do not.
+insert into public.article_materials (article_id, material_id, department_id, qty_per_unit)
+select a.id, m.id, d.id, v.qty
+  from (values
+    ('UT263 SPWL COU', 'MTL-TUBE', 'MACHINE', 1.80),
+    ('UT263 SPWL COU', 'LTH-01',   'CUT',     9.50),
+    ('UO265 DEN VBR',  'SPR-60',   'ASSY',   12.00),
+    ('UO265 DEN VBR',  'SPR-CLIP', 'ASSY',   24.00)
+  ) as v (article_code, material_code, dept_code, qty)
+  join public.articles a on a.code = v.article_code
+  join public.materials m on m.code = v.material_code
+  join public.departments d on d.code = v.dept_code and d.is_active
+on conflict (article_id, material_id, department_id) do nothing;
+
+-- Stock. Deliberately incomplete: plywood and thread have never been counted,
+-- and the linen is genuinely short — which are three different sentences on
+-- screen and must not collapse into one.
+insert into public.material_stock (material_id, qty_on_hand, counted_on, note)
+select m.id, v.qty, current_date - v.days_ago, v.note
+  from (values
+    ('WD-OAK',   4200::numeric, 2, null),
+    ('WD-MANGO',  900,          2, null),
+    ('PLY-12',    260,          5, null),
+    ('MTL-TUBE',  700,          3, null),
+    ('SPR-60',   9000,          9, null),
+    ('SPR-CLIP',18000,          9, null),
+    ('FM-25',     240,          1, null),
+    ('FM-50',     110,          1, 'Reserved against the Boden run'),
+    ('FIB-WAD',   380,          4, null),
+    ('FAB-LIN',   900,          1, 'Short — the mill slipped a fortnight'),
+    ('LTH-01',   3100,          6, null),
+    ('FAB-DACK',  450,          6, null),
+    ('PK-BOX',    260,          3, null)
+  ) as v (code, qty, days_ago, note)
+  join public.materials m on m.code = v.code
+on conflict (material_id) do nothing;

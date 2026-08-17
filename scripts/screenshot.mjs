@@ -27,6 +27,7 @@ const SCREENS = [
   { hash: '#/dashboard', name: 'dashboard', waitFor: 'text=Is the factory on track today?' },
   { hash: '#/wip', name: 'wip', waitFor: 'text=Ready to stuff' },
   { hash: '#/manpower', name: 'manpower', waitFor: 'text=Who is in' },
+  { hash: '#/material', name: 'material', waitFor: 'text=Against the store' },
 ]
 
 await mkdir(outDir, { recursive: true })
@@ -816,6 +817,53 @@ await step('department board', async () => {
   return 'feeders named, late work separated from not-yet-due'
 })
 
+// --- material: three states, and the date that stops being possible ---------
+
+await step('material shortages', async () => {
+  await go('#/material', 'text=Against the store')
+  await page.waitForTimeout(900)
+
+  // Read from attributes rather than the prose. Six checks in this file have
+  // now failed on casing, word boundaries or a panel that only exists with
+  // data — none of which an attribute has.
+  const states = await page.evaluate(() =>
+    [...document.querySelectorAll('[data-testid^="material-"][data-status]')].map(
+      (el) => el.getAttribute('data-status'),
+    ),
+  )
+  if (states.length < 5) throw new Error(`only ${states.length} materials on the plan`)
+
+  // The whole point of the screen: three states, kept apart. The demo seeds
+  // one of each deliberately, so all three must be present — a screen that
+  // collapsed "never counted" into "short" would still look busy and correct.
+  for (const wanted of ['short', 'covered', 'not counted']) {
+    if (!states.includes(wanted)) {
+      throw new Error(`no material is reported as "${wanted}": ${states.join(', ')}`)
+    }
+  }
+
+  // And a count typed on the row moves it out of "never counted".
+  const uncounted = page
+    .locator('[data-testid^="material-"][data-status="not counted"]')
+    .first()
+  const code = (await uncounted.getAttribute('data-testid')).replace('material-', '')
+  await uncounted.locator('button').first().click()
+  const input = page.locator('input[type=number]:visible').first()
+  await input.fill('999999')
+  await input.press('Enter')
+
+  await until(
+    `${code} to leave the uncounted list`,
+    (c) =>
+      document.querySelector(`[data-testid="material-${c}"]`)?.getAttribute('data-status') ===
+      'covered',
+    code,
+  )
+
+  await page.screenshot({ path: `${outDir}/material.png`, fullPage: true })
+  return `${states.length} materials, all three states, and a count landed`
+})
+
 // --- the copy that holds what nobody can type again -------------------------
 //
 // Runs late, after production has been declared and counted in, so there is a
@@ -1063,6 +1111,7 @@ await step('thumb-sized everywhere', async () => {
     ['#/production', 'What you were asked for'],
     ['#/capacity', 'Capacity sheet'],
     ['#/manpower', 'Who is in'],
+    ['#/material', 'Against the store'],
     ['#/masters', 'Production route'],
   ]
 

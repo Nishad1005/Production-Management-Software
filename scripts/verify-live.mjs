@@ -76,6 +76,9 @@ async function checkAnonymous(db) {
     'acceptance_list',
     'attendance_list',
     'order_list',
+    'material_master',
+    'material_shortage',
+    'material_requirements',
   ]) {
     const { error } = await db.from(view).select('*').limit(1)
     report(
@@ -121,6 +124,12 @@ async function checkAnonymous(db) {
     ['set_employee', { p_emp_code: 'X', p_name: 'Nobody' }],
     ['set_article', { p_code: 'X', p_name: 'Nothing' }],
     ['set_article_active', { p_code: 'X', p_is_active: false }],
+    ['set_material', { p_code: 'X', p_name: 'Nothing' }],
+    ['set_material_stock', { p_material_code: 'X', p_qty_on_hand: 1 }],
+    [
+      'set_article_material',
+      { p_article_code: 'X', p_material_code: 'Y', p_department_code: 'Z', p_qty_per_unit: 1 },
+    ],
     ['set_employee_active', { p_emp_code: 'X', p_is_active: false }],
   ]) {
     const { error } = await db.rpc(fn, args)

@@ -8,6 +8,7 @@ describe('migrations', () => {
       // Phase 0 — masters
       'article_bom',
       'article_dept_dminus',
+      'article_materials',
       'articles',
       'capacity_overrides',
       'component_rates',
@@ -22,6 +23,9 @@ describe('migrations', () => {
       'employees',
       'holidays',
       'kpi_targets',
+      // Phase 5 — material
+      'material_stock',
+      'materials',
       // Phase 1 — order book
       'orders',
       // Phase 3 — WIP ledger. Sorts above 'profiles': produ… before profi…
@@ -36,6 +40,7 @@ describe('migrations', () => {
       'schedule_tasks',
       'shifts',
       'shipment_lines',
+      'suppliers',
       'user_roles',
       'working_days',
     ]

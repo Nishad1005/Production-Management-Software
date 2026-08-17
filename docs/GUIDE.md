@@ -359,6 +359,41 @@ says what a day would need; this says what happened.
 
 ---
 
+### Material
+
+What the plan will eat, when it is needed, and the last day it can be ordered.
+
+**Order now, or it will be late** is the panel that matters. Each material is
+counted back from the day the department that uses it starts — leather when
+cutting begins, not when the container sails — less the supplier's lead time.
+Anything already past that date is listed here. Lead times are **calendar days**:
+a supplier does not observe our factory holidays.
+
+**Against the store** is every material the plan needs, beside what is on hand.
+Click **On hand** to type a count; it saves as you press Enter, and counting the
+store deliberately does *not* re-run the schedule — it changes whether the plan
+can be met, which is a different question from what the plan is.
+
+Three states, and they are kept apart on purpose:
+
+- **Covered** — counted, and there is enough.
+- **Short by *n*** — counted, and there is not.
+- **Never counted** — nobody has been to the store. This is **not** reported as
+  a shortage. Treating it as one would bury the real shortages under a list of
+  shelves nobody has got round to.
+
+Quantities follow the engine, not the order. If wood must make 104 chairs'
+worth for 100 to ship, the material is for 104 — the losses at every later
+department are already in the figure.
+
+Click any row to see which orders are waiting on it.
+
+**What it needs to work:** a bill of materials per article, saying how much of
+each material is used and **at which department**. The department is what turns
+a quantity into a date.
+
+---
+
 ### Capacity sheet
 
 The same grid as the capacity spreadsheet — every article against every
@@ -623,8 +658,10 @@ Worth knowing before showing it to anyone:
   so two people running it see different data and a cleared cache loses
   everything. Save to a file after entering anything real — **Save everything**
   on Masters takes the order book and the production ledger too.
-- **Phases 5 onwards do not exist** — no material, quality, machines or costing
-  yet.
+- **Phases 6 onwards do not exist** — no quality, machines or costing yet.
+- **Material planning is in, but its data is not.** The engine, the ordering
+  dates and the shortage states all work; what no article has yet is a real bill
+  of materials. Until one is entered the Material screen has nothing to report.
 - **WIP is valued only as far as it is costed.** The ledger records quantities,
   which are always real. A rupee figure needs a cost per article, entered on the
   capacity sheet; until one is, the KPI says so rather than showing a zero, and
