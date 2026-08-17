@@ -192,6 +192,15 @@ get abandoned.
 
 ## 5. Gotchas — things that cost time
 
+**Assertions written against rendered prose keep failing on working software.**
+Six times now, in three shapes: a `\b` word boundary against `textContent`,
+which runs cells together so "1" and "yes" become "1yes"; a case-sensitive match
+against `innerText`, which *does* reflect `text-transform: uppercase`, so
+"Articles routed" reads as ARTICLES ROUTED; and waiting for a panel that renders
+only when it has data, on a database that correctly has none. Every one reported
+a defect in a screen that was rendering exactly right. Anchor to `data-testid`,
+attributes, or counted structure — never to a sentence. (17 Aug)
+
 **`data-testid` on a custom component compiles and does nothing.** JSX does not
 type-check hyphenated attributes, so passing one to a component that takes an
 explicit prop list is silently dropped — it renders nothing and fails much later

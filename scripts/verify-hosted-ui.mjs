@@ -218,7 +218,10 @@ const SCREENS = [
   ['', 'command-centre', 'Bottleneck utilisation'],
   ['#/dashboard', 'dashboard', 'Is the factory on track today?'],
   ['#/heatmap', 'heatmap', 'Load heatmap'],
-  ['#/gantt', 'schedule', 'Manual pins'],
+  // Not "Manual pins": that panel renders only when pins exist, and a project
+  // with no orders has none. Waiting on it meant waiting for a panel that was
+  // correct to be absent. The intro text is on the screen whatever the data.
+  ['#/gantt', 'schedule', 'Drag a bar'],
   ['#/orders', 'order-book', 'Order book'],
   ['#/accept', 'acceptance', 'Can we take this order?'],
   ['#/whatif', 'what-if', 'Try a change'],
@@ -250,12 +253,19 @@ await step('the real route is there', async () => {
   const rows = await page.locator('[data-testid="capacity-grid"] tbody tr').count()
   if (rows < 10) throw new Error(`only ${rows} articles — is this the right project?`)
 
+  // Counted, not read. The first version of this looked for the words
+  // "Articles routed" and failed against a screen that was rendering perfectly:
+  // the label is uppercased in CSS and innerText reflects text-transform, so
+  // the page says ARTICLES ROUTED. Structure does not have casing.
+  const columns = await page
+    .locator('[data-testid="capacity-grid"] thead th')
+    .count()
+  if (columns < 5) throw new Error(`only ${columns - 1} departments in the grid`)
+
   // The state the offline demo can never show: a real route carrying almost no
   // figures. Every screen has to hold up on it, because it is what U&M see on
   // day one and it stays that way until PPC send the sheet back.
-  const text = await page.locator('body').innerText()
-  if (!/Articles routed/.test(text)) throw new Error('the progress figures are missing')
-  return `${rows} articles against the live project`
+  return `${rows} articles × ${columns - 1} departments, live`
 })
 
 await step('an empty plan says so', async () => {
