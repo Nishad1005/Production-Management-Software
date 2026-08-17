@@ -19,7 +19,8 @@
     "dev:hosted": "vite --mode hosted",
     "build:hosted": "tsc -b && vite build --mode hosted",
     "preview:hosted": "vite preview --mode hosted",
-    "verify:live": "node scripts/verify-live.mjs"
+    "verify:live": "node scripts/verify-live.mjs",
+    "verify:hosted-ui": "node scripts/verify-hosted-ui.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

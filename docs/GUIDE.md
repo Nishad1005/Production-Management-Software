@@ -25,8 +25,9 @@ built to report, and to stop there.
 ## On a phone
 
 Every screen works on a phone: nothing scrolls sideways and every control is
-sized for a thumb. Three are built for it — **Production**, **My department**
-and **WIP** — because that is where the work is entered and read on the floor.
+sized for a thumb. Four are built for it — **Production**, **My department**,
+**Manpower** and **WIP** — because that is where the work is entered and read on
+the floor.
 
 The **load heatmap** stays deliberately dense. Its cells are small because the
 point of a heatmap is seeing a whole month at once; thumb-sized cells would show
@@ -245,6 +246,59 @@ nothing was made at all.
 
 ---
 
+### My department
+
+Your own bench, and the two questions a supervisor asks in the order they ask
+them. Pick your department at the top; everything below follows it.
+
+Jobs are ordered by **the container each one ships in**, not by your own
+deadline. The container sails when it sails.
+
+**Holding you up** is what you are waiting for. Each card names the department
+that owes you the work, the order it is for, and three quantities that mean
+three different things: what they owe, what they have **made**, and what has
+**reached you**. Made and reached are separate on purpose — work made but not
+handed over is a conversation with the bench next door, while work not made is a
+conversation about their day. Different problems, different people.
+
+It lists only what is **late or due within the week**. Anything further out is
+counted in a line underneath rather than shown, because a feeder that has not
+started on work due in three months is not holding you up, and burying six real
+problems under fifty imaginary ones is how a screen stops being read.
+
+If nothing feeds your department, it says so: you start on your own and there is
+never anything to wait for.
+
+**What you owe** is everything still outstanding on the current plan — the order,
+the component, how many, and by when. A job leaves the list when the quantity is
+declared, on the Production screen.
+
+---
+
+### WIP
+
+Where everything is, counted rather than valued.
+
+**In progress** is every shipment line that has been started and not finished.
+Open a card to see the line department by department: what each one was asked
+for, what it declared, and what the next department counted in. That is the
+answer to *"where is order SO-1234"* — not a percentage, but which bench it is
+sitting at.
+
+**Ready to stuff** is the lines that have been through every department on their
+route. They are done as far as production is concerned.
+
+Lines that have not been started at all are counted but not listed; there is
+nothing to say about them beyond the plan, which the Schedule screen already
+shows.
+
+> **Counted, not valued.** Every figure here is what was declared against what
+> the plan asked for. The rupee value of work in progress is a separate thing,
+> shown on the Dashboard, and it needs a cost per article entered on the capacity
+> sheet before it can say anything at all.
+
+---
+
 ### Production
 
 Where the day gets written down. It replaces the daily production sheet, and it
@@ -440,6 +494,27 @@ Panipuri.
 
 ---
 
+---
+
+### Users
+
+Administrators only, and only on the hosted system — the offline build has no
+accounts in it, so there is nobody to administer.
+
+**Accounts are created in the Supabase dashboard, not here.** Creating one needs
+a key that bypasses every access rule, so it is deliberately not something the
+application can do. What happens here is the part that decides what people
+actually see: assigning roles.
+
+A new account has **no roles and can see nothing** until given some. Somebody who
+signs in successfully and finds an empty screen is almost always waiting on this,
+and the screen they see says so.
+
+Roles are enforced in the database on every request, not by hiding menus. Hiding
+a screen is a courtesy; the rule that stops the data being read lives underneath
+and applies however the request arrives.
+
+
 ## Reading the numbers
 
 ### Utilisation
@@ -501,6 +576,13 @@ list tells you which orders it actually touches.
 
 **"These capacity figures are wrong."** → *Masters*, component rates. Read the
 warning above about dedicated rates first.
+
+**"Where is order SO-1234?"** → *WIP* → **In progress**, open the line. It shows
+which department has it, what they were asked for and what they declared.
+
+**"What is my department waiting for?"** → *My department*, pick yours →
+**Holding you up**. It names who owes you the work and whether it has been made
+but not handed over.
 
 **"Add a product we have started making."** → *Masters* → **Articles** →
 **Add an article**, then *Capacity sheet* for its rate in each department and its

@@ -319,6 +319,16 @@ Waits are named: `until('the article to become schedulable', …)` fails with th
 sentence instead of `Timeout 60000ms exceeded`, which twice sent a debugging
 session looking at the wrong stage.
 
+**The hosted client in a browser** — `npm run dev:hosted` in one terminal, then
+`npm run verify:hosted-ui [email password]`. Everything the offline browser
+check does, it does against PGlite: it resets demo data and checks a returning
+browser rebuilds its local database, neither of which exists on Supabase. So the
+application had been driven in a browser hundreds of times and never once
+against the backend U&M will use. **Read only, permanently** — it runs against
+the client's production database, so nothing here adds an order, declares
+production or edits a master. If a write ever needs proving against Supabase it
+belongs on a scratch project.
+
 **Access control against production** — `npm run verify:live`, after any
 migration touching privileges, policies or functions. Local Postgres and Supabase
 differ in their defaults in ways only probing the live project catches: anon
@@ -555,6 +565,49 @@ traced back to a single line written once and then quoted forward by everything
 that followed, including three documents I wrote yesterday. The log is the
 project's memory and that is exactly what makes an unverified line in it
 expensive.
+
+### 2026-08-17 — The hosted client, in a browser, at last
+
+`screenshot.mjs` has driven every screen hundreds of times and never once
+against Supabase. It cannot: it resets demo data and checks that a returning
+browser rebuilds its local database, and both of those are PGlite. `verify:live`
+proves the API answers real requests correctly, which is a different claim from
+the client rendering what comes back. Between them sat the session, the
+PostgREST query layer, RLS filtering reads, and every screen's behaviour on a
+nearly-empty database — the state U&M actually have today.
+
+`scripts/verify-hosted-ui.mjs` closes it, and is **read only by construction**.
+It runs against the client's production database, so nothing in it adds an
+order, declares production or marks attendance. That constraint is written at
+the top of the file rather than left to whoever edits it next: a check that
+quietly seasons a live order book with `SO/26-27/0999` is worse than no check.
+
+Two steps run without an account and both pass. The build is confirmed to be the
+hosted one — reaching a login screen at all proves it, since the offline build
+never shows one, and without that assertion the whole run could pass against
+PGlite and mean nothing. And a wrong password is refused in the application's own
+words.
+
+Both of those steps failed first, and **both times the check was wrong rather
+than the software**. The first looked for Supabase's "Invalid login
+credentials"; the app deliberately rewrites that to "That email address and
+password do not match", because a shop floor does not need the difference
+between a wrong password and an unknown address and telling them would confirm
+which addresses exist. The check now asserts the friendly wording *and* that the
+raw string does not leak. The second tripped over a console error that was the
+expected 400 from the auth endpoint — rejecting a login is a 400, and the
+browser logs every non-2xx as an error, so the check was reporting the security
+behaviour it was testing as a defect. `step()` now takes a narrow per-step
+`allow` regex rather than a global mute.
+
+Everything behind the login is still unverified; it needs an account.
+
+**The guide covers all fourteen screens.** *My department*, *WIP* and *Users*
+had no section at all — the first two being what a supervisor and a merchandiser
+open daily, and the third being how anybody else gets an account in the first
+place. Written from the code rather than from memory, which is how the phone
+note turned out to be stale too: four screens are built mobile-first now, not
+three, since Manpower joined them.
 
 ### 2026-08-16 — The last master that needed a developer
 
