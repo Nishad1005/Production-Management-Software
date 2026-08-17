@@ -17,7 +17,7 @@ built by **Data Brilliance Business Solutions LLP**.
 
 | | |
 |---|---|
-| Specification | `DBBS/UM/KRAM/01` Rev B, 10 Aug 2026, status *For review* |
+| Specification | `DBBS/UM/KRAM/01` Rev B — **no file exists**, see `docs/note-the-missing-specification.html` |
 | Repository | `github.com/Nishad1005/Production-Management-Software` |
 | Client domain | Export upholstered furniture — lounge chairs, sofas |
 | Shipping | Containerised, 20ft / 40ft HQ, CNF terms |
@@ -230,12 +230,14 @@ Keep adding to this. Each one was a real dead end.
 
 **Blocked on the client or on U&M:**
 
-1. **The Rev B specification is not in the repo.** It reached the build truncated
-   at ~50k characters, cutting off the tail of §19 and **all of §20 Open items**.
-   Saving a truncated copy would ship an incomplete reference document, so
-   nothing was saved. → Save the source document to
-   `docs/kram-spec-rev-b.html` and reconcile §20 against this log.
-   **Asked for in `docs/request-specification.html` (DBBS/UM/KRAM/03).**
+1. ~~**The Rev B specification is not in the repo.**~~ **Closed 17 Aug — it was
+   never the client's to send.** The `DBBS/` prefix is our own numbering: the
+   specification was written up here from the concept deck, inside a working
+   session, and never saved to a file. There is no fuller copy to ask for. The
+   concept deck *is* the requirements document and has been audited slide by
+   slide (§9, 15 Aug). Recorded in `docs/note-the-missing-specification.html`
+   so the ~120 section citations in the code do not send the next reader
+   hunting for a document that does not exist.
 2. **No real Panipuri export sample.** The import module is otherwise ready to
    build but would be built against an assumed column layout. **Longest-lead item
    on the critical path** — worth requesting now.
@@ -326,10 +328,9 @@ could call every function on it while all tests were green.
 
 ## 8. What is next
 
-1. **The full Rev B specification.** Open since day one and the only source Kram
-   cannot be audited against — the copy that reached the build is truncated at
-   ~50k characters, losing §20 *Open items* entirely. Everything else on this
-   list is a judgement made without it.
+1. ~~**The full Rev B specification.**~~ Closed 17 Aug. There is no document —
+   see `docs/note-the-missing-specification.html`. The concept deck is the
+   requirements source and has been audited against the build.
 2. **The real route and D-minus values.** Still the single change that would make
    the biggest difference to how the demo lands. Blocked on a session with PPC.
    `docs/GUIDE.md` covers saving the masters to a file afterwards, so that
@@ -401,9 +402,10 @@ forwarded as it stands:
    `scripts/make-capacity-workbook.mjs`.
 2. **The route confirmation** still owed against `DBBS/UM/KRAM/02` — what waits
    for what. Everything else is read through it.
-3. **The Panipuri sample** (`DBBS/UM/KRAM/05`) and **the full Rev B
-   specification** (`DBBS/UM/KRAM/03`). Neither blocks going live: orders can be
-   entered by hand, and the specification is a risk rather than a dependency.
+3. **The Panipuri sample** (`DBBS/UM/KRAM/05`). Does not block going live —
+   orders can be entered by hand — but it is the longest-lead item on the list.
+   (The specification came off this list on 17 Aug: there is no document to ask
+   for. See `docs/note-the-missing-specification.html`.)
 
 **Ours, before U&M's own people have accounts:**
 
@@ -456,7 +458,6 @@ house style as the route confirmation already sent:
 
 | Ref | File | For |
 |---|---|---|
-| `DBBS/UM/KRAM/03` | `docs/request-specification.html` | Whoever holds Rev B |
 | `DBBS/UM/KRAM/04` | `docs/request-route-and-figures.html` | PPC |
 | `DBBS/UM/KRAM/05` | `docs/request-panipuri-export.html` | Whoever runs Panipuri |
 
@@ -523,6 +524,37 @@ bug.
 Generated workbooks are gitignored at the repo root. They are client product
 data, regenerable in one command, and their whole life is being mailed out and
 mailed back — a repository is the wrong place for that file.
+
+**The specification does not exist, and never did as a file.** Nishad asked
+what exactly was being requested, which was the right question to ask — the
+answer turned out to be nothing anyone could send. `DBBS/` is *our* document
+prefix, so `DBBS/UM/KRAM/01` was always ours to hold, and it was written up in a
+working session from the concept deck and never saved. The log had recorded it
+for a week as truncated at 50k characters and owed by the client. Both wrong,
+and repeated in three documents before anybody checked.
+
+The deck was then read properly rather than assumed: nineteen slides, no
+speaker notes, nothing embedded, and **zero numbered sections anywhere in the
+file**, so it cannot stand in for the ~120 `spec §n` citations across the
+codebase. What it does carry is slide 18, *Immediate Followups for PPC
+Software* — D-minus article-wise, article-wise capacity per day with average
+manpower, manpower and overtime tracking. That is the capacity workbook, the
+D-minus sheet and Phase 4, listed by the client themselves ten days before we
+asked for any of it. Worth knowing when PPC ask why we want what we want.
+
+`docs/request-specification.html` is gone; asking U&M for it made no sense.
+`docs/note-the-missing-specification.html` replaces it as an internal note —
+what happened, what the deck is and is not, how to recover what a section said
+(`grep`; the citations mostly quote the sentence), and why the document is
+**not** being reconstructed: one derived from the build cannot audit the build,
+and it would read as a check that structurally cannot fail. `DBBS/UM/KRAM/03`
+is free for a real client document.
+
+The lesson is the familiar one in a new place. Every claim about §19 and §20
+traced back to a single line written once and then quoted forward by everything
+that followed, including three documents I wrote yesterday. The log is the
+project's memory and that is exactly what makes an unverified line in it
+expensive.
 
 ### 2026-08-16 — The last master that needed a developer
 

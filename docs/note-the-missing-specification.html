@@ -1,4 +1,4 @@
-<title>Kram — The specification, in full</title>
+<title>Kram — The specification that is not there</title>
 
 <style>
   /* Kram's own palette and register, carried over from the Rev B specification
@@ -258,7 +258,6 @@
     main { gap: 20px; padding: 20px 0 0; }
   }
 </style>
-
 <style>
   table.fields { width: 100%; border-collapse: collapse; }
   table.fields th {
@@ -283,21 +282,20 @@
   .callout.warn { border-left-color: var(--amber); }
   .callout.stop { border-left-color: var(--flag); }
 </style>
-
 <header class="sheet-head">
   <div class="wrap head-inner">
     <div>
       <p class="eyebrow">Data Brilliance Business Solutions LLP</p>
       <h1>
-        The specification, in full
-        <em>The copy we are building from stops partway through</em>
+        The specification that is not there
+        <em>Why the section numbers in the code point at nothing</em>
       </h1>
     </div>
     <aside class="refblock">
-      <div><span>Ref</span><span>DBBS/UM/KRAM/03</span></div>
-      <div><span>Revision</span><span>A</span></div>
+      <div><span>Ref</span><span>Internal note</span></div>
+      <div><span>Project</span><span>Kram</span></div>
       <div><span>Client</span><span>U&amp;M Designs</span></div>
-      <div><span>Status</span><span>Awaiting the document</span></div>
+      <div><span>Status</span><span>Not for issue</span></div>
     </aside>
   </div>
 </header>
@@ -306,94 +304,116 @@
   <main>
 
     <p class="lead">
-      Kram is built against your specification <em class="term">DBBS/UM/KRAM/01</em>
-      Rev B. The copy we are working from arrived cut short — it stops partway
-      through section 19, and section 20 is missing altogether. We would rather
-      ask for the whole document than keep building around the gap.
+      Around a hundred and twenty comments in this codebase cite a specification
+      by section — <em class="term">spec §4</em>, <em class="term">spec §11</em>,
+      <em class="term">spec §16</em> — and several quote it directly. There is no
+      such file, in this repository or anywhere else. This note exists so that
+      whoever goes looking for it stops looking.
     </p>
 
     <section class="panel">
       <header>
-        <b>What we have, and where it stops</b>
-        <span>Sections 1–20</span>
+        <b>What happened</b>
+        <span>Established 17 August 2026</span>
       </header>
       <div class="body">
         <p>
-          Sections 1 to 18 are complete and have been used throughout. Nearly
-          every decision in the software cites one of them — section 4 for
-          scheduling at component level rather than whole chairs, section 6 for
-          the shipment line being the unit everything is calculated from,
-          section 11 for when the plan recomputes and how much it must handle,
-          section 15 for using your ERP order number so that re-uploading a file
-          corrects the orders rather than duplicating them.
+          A specification numbered <em class="term">DBBS/UM/KRAM/01</em> Rev B,
+          dated 10 August 2026, was written up early in the project from U&amp;M's
+          concept deck and the conversations around it. It was drafted inside a
+          working session and never saved to a file. When the session ended, so
+          did the document.
         </p>
         <p>
-          The text ends partway through <strong>section 19</strong>, the phase
-          plan. <strong>Section 20, “Open items”, is not there at all.</strong>
-        </p>
-        <p class="note">
-          We did not save the partial copy into the project. A reference
-          document that looks complete but is not is worse than none, because
-          whoever reads it next has no way of knowing where it stops.
+          The project log recorded it as “truncated at ~50k characters, cutting
+          off the tail of §19 and all of §20 Open items”, and treated it for a
+          week as something the client still owed us. Neither is right. U&amp;M
+          never had it — the <em class="term">DBBS/</em> prefix is our own
+          numbering, so it was ours to hold — and there is no fuller copy
+          anywhere to ask for.
         </p>
       </div>
     </section>
 
-    <div class="callout warn">
-      <h3>Why the missing section is the one that matters</h3>
-      <p>
-        Section 20 is where you listed what was still undecided when the
-        specification was written. Every item on that list has since either been
-        decided quietly by us while building, or is still open with neither side
-        tracking it.
-      </p>
-      <p>
-        It is the only part of the document guaranteed to contain things we do
-        not know that we do not know. Everything else we can check by reading;
-        this we cannot.
-      </p>
-    </div>
-
     <section class="panel">
       <header>
-        <b>What we are asking for</b>
-        <span>Three things</span>
+        <b>What the deck is, and is not</b>
+        <span>Checked, not assumed</span>
       </header>
       <div class="body">
-        <ul class="asks">
-          <li>
-            <strong>The complete Rev B document as a file</strong> — PDF, Word
-            or web page, whichever you hold it in. A file rather than pasted
-            text, because pasted text is how it was truncated the first time.
-          </li>
-          <li>
-            <strong>Confirmation that Rev B is still current.</strong> It is
-            dated 10 August and marked <em class="term">For review</em>. If it
-            has moved on since, we would rather build against the newer one.
-          </li>
-          <li>
-            <strong>Any of section 20 that has been settled in conversation
-            since.</strong> Decisions taken in a meeting are just as good as
-            decisions written down, as long as we know about them.
-          </li>
-        </ul>
+        <p>
+          <em class="term">docs/source/concept-deck.pptx</em> is the client's
+          brief and is genuinely the requirements document: nineteen slides
+          covering objectives, dashboard features, a five-row scope of work, the
+          MD's KPIs, and the screens they want. <strong>It is not the
+          specification.</strong> It carries no speaker notes, embeds no
+          documents, and contains no numbered sections at all — so no citation
+          in this codebase can be resolved against it.
+        </p>
+        <p class="note">
+          Verified by reading the file rather than by opening it: nineteen
+          slides, zero notes slides, zero embedded parts, zero section-style
+          references anywhere in the XML.
+        </p>
       </div>
     </section>
 
     <div class="callout">
-      <h3>What we will do with it</h3>
+      <h3>If you need to know what a section said</h3>
       <p>
-        The document goes into the project alongside the software, and every
-        item in section 20 gets walked through one by one — each either closed
-        with the decision that was actually taken, or written into our open
-        items list as still owed. You get that list back.
+        The citations mostly carry the sentence with them. Searching the
+        codebase for the section number returns the claim it was making, in
+        context, next to the code that implements it:
+      </p>
+      <p><em class="term">grep -rn "§11" --include=*.sql --include=*.ts .</em></p>
+      <p>
+        That is weaker than the document would have been, but it is not nothing
+        — and unlike the document, it cannot drift away from the build without
+        somebody noticing.
+      </p>
+    </div>
+
+    <div class="callout warn">
+      <h3>What was lost, honestly</h3>
+      <p>
+        Less than the log implied. The concept deck has been audited slide by
+        slide (log §9, 15 August); that audit found three things claimed and not
+        built, all of which were then built. The deck's own §18,
+        <strong>Immediate Followups</strong>, is the closest thing to the
+        “open items” section that was supposedly missing — and it lists D-minus
+        article-wise, article-wise capacity per day with average manpower, and
+        manpower and overtime tracking. All three are now either built or
+        formally requested.
       </p>
       <p>
-        It is also the one audit we have never been able to run. Your concept
-        deck has been checked slide by slide against what is built. Your
-        capacity model is checked automatically every time we run the tests. The
-        specification, which is the document that actually governs the work, has
-        never been checked end to end — because we have never had all of it.
+        What is genuinely gone is a numbered document to check the build
+        against. The log carries the decisions and the reasoning, and is kept
+        current in a way a specification would not have been.
+      </p>
+    </div>
+
+    <div class="callout">
+      <h3>Why it is not being reconstructed</h3>
+      <p>
+        It could be — roughly a hundred and twenty quoted citations is enough to
+        rebuild it section by section. It is deliberately not being done, for
+        two reasons.
+      </p>
+      <p>
+        A specification derived from the build cannot then be used to audit the
+        build. It would read as an independent check and be nothing of the kind,
+        which is the exact failure this project keeps naming: something that
+        looks like verification and cannot fail.
+      </p>
+      <p>
+        And the work it would displace is real — driving the hosted client in a
+        browser, and the two screens missing from the user guide. Both are on
+        the go-live list. A reconstructed specification is not.
+      </p>
+      <p class="note">
+        If U&amp;M ever need a document to sign off, the right answer is a short
+        scope note written for that purpose — not a reconstruction dressed up as
+        the original.
       </p>
     </div>
 
@@ -403,6 +423,6 @@
 <footer>
   <div class="foot-inner">
     <span>Kram — production planning &amp; control</span>
-    <span>Prepared for U&amp;M Designs · 17 August 2026</span>
+    <span>Internal · 17 August 2026</span>
   </div>
 </footer>
