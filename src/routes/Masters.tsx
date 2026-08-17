@@ -36,6 +36,7 @@ import {
   importMasters,
   readJsonFile,
 } from '@/lib/masters-io'
+import { downloadBackup, exportBackup, summarise } from '@/lib/backup-io'
 import {
   EditableNumber,
   EditableText,
@@ -404,7 +405,7 @@ export function Masters() {
  */
 function MastersFileControls() {
   const client = useQueryClient()
-  const [busy, setBusy] = useState<'export' | 'import' | null>(null)
+  const [busy, setBusy] = useState<'export' | 'import' | 'backup' | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const fileInput = useRef<HTMLInputElement>(null)
@@ -415,6 +416,33 @@ function MastersFileControls() {
     try {
       downloadMasters(await exportMasters())
       setMessage('Masters saved to a file.')
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  /**
+   * The masters file carries what can be re-entered. This carries what cannot.
+   *
+   * A rate typed wrongly can be typed again from a spreadsheet; what a
+   * department declared it made on a Tuesday exists in one database and nowhere
+   * else. Until now there was no way to get it out — every view either
+   * aggregates the ledger or slices it by day.
+   */
+  async function onBackup() {
+    setBusy('backup')
+    setError(null)
+    setMessage(null)
+    try {
+      const file = await exportBackup()
+      downloadBackup(file)
+      const n = summarise(file)
+      setMessage(
+        `Saved — ${n.orders} orders, ${n.lines} shipment lines, ` +
+          `${n.ledger} ledger entries, ${n.rows} rows in all.`,
+      )
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
     } finally {
@@ -463,6 +491,14 @@ function MastersFileControls() {
             if (file) void onImport(file)
           }}
         />
+        <Button
+          variant="quiet"
+          onClick={onBackup}
+          disabled={busy !== null}
+          testId="backup-everything"
+        >
+          {busy === 'backup' ? 'Copying…' : 'Save everything to a file'}
+        </Button>
       </div>
       {message ? (
         <p className="text-clear mt-1.5 text-[11.5px]">{message}</p>
@@ -471,6 +507,14 @@ function MastersFileControls() {
       <p className="text-faint mt-1.5 max-w-[40ch] text-[11px]">
         Loading merges by code — it never wipes what is already there. The file
         moves between the offline and hosted systems unchanged.
+      </p>
+      {/* Said plainly, because the difference between a copy and a restore is
+          exactly the thing people assume in the wrong direction. */}
+      <p className="text-faint mt-1.5 max-w-[40ch] text-[11px]">
+        <strong>Save everything</strong> also takes the order book and the
+        production ledger — the figures nobody can type again. Keep it somewhere
+        other than this machine. It is a copy to hold, not something the software
+        loads back on its own.
       </p>
     </div>
   )

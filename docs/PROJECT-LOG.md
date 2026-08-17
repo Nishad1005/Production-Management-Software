@@ -72,7 +72,7 @@ unmodified in the browser, so the demo runs the real engine with no backend.
 `npm run build` produces a static folder.
 
 **Online.** Supabase project `fiqfbbnmksppbpxmhnbv` — *kram*, Mumbai
-(ap-south-1), Postgres 17.6. Thirty-two migrations applied, the last on 16 Aug (§9).
+(ap-south-1), Postgres 17.6. Thirty-three migrations applied, the last on 17 Aug (§9).
 
 > **Migrations are append-only from here.** Editing one now means the file and
 > the live database disagree, silently, until something breaks in a way that
@@ -192,6 +192,13 @@ get abandoned.
 
 ## 5. Gotchas — things that cost time
 
+**`data-testid` on a custom component compiles and does nothing.** JSX does not
+type-check hyphenated attributes, so passing one to a component that takes an
+explicit prop list is silently dropped — it renders nothing and fails much later
+as a click timing out on an element that never existed. `Button` takes a
+`testId` prop instead, which the compiler checks. (17 Aug)
+
+
 Keep adding to this. Each one was a real dead end.
 
 | Symptom | Cause and fix |
@@ -296,7 +303,7 @@ Since 15 Aug it covers **both** of the prototype's modules: the capacity and
 load arithmetic, and the person-hour conversion that turns a shortfall into
 overtime hours and people.
 
-**233 unit and integration tests** against a real native Postgres, booted per run
+**238 unit and integration tests** against a real native Postgres, booted per run
 from an embedded binary. Covers schema shape, RLS (as the `authenticated` role —
 table owners bypass RLS, so a policy test run as superuser proves nothing), the
 working-day calendar, engine correctness, breaches, pins, overrides, the route
@@ -312,7 +319,7 @@ against the real route.
 **Browser** — `npm run screenshot` drives every screen plus twenty-two
 interactions in headless Chromium and fails on any console error. It checks the
 D-minus edit survives a reload, which is what proves it reached the database
-rather than only React state. Thirty-three steps, two of them at phone width.
+rather than only React state. Thirty-four steps, two of them at phone width.
 Several real defects came from this that the build was happy with.
 
 Waits are named: `until('the article to become schedulable', …)` fails with that
@@ -438,9 +445,11 @@ forwarded as it stands:
 7. **The guide is missing two screens.** *My department* and *WIP* have no
    section in `docs/GUIDE.md` — the two screens a HOD and a merchandiser open
    daily. Fine for a demonstration, not for handover.
-8. **A backup answer.** Masters export to a file, which covers the figures. What
-   happens to the order book and the WIP ledger if the project is lost is a
-   question nobody has asked yet.
+8. ~~**A backup answer.**~~ **Done 17 Aug.** *Save everything to a file* on
+   Masters takes the order book and the production ledger as well as the
+   masters. Still worth confirming what Supabase's own backups cover on the
+   project's current plan — this is a copy U&M control, not a replacement for
+   the platform's.
 
 **Not needed to go live:** Phases 5–10 — material, quality, machines, money,
 predictive — and article costs, which improve one dashboard KPI in proportion to
@@ -565,6 +574,54 @@ traced back to a single line written once and then quoted forward by everything
 that followed, including three documents I wrote yesterday. The log is the
 project's memory and that is exactly what makes an unverified line in it
 expensive.
+
+### 2026-08-17 — What nobody can type again
+
+The last item on the go-live list that was ours. Masters have had a file since
+Phase 1 and the schema is thirty-three migrations in git, so both are already
+copied. **What a department declared it made on a Tuesday is in one Supabase
+project and nowhere else** — and until today it could not leave the database at
+all, because every view either aggregates the ledger or slices it by day. That
+is the only data in Kram with no other source.
+
+`supabase db dump` was the obvious route and is not available: it runs pg_dump
+in a container, and this machine has no Docker (§3, deliberately). A script
+would have been the next thought and is the wrong shape anyway — a backup only a
+developer can run is a backup that does not happen. It is a button on Masters,
+beside the masters file, where somebody already goes to save their afternoon's
+work.
+
+Five new views exist so the rows can leave: `declaration_list`,
+`acceptance_list`, `attendance_list`, `department_attendance_list`,
+`capacity_override_list`, plus `order_list` and one additive column on
+`shipment_line_list`. All keyed by **natural keys** — order number, department
+code, dates — never internal ids, which is the masters file's convention applied
+to the order book. A uuid is meaningless the moment the database it came from is
+gone, and that is the only situation this file is ever opened in.
+
+Three decisions worth keeping:
+
+**The acceptance goes in beside the declaration.** 90 declared, 84 counted in.
+A copy carrying only what was declared would quietly settle an argument the
+ledger exists to hold open.
+
+**Attendance includes people who have since left.** `employee_day` filters to
+active employees, which is right for a screen and wrong for a copy — somebody
+who left in March still worked in February.
+
+**There is no import for the transactional half, on purpose.** Masters upsert by
+natural key and are safe to apply twice; a production declaration is an event,
+and replaying events into a database that may already hold some of them is how a
+factory ends up with a day it made twice. The UI says so in those words rather
+than implying a restore button exists.
+
+**A new gotcha, and a good one.** The browser step clicked
+`[data-testid="backup-everything"]` and timed out on an element that was never
+rendered: `Button` takes an explicit prop list and does not forward unknown
+attributes, and **JSX does not type-check hyphenated attributes**, so
+`data-testid` on a component compiles perfectly, renders nothing, and fails much
+later as a click timeout. `Button` now takes a `testId` prop the compiler can
+see. Worth remembering for every other component in `ui.tsx`.
 
 ### 2026-08-17 — The hosted client, in a browser, at last
 

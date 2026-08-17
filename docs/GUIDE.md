@@ -409,6 +409,21 @@ how they will be loaded into the hosted system later.
 Loading **merges by code** and never wipes what is already there, so a partly
 filled file is safe to apply.
 
+**Save everything to a file.** The masters file above carries the figures you
+could type again from a spreadsheet. This one also carries the things you could
+not: the order book, and every production declaration and handover ever entered.
+What a department said it made on a Tuesday exists in one database and nowhere
+else.
+
+Keep it somewhere other than the machine you are working on. Once a week is
+plenty at first, and more often once real production is being entered.
+
+> It is a **copy to hold, not something the software loads back on its own**. The
+> masters half merges by code and is safe to apply twice; a production entry is
+> an event, and replaying events into a database that already holds some of them
+> is how a factory ends up with a day it made twice. If the file is ever needed,
+> rebuilding from it is a job to do once, carefully, with somebody watching.
+
 **Production route.** Every department, and the yield — the percentage that
 survives each step. The number on the left is only the order they are listed in.
 Deactivating a department never deletes it; one with history keeps it.
@@ -604,9 +619,10 @@ Worth knowing before showing it to anyone:
   export file to build the mapping against.
 - **No login, and access control is not active offline.** The permission model is
   built and tested, but the offline build runs as a single user with full rights.
-- **Nothing is shared, and nothing is backed up.** Each browser holds its own
-  copy, so two people running it see different data and a cleared cache loses
-  everything. Save the masters to a file after entering anything real.
+- **Nothing is shared in the offline build.** Each browser holds its own copy,
+  so two people running it see different data and a cleared cache loses
+  everything. Save to a file after entering anything real — **Save everything**
+  on Masters takes the order book and the production ledger too.
 - **Phases 5 onwards do not exist** — no material, quality, machines or costing
   yet.
 - **WIP is valued only as far as it is costed.** The ledger records quantities,

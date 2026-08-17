@@ -72,6 +72,10 @@ async function checkAnonymous(db) {
     'employee_day',
     'department_manpower_day',
     'article_master',
+    'declaration_list',
+    'acceptance_list',
+    'attendance_list',
+    'order_list',
   ]) {
     const { error } = await db.from(view).select('*').limit(1)
     report(

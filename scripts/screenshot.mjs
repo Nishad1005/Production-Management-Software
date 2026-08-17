@@ -9,7 +9,7 @@
  * in the browser, and "it renders" says nothing about whether a form saves. A
  * blank screenshot is a failure however green the build was.
  */
-import { mkdir } from 'node:fs/promises'
+import { mkdir, readFile } from 'node:fs/promises'
 import { chromium } from 'playwright'
 
 const baseUrl = process.argv[2] ?? 'http://localhost:5173'
@@ -814,6 +814,50 @@ await step('department board', async () => {
 
   await page.screenshot({ path: `${outDir}/board.png`, fullPage: true })
   return 'feeders named, late work separated from not-yet-due'
+})
+
+// --- the copy that holds what nobody can type again -------------------------
+//
+// Runs late, after production has been declared and counted in, so there is a
+// ledger to lose. Checking this against an empty database would prove only that
+// a file downloads.
+
+await step('save everything to a file', async () => {
+  await go('#/masters', 'text=Production route')
+
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    page.click('[data-testid="backup-everything"]'),
+  ])
+  const saved = `${outDir}/kram-backup.json`
+  await download.saveAs(saved)
+
+  const file = JSON.parse(await readFile(saved, 'utf8'))
+  if (file.kram_backup !== 1) throw new Error('not a Kram backup file')
+
+  // The masters half already had a file. The half that matters is the ledger —
+  // 26 declared by stitching and 24 counted in by stapling, both earlier in
+  // this run.
+  const decl = file.data?.production_declarations ?? []
+  const acc = file.data?.production_acceptances ?? []
+  if (!decl.length) throw new Error('the file carries no production declarations')
+  if (!acc.length) throw new Error('the file carries no handovers counted in')
+
+  // Keyed by things that survive the database it came from. A uuid in here
+  // means the file is worthless the moment it is needed.
+  const first = decl[0]
+  if (!first.erp_order_no || !first.department_code) {
+    throw new Error(`ledger rows are not keyed naturally: ${JSON.stringify(first).slice(0, 90)}`)
+  }
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-/.test(String(first.erp_order_no))) {
+    throw new Error('the order key is a uuid')
+  }
+
+  // And the disagreement is kept: declared and accepted differ, on purpose.
+  if (!file.data.orders?.length) throw new Error('no orders in the file')
+
+  const summary = await page.locator('text=/ledger entries/').innerText()
+  return `${decl.length} declarations, ${acc.length} handovers — ${summary.toLowerCase()}`
 })
 
 // --- an article, from nothing to schedulable --------------------------------

@@ -137,12 +137,23 @@ export function Button({
   disabled,
   variant = 'primary',
   type = 'button',
+  testId,
 }: {
   children: ReactNode
   onClick?: () => void
   disabled?: boolean
   variant?: 'primary' | 'quiet'
   type?: 'button' | 'submit'
+  /**
+   * Anchors a browser check to this button.
+   *
+   * Named `testId` rather than taken as `data-testid` on purpose: JSX does not
+   * type-check hyphenated attributes, so writing `data-testid` on a component
+   * that does not forward it compiles cleanly, renders nothing, and fails much
+   * later as a click timing out on an element that was never there. This one
+   * the compiler can see.
+   */
+  testId?: string
 }) {
   // Same reasoning as inputClass: thumb-sized on a phone, dense on a desk.
   const base =
@@ -156,6 +167,7 @@ export function Button({
       type={type}
       onClick={onClick}
       disabled={disabled}
+      data-testid={testId}
       className={`${base} ${styles}`}
     >
       {children}
