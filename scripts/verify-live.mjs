@@ -67,6 +67,10 @@ async function checkAnonymous(db) {
     'production_worklist',
     'wip_by_order',
     'wip_pending_acceptance',
+    'overtime_and_headcount',
+    'employee_list',
+    'employee_day',
+    'department_manpower_day',
   ]) {
     const { error } = await db.from(view).select('*').limit(1)
     report(
@@ -105,6 +109,12 @@ async function checkAnonymous(db) {
         p_qty: 1,
       },
     ],
+    [
+      'set_employee_attendance',
+      { p_emp_code: 'X', p_date: '2026-01-01', p_status: 'present' },
+    ],
+    ['set_employee', { p_emp_code: 'X', p_name: 'Nobody' }],
+    ['set_employee_active', { p_emp_code: 'X', p_is_active: false }],
   ]) {
     const { error } = await db.rpc(fn, args)
     const blockedAtDoor = error?.message?.includes('function')

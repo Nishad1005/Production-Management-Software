@@ -192,3 +192,82 @@ describe('the demonstration order book', () => {
     })
   })
 })
+
+describe('the demonstration crew', () => {
+  it('puts exactly as many people on the floor as the establishment says', async () => {
+    await withRollback(async (c) => {
+      await demo(c)
+      // Generated from department_shifts rather than typed, so a screen
+      // reading "9 of 10 in" beside eleven names is not possible.
+      const { rows } = await c.query<{ department_code: string }>(
+        `select ds.department_id::text as department_code
+           from department_shifts ds
+           join departments d on d.id = ds.department_id and d.is_active
+          where ds.sanctioned_headcount <> (
+            select count(*) from employees e
+             where e.department_id = ds.department_id
+               and e.default_shift_id = ds.shift_id
+               and e.is_active)`,
+      )
+      expect(rows).toEqual([])
+    })
+  })
+
+  it('marks today, and leaves one department honestly unrecorded', async () => {
+    await withRollback(async (c) => {
+      await demo(c)
+      const { rows } = await c.query<{
+        department_code: string
+        sanctioned: number
+        present: number
+        unrecorded: number
+      }>(
+        `select department_code, sanctioned, present, unrecorded
+           from department_manpower_day
+          where attendance_date = current_date::text
+          order by route_position`,
+      )
+
+      // Everybody counted is one of in, out or on leave, so nobody in a marked
+      // department is missing from the tally.
+      expect(rows.length).toBe(13)
+      for (const r of rows) {
+        expect(r.unrecorded).toBe(0)
+        expect(r.present).toBeGreaterThan(0)
+        expect(r.present).toBeLessThanOrEqual(r.sanctioned)
+      }
+
+      // Fitting is deliberately untouched: "nobody has said" has to look
+      // different from "everybody came in", or the screen quietly asserts a
+      // full attendance nobody claimed.
+      expect(rows.map((r) => r.department_code)).not.toContain('FIT')
+      const { rows: fit } = await c.query<{ present: number | null }>(
+        `select present from department_day where department_code = 'FIT'`,
+      )
+      expect(fit[0].present).toBeNull()
+    })
+  })
+
+  it('scales the day by who came in, on the demo data too', async () => {
+    await withRollback(async (c) => {
+      await demo(c)
+      const { rows } = await c.query<{
+        code: string
+        present: number
+        sanctioned: number
+        fraction: number | null
+      }>(
+        `select department_code as code, present, sanctioned,
+                attendance_fraction as fraction
+           from department_day
+          where department_code = 'STITCH'`,
+      )
+      expect(rows[0].present).toBeLessThan(rows[0].sanctioned)
+      // Attendance only scales a rate that carries the crew it was measured
+      // with; where the demo gives one, the day is short in proportion.
+      if (rows[0].fraction !== null) {
+        expect(rows[0].fraction).toBeCloseTo(rows[0].present / rows[0].sanctioned, 3)
+      }
+    })
+  })
+})

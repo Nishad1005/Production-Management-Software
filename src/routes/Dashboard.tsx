@@ -1,6 +1,7 @@
 import { useMdDashboard, type Kpi } from '@/data/planning'
-import { Panel } from '@/components/ui'
-import { formatNumber } from '@/components/format'
+import { useProductionVsPlan, type ProductionVsPlan } from '@/data/wip'
+import { Empty, Panel, Table, Td, Th } from '@/components/ui'
+import { formatDate, formatNumber } from '@/components/format'
 
 /**
  * The MD's dashboard, slide 6 of the concept deck.
@@ -45,7 +46,100 @@ export function Dashboard() {
           </p>
         ) : null}
       </Panel>
+
+      <ProductionAgainstPlan />
     </div>
+  )
+}
+
+/**
+ * Deck slide 11. Planned against declared, per department per day.
+ *
+ * A full join in SQL, which is the interesting part: a department that made
+ * something nobody planned appears here as plainly as one that made nothing it
+ * was asked for. The KPIs above say whether the factory is on track; this says
+ * where it came apart.
+ */
+function ProductionAgainstPlan() {
+  const days = 14
+  const to = new Date()
+  const from = new Date(to.getTime() - days * 86_400_000)
+  const iso = (d: Date) => d.toISOString().slice(0, 10)
+
+  const vsPlan = useProductionVsPlan(iso(from), iso(to))
+  const rows = (vsPlan.data ?? []).filter(
+    (r) => r.qty_planned > 0 || r.qty_good > 0 || r.qty_rejected > 0,
+  )
+  const behind = rows.filter((r) => r.variance < 0)
+
+  return (
+    <Panel
+      title="Planned against made"
+      meta={
+        rows.length
+          ? `${behind.length} of ${rows.length} short, last ${days} days`
+          : `last ${days} days`
+      }
+    >
+      <div data-testid="production-vs-plan">
+        {rows.length === 0 ? (
+          <Empty>
+            Nothing was planned or declared in the last {days} days. Output is
+            entered on the Production screen, by the department that made it.
+          </Empty>
+        ) : (
+          <Table>
+            <thead>
+              <tr>
+                <Th>Day</Th>
+                <Th>Department</Th>
+                <Th align="right">Planned</Th>
+                <Th align="right">Made</Th>
+                <Th align="right">Rejected</Th>
+                <Th align="right">Variance</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <Row key={`${r.work_date}-${r.department_code}`} row={r} />
+              ))}
+            </tbody>
+          </Table>
+        )}
+      </div>
+    </Panel>
+  )
+}
+
+function Row({ row }: { row: ProductionVsPlan }) {
+  // Planned nothing and made something is not a variance to be praised for —
+  // it is work that arrived off-plan, and it reads differently.
+  const unplanned = row.qty_planned === 0 && row.qty_good > 0
+
+  return (
+    <tr>
+      <Td>{formatDate(row.work_date)}</Td>
+      <Td>{row.department_name}</Td>
+      <Td align="right">{row.qty_planned ? formatNumber(row.qty_planned) : '—'}</Td>
+      <Td align="right">{row.qty_good ? formatNumber(row.qty_good) : '—'}</Td>
+      <Td align="right">
+        {row.qty_rejected ? (
+          <span className="text-amber">{formatNumber(row.qty_rejected)}</span>
+        ) : (
+          '—'
+        )}
+      </Td>
+      <Td align="right">
+        {unplanned ? (
+          <span className="text-mid">not planned</span>
+        ) : (
+          <span className={row.variance < 0 ? 'text-flag' : 'text-clear'}>
+            {row.variance > 0 ? '+' : ''}
+            {formatNumber(row.variance)}
+          </span>
+        )}
+      </Td>
+    </tr>
   )
 }
 

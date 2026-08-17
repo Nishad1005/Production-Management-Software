@@ -232,6 +232,19 @@ like before a decision was taken.
 > the rest. The screen tells you when that has happened, because a partial result
 > presented as a whole one would be worse than no result.
 
+### Dashboard
+
+The MD's screen. Ten figures, each with its target, and the ones that cannot be
+computed yet say what they are waiting for instead of showing a zero — a zero
+would be read as a fact.
+
+**Planned against made** sits underneath: every department's last fortnight, what
+the plan asked for beside what was declared, and the difference. A day where
+something was made that nobody planned appears just as plainly as a day where
+nothing was made at all.
+
+---
+
 ### Production
 
 Where the day gets written down. It replaces the daily production sheet, and it
@@ -258,6 +271,37 @@ someone types a number would move the ground under them.
 
 Entering a figure again corrects it rather than adding to it, so there is no way
 to double a day by entering it twice.
+
+---
+
+### Manpower
+
+Who is here, and what to do about the days there are not enough of them.
+
+**Where overtime would close the gap** takes every day a department is asked for
+more than it can make and says it in hours instead of pieces: how much overtime
+each person would have to work, or — where that runs past the overtime ceiling —
+how many extra people the day needs. An overtime hour is worth less than a normal
+one; the efficiency figure on the shift says how much less, and it is editable
+like any other master. This is the arithmetic from U&M's own capacity model, and
+the tests check Kram against it rather than against itself.
+
+Days that have already gone are not listed. Overload in the past is real, but no
+amount of overtime reaches it — that work is late, and it moves on the schedule.
+
+**Who is in** is each department's day: on the books, in, out, on leave, and the
+overtime actually worked. A department nobody has marked shows as unrecorded
+rather than as fully present, because the two are not the same thing and only one
+of them is a fact.
+
+**Deployment** is the roster. Pick a department, and mark each person **In**,
+**Out** or **On leave**; enter overtime hours against anyone who stayed. Marking
+somebody changes what their department can make that day, so the plan re-runs —
+the head count on the Production screen follows the same moment, because it is
+the same number and not a second copy of it.
+
+Overtime here is hours **worked**, not hours the plan would like. The panel above
+says what a day would need; this says what happened.
 
 ---
 
@@ -452,8 +496,9 @@ in the browser and reloads the seed. There is no undo.
 
 Worth knowing before showing it to anyone:
 
-- **The data is illustrative.** Four departments from the prototype, not U&M's
-  real seven, and invented rates.
+- **The data is illustrative.** The department names, what feeds what and the
+  article codes are U&M's own; every rate, yield, D-minus, order and employee in
+  the offline build is invented, so the screens have something to say.
 - **No ERP import yet.** Orders are entered by hand until we have a real Panipuri
   export file to build the mapping against.
 - **No login, and access control is not active offline.** The permission model is
@@ -461,8 +506,10 @@ Worth knowing before showing it to anyone:
 - **Nothing is shared, and nothing is backed up.** Each browser holds its own
   copy, so two people running it see different data and a cleared cache loses
   everything. Save the masters to a file after entering anything real.
-- **Phases 4 onwards do not exist** — no manpower, material, quality, machines
-  or costing yet.
-- **WIP is counted, not valued.** The ledger records quantities. Rupee value
-  needs a component cost master, which has not been loaded, and inventing it
-  would put a made-up figure beside real ones.
+- **Phases 5 onwards do not exist** — no material, quality, machines or costing
+  yet.
+- **WIP is valued only as far as it is costed.** The ledger records quantities,
+  which are always real. A rupee figure needs a cost per article, entered on the
+  capacity sheet; until one is, the KPI says so rather than showing a zero, and
+  where only part of the floor is costed it says how much of it the total
+  covers.

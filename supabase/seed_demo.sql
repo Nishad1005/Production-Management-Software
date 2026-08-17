@@ -399,3 +399,74 @@ select decl.id,
   join public.shipment_lines sl on sl.id = decl.shipment_line_id
   join public.orders o on o.id = sl.order_id and o.erp_order_no = 'SO/26-27/0455'
 on conflict do nothing;
+
+-- ---------------------------------------------------------------------------
+-- The people. Phase 4, deck slide 13.
+--
+-- Generated from each department's own establishment, so the roster and the
+-- sanctioned head count cannot disagree — a screen that says "9 of 10 in" while
+-- eleven names are listed is the kind of quietly wrong that this project keeps
+-- refusing. Names are invented like everything else in this file; the head
+-- counts are the ones above.
+--
+-- Roughly a third skilled, and the last two of any department are on contract:
+-- enough of a mix that the deployment chart shows one, not a wall of identical
+-- rows.
+-- ---------------------------------------------------------------------------
+insert into public.employees
+  (emp_code, name, department_id, default_shift_id, skill_level, employment_type)
+select d.code || '-' || lpad(n::text, 2, '0'),
+       (array['Ramesh','Sunil','Anjali','Farid','Kavita','Imran','Deepa',
+              'Sanjay','Meera','Vikas','Prakash','Nisha','Arun','Rekha',
+              'Salim','Pooja','Mahesh','Latha','Girish','Shabana',
+              'Dinesh','Yasmin'])[1 + ((n * 7 + d.route_position) % 22)]
+         || ' ' ||
+       (array['Patil','Sheikh','Naik','Kulkarni','Ansari','Rane','Joshi',
+              'Gaikwad','Sawant','Qureshi','More'])[1 + ((n * 3 + d.route_position) % 11)],
+       d.id,
+       ds.shift_id,
+       case when n % 3 = 1 then 'skilled' else 'semi_skilled' end::public.skill_level,
+       case when n > ds.sanctioned_headcount - 2 then 'contract' else 'permanent' end
+         ::public.employment_type
+  from public.department_shifts ds
+  join public.departments d on d.id = ds.department_id and d.is_active
+  cross join lateral generate_series(1, ds.sanctioned_headcount) as n
+on conflict (emp_code) do nothing;
+
+-- Today, as a supervisor would have left it by mid-morning: most of the floor
+-- marked, a few absent, one on leave, a couple who stayed late on the Harper
+-- run — and, deliberately, a whole department nobody has touched yet, because
+-- "nobody has said" is a state the screen has to show honestly rather than
+-- reading as a full attendance.
+--
+-- Written through set_employee_attendance so the department head count is
+-- derived the same way the floor derives it, and capacity for today moves with
+-- it. current_date, so the demonstration is always about this morning.
+do $$
+declare
+  r record;
+begin
+  for r in
+    select e.emp_code,
+           row_number() over (partition by d.code order by e.emp_code) as seat,
+           d.code as dept
+      from public.employees e
+      join public.departments d on d.id = e.department_id and d.is_active
+     where e.is_active
+       -- Fitting has not been marked at all. Someone has to chase it.
+       and d.code <> 'FIT'
+  loop
+    perform public.set_employee_attendance(
+      r.emp_code,
+      current_date,
+      case
+        when r.seat % 11 = 0 then 'absent'
+        when r.seat % 17 = 0 then 'leave'
+        else 'present'
+      end::public.attendance_status,
+      case when r.dept = 'STITCH' and r.seat <= 3 then 2 else 0 end,
+      case when r.dept = 'STITCH' and r.seat <= 3
+           then 'Stayed on the Harper stitching run' end
+    );
+  end loop;
+end $$;

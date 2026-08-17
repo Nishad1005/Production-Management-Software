@@ -54,11 +54,13 @@ material, cash and customer relationships the system cannot see.
 | 2 | Scheduling engine, planning outputs, acceptance check | **Done** |
 | 3 | WIP tracking — declarations, two-sided handovers, measured yield | **Done** |
 | — | MD dashboard, department boards, attendance-driven capacity | **Done** |
-| 4–10 | Manpower, material, quality, machines, cost, command centre, predictive | Not started |
+| 4 | Manpower — overtime and headcount arithmetic, per-person attendance | **Done** |
+| 5–10 | Material, quality, machines, cost, command centre, predictive | Not started |
 
-**Client**: eight screens, all reading from database views. Editable: D-minus
+**Client**: fourteen screens, all reading from database views. Editable: D-minus
 matrix, component rates, department yield/route/headcount, what feeds what,
-holidays, orders, shipment lines, and pins by dragging a schedule bar.
+holidays, orders, shipment lines, article cost, who came in — per person or as a
+head count — and pins by dragging a schedule bar.
 
 **The route is a graph, not a line.** `department_dependencies` says what must
 finish before what; `route_position` only orders the display. The engine reads
@@ -70,7 +72,7 @@ unmodified in the browser, so the demo runs the real engine with no backend.
 `npm run build` produces a static folder.
 
 **Online.** Supabase project `fiqfbbnmksppbpxmhnbv` — *kram*, Mumbai
-(ap-south-1), Postgres 17.6. All twenty-nine migrations applied.
+(ap-south-1), Postgres 17.6. Thirty-one migrations applied, the last two on 15 Aug (§9).
 
 > **Migrations are append-only from here.** Editing one now means the file and
 > the live database disagree, silently, until something breaks in a way that
@@ -243,9 +245,11 @@ Keep adding to this. Each one was a real dead end.
 
 **Decisions the client owes us:**
 
-4. **Per-employee vs aggregate attendance** (spec §8). Per-employee is what skill
-   mix and leave management require, and is more entry. Must be settled with HR
-   before Phase 4; `employees` already exists so it shapes what we seed.
+4. ~~**Per-employee vs aggregate attendance** (spec §8).~~ **Settled 15 Aug:**
+   U&M chose per-employee, entered on the floor, with overtime recorded as
+   hours *worked*. Both exist — marking individuals derives the department head
+   count rather than sitting beside it, because two ways to say how many people
+   were in is how a wrong number ends up looking normal.
 5. **The overtime ceiling.** Five hours on top of an eight-hour net shift is long
    under the Factories Act's daily and quarterly limits, and multi-shift working
    adds its own provisions. The figure is configurable and is what the spec
@@ -275,7 +279,11 @@ client has seen, then diffs the SQL engine against it cell by cell across the
 prototype's own default scenario and five more. Zero divergence. Any difference
 is a real defect in one implementation or the other.
 
-**198 unit and integration tests** against a real native Postgres, booted per run
+Since 15 Aug it covers **both** of the prototype's modules: the capacity and
+load arithmetic, and the person-hour conversion that turns a shortfall into
+overtime hours and people.
+
+**213 unit and integration tests** against a real native Postgres, booted per run
 from an embedded binary. Covers schema shape, RLS (as the `authenticated` role —
 table owners bypass RLS, so a policy test run as superuser proves nothing), the
 working-day calendar, engine correctness, breaches, pins, overrides, the route
@@ -288,11 +296,11 @@ Note the task count is lower than the spec's ~40,000 estimate; three components
 across seven departments gives 21 pairs. The row count matches. Worth checking
 against the real route.
 
-**Browser** — `npm run screenshot` drives every screen plus fourteen interactions
+**Browser** — `npm run screenshot` drives every screen plus fifteen interactions
 in headless Chromium and fails on any console error. It checks the D-minus edit
 survives a reload, which is what proves it reached the database rather than only
-React state. Thirty-one steps, two of them at phone width. Several real defects came from this that the build
-was happy with.
+React state. Thirty-three steps, two of them at phone width. Several real defects
+came from this that the build was happy with.
 
 **Access control against production** — `npm run verify:live`, after any
 migration touching privileges, policies or functions. Local Postgres and Supabase
@@ -303,16 +311,23 @@ could call every function on it while all tests were green.
 
 ## 8. What is next
 
-1. **The real route and D-minus values.** Still the single change that would make
-   the biggest difference to how the demo lands. Blocked on a session with PPC —
-   and `docs/GUIDE.md` now covers saving the masters to a file afterwards, so
-   that session's work is not held hostage by one browser.
-2. **Supabase**, per the decision below: after the demo, before Phase 3.
-3. **Phase 3 — WIP tracking.** The highest-value build from the concept deck.
-   It replaces the daily-production Google Sheet (slide 18), unlocks six of the
-   nine MD dashboard KPIs, and makes capacity self-correcting rather than
-   asserted. Inherently multi-user, so it needs Supabase first.
-4. **Articles and components as masters.** Currently seeded only; there is no way
+1. **The full Rev B specification.** Open since day one and the only source Kram
+   cannot be audited against — the copy that reached the build is truncated at
+   ~50k characters, losing §20 *Open items* entirely. Everything else on this
+   list is a judgement made without it.
+2. **The real route and D-minus values.** Still the single change that would make
+   the biggest difference to how the demo lands. Blocked on a session with PPC.
+   `docs/GUIDE.md` covers saving the masters to a file afterwards, so that
+   session's work is not held hostage by one browser.
+3. **The Panipuri export sample.** The import module is otherwise ready to build
+   but would be built against an assumed column layout. U&M say it will take
+   time, which is the reason to have asked already.
+4. **Article costs.** One box per article on the capacity sheet, and WIP value
+   turns from "—" into rupees for as much of the floor as is filled in. Nobody
+   is blocked on it; it improves one KPI in proportion to how much is entered.
+5. **Phase 5 — material.** The next phase in the spec's own order, and the one
+   the deck's "material shortage" alerts need.
+6. **Articles and components as masters.** Currently seeded only; there is no way
    to add a new article without SQL. Lower priority than it sounds, since both
    arrive from Panipuri in the real system.
 
@@ -381,6 +396,87 @@ precondition for the planning half being used in anger.
 
 Newest first. One entry per working session — what changed, and anything a
 future reader would not infer from the diff.
+
+### 2026-08-15 — Phase 4: the shortfall said in hours and people
+
+Started by auditing the concept deck slide by slide, because a phase that begins
+by inventing scope tends to skip whatever the client already asked for. Nineteen
+slides against what exists. Three findings, and the largest of them *was* Phase
+4.
+
+**The client's own prototype has a Module 2, and we had never implemented it.**
+`capacity-modules-prototype.html` — "Overtime and headcount · person-hour
+conversion" — turns a shortfall in pieces into overtime hours per person, then
+into people when the overtime ceiling is reached. §1 of this document has
+claimed since day one that Kram "reports load against capacity, **shortfall in
+hours and people**". The first half was true. `engine-parity.test.ts`
+reproduced Module 1 and stopped there.
+
+Kram cannot use their formulas as written, and the reason is the same one that
+shapes every planning view: their prototype gives a department one capacity in
+units, and Kram's departments make several components. Units of legs cannot be
+added to units of covers, so there is no single shortfall in units to put in the
+numerator. Substituting their own `uph = capacity / (headcount × hours)` into
+each formula cancels the capacity out, and all three reduce to the overload
+fraction:
+
+    otPer = (utilisation − 1) × hours / efficiency
+    heads = ceil((utilisation − 1) × headcount)
+    extra = ceil(headcount × ((utilisation − 1) − ceiling × efficiency / hours))
+
+which is the same arithmetic in the one quantity Kram can add up. For a
+department making a single component — the prototype's own case — they are
+identically equal, and the parity test now proves that against the prototype's
+default scenario rather than taking the derivation's word for it. Six parity
+tests now, three per module.
+
+**`employees` had existed since Phase 0 with nothing referencing it** but its own
+RLS policies — the fourth built-and-tested thing found invisible, after
+`capacity_overrides`, `wip_by_order` and `production_vs_plan`. The pattern is
+consistent enough to be worth naming: work stops at the last green test rather
+than at the screen. Two of the four were closed this session.
+
+**Attendance is now per person, and derives the head count rather than sitting
+beside it.** U&M chose the fuller scope: individuals, with overtime recorded as
+hours *worked*, not hours the plan wishes for. `resolve_capacity` reads
+`department_attendance` and nothing else, so `set_employee_attendance` writes
+the individual row and then re-derives that number through the same
+`set_attendance` the count screen uses. One input to capacity, two ways to
+arrive at it. Marking somebody out moves what their department can make that
+day, and the browser check proves it across two screens: mark Shabana Ansari out
+on Manpower, and Today's capacity on Production reads 10 of 12 in — without
+anybody typing it twice.
+
+**Overtime is not offered on days that have gone.** The first version of the
+screen listed every flagged day including last month's, each with a confident
+"needs 15 more people". Days already past are real overload, but no amount of
+overtime reaches them; they are a scheduling problem, and they now say so in one
+line instead of twenty cards of advice nobody can take.
+
+**`production_vs_plan` finally has a screen** — deck slide 11, built and tested
+in Phase 3 and never once visible. It sits under the MD's KPIs: planned against
+made, per department per day, with the full join intact so a day worked with
+nothing planned reads as loudly as the reverse.
+
+The demonstration roster is generated from each department's own establishment,
+so the head count and the list of names cannot disagree. A screen that says
+"9 of 10 in" beside eleven names is precisely the failure this project keeps
+refusing.
+
+Both migrations — `20260815090000_overtime_headcount.sql` and
+`20260815090100_employee_attendance.sql` — are applied to the live project, and
+`verify:live` now probes the four new views and three new functions: none of
+them is reachable with the anon key. The signed-in half of that check still
+needs somebody to run it with an account, which is the one thing this session
+could not do for itself.
+
+**A locator lesson, the sixth.** The browser check read a head count out of the
+page with `/Stitching[\s\S]*?(\d+)\s+in\b/` against `textContent`, and it
+matched a department six cards further down — `textContent` runs "11 in" straight
+into "1 out", so `\b` never fires where `innerText`'s newline would have made
+it. It now reads a `data-present` attribute. Numbers scraped out of prose keep
+finding the wrong number, and the failure looks like a timeout rather than a
+mismatch.
 
 ### 2026-08-12 — Phase 3: the WIP ledger
 

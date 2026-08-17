@@ -17,6 +17,8 @@ describe('migrations', () => {
       'department_dependencies',
       'department_shifts',
       'departments',
+      // Phase 4 — who was actually there
+      'employee_attendance',
       'employees',
       'holidays',
       'kpi_targets',

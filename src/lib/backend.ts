@@ -23,6 +23,9 @@ export type Filters = Record<string, string | number | boolean | null | undefine
 
 export type SelectOptions = {
   eq?: Filters
+  /** Inclusive bounds — a window of dates, mostly. PostgREST has both. */
+  gte?: Filters
+  lte?: Filters
   order?: string[]
   limit?: number
 }
@@ -66,6 +69,16 @@ class OfflineBackend implements Backend {
       } else {
         params.push(value)
         conditions.push(`${quote(column)} = $${params.length}`)
+      }
+    }
+    for (const [op, filters] of [
+      ['>=', options.gte],
+      ['<=', options.lte],
+    ] as const) {
+      for (const [column, value] of Object.entries(filters ?? {})) {
+        if (value === undefined || value === null) continue
+        params.push(value)
+        conditions.push(`${quote(column)} ${op} $${params.length}`)
       }
     }
 
@@ -124,6 +137,14 @@ class HostedBackend implements Backend {
     for (const [column, value] of Object.entries(options.eq ?? {})) {
       if (value === undefined) continue
       builder = value === null ? builder.is(column, null) : builder.eq(column, value)
+    }
+    for (const [column, value] of Object.entries(options.gte ?? {})) {
+      if (value === undefined || value === null) continue
+      builder = builder.gte(column, value)
+    }
+    for (const [column, value] of Object.entries(options.lte ?? {})) {
+      if (value === undefined || value === null) continue
+      builder = builder.lte(column, value)
     }
     for (const term of options.order ?? []) {
       const [column, direction] = term.split(/\s+/)

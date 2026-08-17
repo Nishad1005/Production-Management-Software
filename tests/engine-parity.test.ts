@@ -6,7 +6,9 @@ import { runSchedule } from './helpers/fixtures'
 import {
   PROTOTYPE_DEPTS,
   PROTOTYPE_ORDERS,
+  PROTOTYPE_SHIFT,
   referenceLoad,
+  referenceOvertime,
 } from './helpers/reference-scheduler'
 
 /**
@@ -23,9 +25,15 @@ async function buildPrototypeFixture(c: pg.Client) {
   // The prototype closes Sundays and nothing else.
   await c.query('delete from holidays')
 
+  // The prototype's own shift rules: an 8-hour day, a 3-hour overtime ceiling
+  // and 85% overtime efficiency. Kram's defaults differ on the ceiling, and
+  // Module 2 parity is meaningless unless both sides use the same numbers.
   await c.query(
-    `insert into shifts (code, name, start_time, end_time)
-     values ('GEN', 'General', '09:00', '18:00')`,
+    `insert into shifts
+       (code, name, start_time, end_time,
+        net_production_hours, max_ot_hours, ot_efficiency_pct)
+     values ('GEN', 'General', '09:00', '18:00', $1, $2, $3)`,
+    [PROTOTYPE_SHIFT.hours, PROTOTYPE_SHIFT.otCeiling, PROTOTYPE_SHIFT.efficiencyPct],
   )
 
   await c.query(
@@ -175,6 +183,114 @@ describe('parity with the capacity-flagging prototype', () => {
       )
 
       expect(rows.map((r) => Number(r.qty))).toEqual([20, 40, 40])
+    })
+  })
+})
+
+/**
+ * Module 2 of the same prototype — the half Kram claimed to do and did not.
+ *
+ * The two implementations are deliberately different expressions of the same
+ * arithmetic: the prototype works in units against one capacity per department,
+ * Kram works in utilisation because it cannot add units of legs to units of
+ * covers. Substituting units-per-person-hour into their formulas collapses the
+ * capacity out of all three and leaves the overload fraction. If that algebra
+ * is wrong, these disagree.
+ */
+describe('parity on overtime and headcount', () => {
+  async function engineOvertime(c: pg.Client, run: string) {
+    const { rows } = await c.query<{
+      department_code: string
+      load_date: string
+      ot_hours_per_person: number
+      people_instead: number
+      extra_people: number
+      covered_by_overtime: boolean
+    }>(
+      `select department_code, load_date, ot_hours_per_person,
+              people_instead, extra_people, covered_by_overtime
+         from overtime_and_headcount
+        where run_id = $1
+        order by department_code, load_date`,
+      [run],
+    )
+    return rows
+  }
+
+  it('reports the same overtime and people as the prototype', async () => {
+    await withRollback(async (c) => {
+      await buildPrototypeFixture(c)
+      for (const order of PROTOTYPE_ORDERS) await addOrder(c, order)
+
+      const run = await runSchedule(c)
+      const engine = await engineOvertime(c, run)
+      const reference = referenceOvertime(
+        referenceLoad(PROTOTYPE_ORDERS, PROTOTYPE_DEPTS),
+        PROTOTYPE_DEPTS,
+      )
+
+      // Same flagged days, and the prototype's default scenario has some — a
+      // green run here would mean the fixture stopped overloading anything and
+      // the comparison had quietly become vacuous.
+      expect(reference.length).toBeGreaterThan(0)
+      expect(engine.length).toBe(reference.length)
+
+      for (const [i, want] of reference.entries()) {
+        const got = engine[i]
+        const where = `${want.department} ${want.date}`
+        expect(got.department_code, where).toBe(want.department)
+        expect(got.load_date, where).toBe(want.date)
+        expect(got.ot_hours_per_person, where).toBeCloseTo(
+          want.otHoursPerPerson,
+          2,
+        )
+        expect(got.people_instead, where).toBe(want.peopleInstead)
+        expect(got.extra_people, where).toBe(want.extraPeople)
+        expect(got.covered_by_overtime, where).toBe(want.coveredByOvertime)
+      }
+    })
+  })
+
+  it('agrees across quantities that cross the overtime ceiling', async () => {
+    const scenarios = [
+      // Comfortably inside the ceiling.
+      { id: 'A', qty: 45, stuffingDate: '2026-11-02' },
+      // Far past it, where extra people is the answer instead.
+      { id: 'B', qty: 400, stuffingDate: '2026-11-16' },
+      { id: 'C', qty: 1000, stuffingDate: '2026-12-15' },
+    ] as const
+
+    for (const scenario of scenarios) {
+      await withRollback(async (c) => {
+        await buildPrototypeFixture(c)
+        await addOrder(c, scenario)
+
+        const run = await runSchedule(c)
+        const engine = await engineOvertime(c, run)
+        const reference = referenceOvertime(
+          referenceLoad([scenario], PROTOTYPE_DEPTS),
+          PROTOTYPE_DEPTS,
+        )
+
+        expect(engine.length, `scenario ${scenario.id}`).toBe(reference.length)
+        for (const [i, want] of reference.entries()) {
+          expect(
+            engine[i].ot_hours_per_person,
+            `scenario ${scenario.id} ${want.department} ${want.date}`,
+          ).toBeCloseTo(want.otHoursPerPerson, 2)
+          expect(engine[i].extra_people).toBe(want.extraPeople)
+        }
+      })
+    }
+  })
+
+  it('says nothing at all when no day is over capacity', async () => {
+    await withRollback(async (c) => {
+      await buildPrototypeFixture(c)
+      // 30 units against the tightest capacity of 30/day: full, not over.
+      await addOrder(c, { id: 'F', qty: 30, stuffingDate: '2026-11-02' })
+      const run = await runSchedule(c)
+      expect(await engineOvertime(c, run)).toEqual([])
     })
   })
 })

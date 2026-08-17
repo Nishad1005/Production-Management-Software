@@ -137,6 +137,34 @@ export function useMeasuredYield() {
   })
 }
 
+export type ProductionVsPlan = {
+  department_code: string
+  department_name: string
+  route_position: number
+  work_date: string
+  qty_planned: number
+  qty_good: number
+  qty_rejected: number
+  variance: number
+}
+
+/**
+ * Planned against declared, per department per day — deck slide 11. A full
+ * join in SQL, so a day with output nobody planned shows up as loudly as a
+ * planned day with no output.
+ */
+export function useProductionVsPlan(from: string, to: string) {
+  return useQuery({
+    queryKey: ['production-vs-plan', from, to],
+    queryFn: () =>
+      select<ProductionVsPlan>('production_vs_plan', {
+        gte: { work_date: from },
+        lte: { work_date: to },
+        order: ['work_date', 'route_position'],
+      }),
+  })
+}
+
 /**
  * A declaration does not move any planned date, so unlike a masters edit this
  * deliberately does *not* re-run the schedule. Rescheduling the factory because

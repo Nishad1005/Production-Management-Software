@@ -101,3 +101,74 @@ export function referenceLoad(
 
   return load
 }
+
+// ---------------------------------------------------------------------------
+// Module 2 — overtime and headcount.
+//
+// A second transcription of the prototype, kept in *its* terms: units, one
+// capacity per department, the arithmetic copied line for line from runOT() in
+// capacity-modules-prototype.html. Kram computes the same answers from
+// utilisation, because it cannot add units of legs to units of covers — so
+// these being two genuinely different expressions is what makes agreeing
+// between them worth anything.
+// ---------------------------------------------------------------------------
+
+/** The prototype's own shift defaults: 8h day, 3h OT ceiling, 85% efficiency. */
+export const PROTOTYPE_SHIFT = { hours: 8, otCeiling: 3, efficiencyPct: 85 }
+
+export type OvertimeRow = {
+  department: string
+  date: string
+  load: number
+  shortfall: number
+  otHoursPerPerson: number
+  peopleInstead: number
+  extraPeople: number
+  coveredByOvertime: boolean
+}
+
+export function referenceOvertime(
+  load: Map<LoadKey, number>,
+  depts: ReadonlyArray<{ code: string; capacity: number; headcount: number }>,
+  shift = PROTOTYPE_SHIFT,
+): OvertimeRow[] {
+  const nh = shift.hours
+  const ceiling = shift.otCeiling
+  const eff = shift.efficiencyPct / 100
+  const rows: OvertimeRow[] = []
+
+  for (const dept of depts) {
+    const hc = dept.headcount
+    // units per person-hour
+    const uph = dept.capacity / (hc * nh)
+
+    for (const [key, q] of load) {
+      const [code, date] = key.split('|')
+      if (code !== dept.code || q <= dept.capacity) continue
+
+      const S = q - dept.capacity
+      const otPer = S / (uph * eff) / hc
+      const heads = Math.ceil(S / (uph * nh))
+      const covered = otPer <= ceiling
+
+      rows.push({
+        department: dept.code,
+        date,
+        load: q,
+        shortfall: S,
+        otHoursPerPerson: otPer,
+        peopleInstead: heads,
+        extraPeople: covered
+          ? 0
+          : Math.ceil((S - hc * ceiling * uph * eff) / (uph * nh)),
+        coveredByOvertime: covered,
+      })
+    }
+  }
+
+  return rows.sort((a, b) =>
+    a.department === b.department
+      ? a.date.localeCompare(b.date)
+      : a.department.localeCompare(b.department),
+  )
+}

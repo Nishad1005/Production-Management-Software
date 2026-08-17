@@ -26,6 +26,7 @@ const SCREENS = [
   { hash: '#/board', name: 'department-board', waitFor: 'text=What you owe' },
   { hash: '#/dashboard', name: 'dashboard', waitFor: 'text=Is the factory on track today?' },
   { hash: '#/wip', name: 'wip', waitFor: 'text=Ready to stuff' },
+  { hash: '#/manpower', name: 'manpower', waitFor: 'text=Who is in' },
 ]
 
 await mkdir(outDir, { recursive: true })
@@ -746,8 +747,29 @@ await step('md dashboard', async () => {
     throw new Error('WIP value is showing a number it cannot compute')
   }
 
+  // Slide 11, planned against made. Built and tested since Phase 3 with no way
+  // to see it — the fourth thing found that way, so it is checked on screen.
+  const vsPlan = page.locator('[data-testid="production-vs-plan"]')
+  const planRows = await vsPlan.locator('tbody tr').count()
+  if (!planRows) {
+    throw new Error(
+      `plan-against-made panel has no rows: ${(await vsPlan.innerText()).slice(0, 120)}`,
+    )
+  }
+  // Declaring production earlier in this run put a real figure on today, so a
+  // table of nothing-but-dashes would mean the full join is not joining.
+  // Read by column position rather than out of the prose: the last check that
+  // scraped a number out of textContent matched a different department.
+  const made = await vsPlan.evaluate((el) =>
+    [...el.querySelectorAll('tbody tr')].some((tr) => {
+      const cell = tr.children[3]?.textContent?.trim() ?? ''
+      return cell !== '—' && Number(cell.replace(/,/g, '')) > 0
+    }),
+  )
+  if (!made) throw new Error('every row shows nothing made — the join is not joining')
+
   await page.screenshot({ path: `${outDir}/dashboard.png`, fullPage: true })
-  return "nine KPIs, and the one without data says so"
+  return "nine KPIs, the one without data says so, and plan against made"
 })
 
 // --- the department's own board ---------------------------------------------
@@ -781,6 +803,59 @@ await step('department board', async () => {
   return 'feeders named, late work separated from not-yet-due'
 })
 
+// --- marking one person moves what the department can make ------------------
+//
+// The whole reason set_employee_attendance derives department_attendance rather
+// than sitting beside it. Two screens, two views, one number: mark somebody out
+// on Manpower, and Today's capacity on the Production screen — which reads
+// department_day.present, the figure resolve_capacity itself reads — has to
+// agree without anybody typing it in twice.
+
+await step('attendance moves capacity', async () => {
+  await go('#/manpower', 'text=Who is in')
+  await page.selectOption('[data-testid="manpower-department"]', 'STITCH')
+  await page.waitForTimeout(900)
+
+  // Read from an attribute, not from the prose. Scraping "11 in" out of
+  // textContent looked fine and matched the wrong department, because
+  // textContent runs "11 in" straight into "1 out" and \b never fires.
+  const card = page.locator('[data-testid="manpower-dept-STITCH"]')
+  const before = Number(await card.getAttribute('data-present'))
+  if (!before) throw new Error('nobody is in — the demo roster is not being marked')
+
+  // The first person the panel lists who is currently in. Scoped to the
+  // people panel: "Out" also appears in the summary above, and an unanchored
+  // locator has broken five checks here already.
+  const person = page
+    .locator('[data-testid="manpower-people"] > div > div')
+    .filter({ has: page.locator('button.border-blue:has-text("In")') })
+    .first()
+  const name = (await person.innerText()).split('\n')[0]
+  await person.getByRole('button', { name: 'Out' }).click()
+
+  await page.waitForFunction(
+    (n) =>
+      document
+        .querySelector('[data-testid="manpower-dept-STITCH"]')
+        ?.getAttribute('data-present') === String(n),
+    before - 1,
+    { timeout: 60_000 },
+  )
+  await page.screenshot({ path: `${outDir}/manpower.png`, fullPage: true })
+
+  // And the number the engine reads followed, on a screen that never saw the
+  // employee record.
+  await go('#/production', 'text=What you were asked for')
+  await page.selectOption('[data-testid="production-department"]', 'STITCH')
+  await page.waitForFunction(
+    (n) => new RegExp(`\\b${n}\\b\\s*of\\s*\\d+ in`).test(document.body.innerText),
+    before - 1,
+    { timeout: 60_000 },
+  )
+
+  return `${name} marked out — ${before} in became ${before - 1}, and capacity followed`
+})
+
 // --- every screen is usable with a thumb ------------------------------------
 //
 // One pass over all of them at phone width. Deliberately excludes cells inside
@@ -811,6 +886,7 @@ await step('thumb-sized everywhere', async () => {
     ['#/board', 'What you owe'],
     ['#/production', 'What you were asked for'],
     ['#/capacity', 'Capacity sheet'],
+    ['#/manpower', 'Who is in'],
     ['#/masters', 'Production route'],
   ]
 
