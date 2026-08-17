@@ -35,6 +35,11 @@ screenshots/
 # Claude Code — shared project config is committed, per-machine state is not
 .claude/settings.local.json
 
+# Generated capacity workbooks. Client product data, regenerable in one
+# command, and they come back from PPC edited — a repo is the wrong place for
+# a file whose whole life is being mailed out and mailed back.
+/*.xlsx
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

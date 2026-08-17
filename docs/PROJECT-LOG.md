@@ -242,10 +242,14 @@ Keep adding to this. Each one was a real dead end.
    **Asked for in `docs/request-panipuri-export.html` (DBBS/UM/KRAM/05)**, which
    also puts the question that decides the whole workflow: does Panipuri hold a
    stuffing date at all, or only a customer delivery date?
-3. **The route is placeholder data.** Four departments from the prototype, not
-   U&M's real seven, and every rate is invented. The arithmetic is right; the
-   numbers are illustrative. Needs a working session with PPC, which is also the
-   moment to explain the dedicated-rate convention (§4).
+3. **The route is real; the figures are not.** Corrected 17 Aug — the live
+   project carries U&M's fourteen departments and seventy-one SKUs, and has
+   since the capacity sheet was imported. What is missing is every number in the
+   994 cells: not one rate is entered, and two D-minus offsets exist in total.
+   (The offline demo lays the same fourteen departments over invented figures;
+   `seed.sql` keeps its four-department parity fixture, which is separate from
+   both and must stay that way.) Needs a working session with PPC, which is also
+   the moment to explain the dedicated-rate convention (§4).
    **Asked for in `docs/request-route-and-figures.html` (DBBS/UM/KRAM/04)**, with
    a blank workbook from `scripts/make-capacity-workbook.mjs` to fill in. The
    what-feeds-what table from `DBBS/UM/KRAM/02` is still owed on top.
@@ -457,6 +461,34 @@ One thing the generator cannot answer for itself, so it says it out loud: if
 the project still holds the placeholder route rather than U&M's real SKUs, the
 blank sheet would ask PPC to fill in a factory that is not theirs. It warns
 below ten articles rather than writing that file silently.
+
+**Both checks run, and one question closed.** `verify:live` passes on both
+halves against an admin account — the four new views and five new functions are
+unreachable with the anon key, and a signed-in planner can still edit masters,
+run the schedule and rebuild the calendar. And the workbook generator answered
+what this session could not: **the live project holds U&M's real route** —
+fourteen departments, seventy-one SKUs, 994 cells, no rates entered against any
+of them and two D-minus offsets. The sheet that goes to PPC is the real one.
+
+**The article names came in rough, and are staying that way for now.** Of the
+seventy-one, **fifty-seven repeat their own code in the name** — `125034299`
+reads as *"125034299 Boden Dining Chair- Smokey Ta"* on the capacity sheet and
+on every screen. **Twenty-three (`NPD-2501`–`NPD-2523`) have no description at
+all**, the name being the code again. A handful are cut mid-word: *"Smokey
+Ta"*, *"Sapphir"*, *"Reese Full/Queen Headboard - B"*.
+
+None of this is the import's doing — name lengths run to fifty-six characters,
+so nothing is being clipped in the pipeline. They arrived this way in U&M's own
+capacity sheet. `set_article` would correct all fifty-seven by code in one pass,
+and the decision was deliberately not to: the code is what PPC match on, the
+names are cosmetic, and rewriting a client's product descriptions on their live
+system to tidy a screen is not our call to make unasked. Written down here so
+the next person to see a doubled code reads it as a known state rather than a
+bug.
+
+Generated workbooks are gitignored at the repo root. They are client product
+data, regenerable in one command, and their whole life is being mailed out and
+mailed back — a repository is the wrong place for that file.
 
 ### 2026-08-16 — The last master that needed a developer
 
