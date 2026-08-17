@@ -5,8 +5,12 @@
  *   node scripts/import-capacity-sheet.mjs <workbook.xlsx> --dry-run
  *
  * Reads the departments from the header row and the SKUs from the body, and
- * loads any capacity figures that have been filled in. Everything upserts by
- * code, so it is safe to run again when PPC returns a completed sheet.
+ * loads any capacity figures that have been filled in — rates, crew sizes, and
+ * the D-minus offsets from the second sheet. Everything upserts by code, so it
+ * is safe to run again when PPC returns a completed sheet.
+ *
+ * The layout lives in lib/capacity-workbook.mjs, shared with the generator that
+ * writes the blank sheet, so the two cannot drift a column apart.
  *
  * Deliberately a script rather than a migration: this is client data, it will
  * change, and it belongs nowhere near the schema's history.
@@ -14,7 +18,7 @@
 import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { createClient } from '@supabase/supabase-js'
-import * as XLSX from 'xlsx'
+import { parseWorkbook } from './lib/capacity-workbook.mjs'
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url))
 
@@ -74,45 +78,6 @@ function departmentCode(name) {
   )
 }
 
-function parseWorkbook(buffer) {
-  const wb = XLSX.read(buffer, { type: 'buffer' })
-  const sheet = wb.Sheets[wb.SheetNames[0]]
-  const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, blankrows: false })
-
-  // Row 2 carries department names, one per pair of columns; row 3 the
-  // Manpower/Units sub-headers; the body starts at row 4.
-  const header = rows[1] ?? []
-  const departments = []
-  for (let col = 3; col < header.length; col += 1) {
-    const name = String(header[col] ?? '').trim()
-    if (name) departments.push({ name, column: col })
-  }
-
-  const articles = []
-  for (const row of rows.slice(3)) {
-    const code = String(row[1] ?? '').trim()
-    if (!code) continue
-    // Names carry hard line breaks from the spreadsheet's wrapping.
-    const name = String(row[2] ?? code).replace(/\s+/g, ' ').trim()
-    const cells = departments.map((d) => ({
-      department: d.name,
-      manpower: numberOrNull(row[d.column]),
-      units: numberOrNull(row[d.column + 1]),
-    }))
-    articles.push({ code, name, cells })
-  }
-
-  return { departments, articles }
-}
-
-function numberOrNull(value) {
-  if (value === undefined || value === null || String(value).trim() === '') {
-    return null
-  }
-  const n = Number(value)
-  return Number.isFinite(n) ? n : null
-}
-
 async function loadEnv() {
   const text = await readFile(`${repoRoot}/.env.hosted.local`, 'utf8')
   return Object.fromEntries(
@@ -134,11 +99,32 @@ if (!file) {
 
 const { departments, articles } = parseWorkbook(await readFile(file))
 const filled = articles.flatMap((a) => a.cells.filter((c) => c.units !== null))
+const offsets = articles.flatMap((a) =>
+  a.cells.filter((c) => c.units !== null && c.dminus !== null),
+)
+
+/*
+ * An article schedules only when every department it is routed through has an
+ * offset. Reporting the offsets alone would let a sheet look nearly complete
+ * while not one article could be planned — this is the figure PPC actually
+ * care about, so it is the one printed.
+ */
+const routed = articles.filter((a) => a.cells.some((c) => c.units !== null))
+const schedulable = routed.filter((a) =>
+  a.cells.every((c) => c.units === null || c.dminus !== null),
+)
 
 console.log(`Workbook: ${file}`)
 console.log(`  departments : ${departments.length}`)
 console.log(`  articles    : ${articles.length}`)
 console.log(`  filled cells: ${filled.length}`)
+console.log(`  D-minus     : ${offsets.length} of ${filled.length} routed cells`)
+console.log(
+  `  schedulable : ${schedulable.length} of ${routed.length} routed articles` +
+    (schedulable.length < routed.length
+      ? ' — the rest are missing an offset and will not plan'
+      : ''),
+)
 
 const ordered = ROUTE.filter((name) => departments.some((d) => d.name === name))
 const unplaced = departments.filter((d) => !ROUTE.includes(d.name))
@@ -278,6 +264,32 @@ for (const article of articles) {
   }
 }
 console.log(`  capacity cells: ${cells} loaded`)
+
+/*
+ * D-minus after the rates, deliberately. set_dminus marks the cell complete,
+ * and a cell is only worth completing where the article actually goes — so the
+ * rate has to exist first for the pair to mean anything.
+ */
+let loadedOffsets = 0
+for (const article of articles) {
+  for (const cell of article.cells) {
+    if (cell.units === null || cell.dminus === null) continue
+    if (await call(
+      'set_dminus',
+      {
+        p_article_code: article.code,
+        p_department_code: departmentCode(cell.department),
+        p_days: cell.dminus,
+      },
+      `D-minus ${article.code} × ${cell.department}`,
+    )) {
+      loadedOffsets++
+    } else {
+      failed++
+    }
+  }
+}
+console.log(`  D-minus offsets: ${loadedOffsets} loaded`)
 
 await db.auth.signOut()
 console.log(failed ? `\n${failed} failed.` : '\nDone.')

@@ -141,6 +141,10 @@ tests/           schema, RLS, calendar, engine, parity, scale, planning views
 
 ## Open items
 
+Each of these now has a request note against it in `docs/`, written to be
+forwarded as it stands — `request-specification.html`,
+`request-route-and-figures.html`, `request-panipuri-export.html`.
+
 1. **The Rev B specification is not in the repo.** It reached the build
    truncated, cutting off §20 Open items. `docs/kram-spec-rev-b.html` is still to
    be saved from the source document.

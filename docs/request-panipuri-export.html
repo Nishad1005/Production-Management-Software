@@ -1,0 +1,526 @@
+<title>Kram — One export from Panipuri</title>
+
+<style>
+  /* Kram's own palette and register, carried over from the Rev B specification
+     and the software, so this reads as part of the same product. Light is the
+     document's natural ground; dark is defined token-for-token so the page
+     holds up wherever it is opened. */
+  :root {
+    --paper: #e9edf1;
+    --sheet: #ffffff;
+    --ink: #16202e;
+    --mid: #5c6b7a;
+    --faint: #8996a4;
+    --rule: #c9d3dc;
+    --rule-soft: #dfe6ec;
+    --blue: #2c4a6e;
+    --amber: #b07d1a;
+    --flag: #c4462e;
+    --bar-text: #ffffff;
+    --bar-meta: #93a6b8;
+
+    --sans: 'Archivo', ui-sans-serif, -apple-system, BlinkMacSystemFont,
+      'Segoe UI', sans-serif;
+    --mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  }
+
+  :root:not([data-theme='light']) {
+    @media (prefers-color-scheme: dark) {
+      --paper: #0f151d;
+      --sheet: #16202e;
+      --ink: #e6ecf2;
+      --mid: #a3b1c0;
+      --faint: #7e8d9d;
+      --rule: #2c3a4b;
+      --rule-soft: #223040;
+      --blue: #8fb3dc;
+      --amber: #d8a83f;
+      --flag: #e2745c;
+      --bar-text: #0f151d;
+      --bar-meta: #4a6076;
+    }
+  }
+
+  :root[data-theme='dark'] {
+    --paper: #0f151d;
+    --sheet: #16202e;
+    --ink: #e6ecf2;
+    --mid: #a3b1c0;
+    --faint: #7e8d9d;
+    --rule: #2c3a4b;
+    --rule-soft: #223040;
+    --blue: #8fb3dc;
+    --amber: #d8a83f;
+    --flag: #e2745c;
+    --bar-text: #0f151d;
+    --bar-meta: #4a6076;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .sheet-head {
+    background: var(--sheet);
+    border-bottom: 2px solid var(--ink);
+    background-image:
+      linear-gradient(var(--rule-soft) 1px, transparent 1px),
+      linear-gradient(90deg, var(--rule-soft) 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+
+  .wrap { max-width: 940px; margin: 0 auto; padding: 0 28px; }
+
+  .head-inner {
+    display: flex; flex-wrap: wrap; align-items: flex-end;
+    justify-content: space-between; gap: 32px; padding: 40px 0 28px;
+  }
+
+  .eyebrow {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--blue); margin: 0 0 12px;
+  }
+
+  h1 {
+    font-family: var(--sans); font-weight: 800; letter-spacing: -0.03em;
+    line-height: 1; font-size: clamp(30px, 5vw, 44px); margin: 0;
+    text-wrap: balance;
+  }
+  h1 em {
+    display: block; font-style: normal; color: var(--blue);
+    font-size: clamp(15px, 2.2vw, 19px); font-weight: 600;
+    letter-spacing: -0.01em; margin-top: 8px;
+  }
+
+  .refblock { border: 1.5px solid var(--ink); min-width: 240px; }
+  .refblock div {
+    display: grid; grid-template-columns: 78px 1fr;
+    border-bottom: 1px solid var(--rule);
+  }
+  .refblock div:last-child { border-bottom: 0; }
+  .refblock span {
+    font-family: var(--mono); font-size: 11px; padding: 6px 10px;
+  }
+  .refblock span:first-child {
+    color: var(--faint); border-right: 1px solid var(--rule);
+    text-transform: uppercase; letter-spacing: 0.08em; font-size: 10px;
+  }
+
+  main { padding: 34px 0 72px; display: flex; flex-direction: column; gap: 32px; }
+
+  p { margin: 0 0 14px; max-width: 68ch; }
+  p:last-child { margin-bottom: 0; }
+
+  .lead { font-size: 18px; color: var(--mid); max-width: 64ch; }
+
+  .panel { background: var(--sheet); border: 1px solid var(--ink); }
+  .panel > header {
+    background: var(--ink); color: var(--bar-text);
+    padding: 9px 18px; display: flex; flex-wrap: wrap;
+    justify-content: space-between; align-items: center; gap: 12px;
+  }
+  .panel > header b {
+    font-family: var(--sans); font-size: 14px; font-weight: 600;
+  }
+  .panel > header span {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--bar-meta);
+  }
+  .panel .body { padding: 22px 18px; }
+
+  table { width: 100%; border-collapse: collapse; }
+  .route th {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--blue); text-align: left;
+    padding: 0 10px 8px 0; border-bottom: 1.5px solid var(--ink);
+  }
+  .route td {
+    padding: 9px 10px 9px 0; border-bottom: 1px solid var(--rule-soft);
+    vertical-align: baseline;
+  }
+  .route tr:last-child td { border-bottom: 0; }
+  .pos {
+    font-family: var(--mono); font-variant-numeric: tabular-nums;
+    color: var(--blue); font-size: 13px; width: 58px;
+  }
+  .code {
+    font-family: var(--mono); font-size: 12px; color: var(--mid);
+    width: 96px; text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .dept { font-weight: 600; }
+  .note { color: var(--mid); font-size: 14px; }
+
+  .questions { display: grid; gap: 16px; }
+  @media (min-width: 720px) { .questions { grid-template-columns: 1fr 1fr; } }
+  .q {
+    background: var(--sheet); border: 1px solid var(--rule);
+    border-left: 3px solid var(--amber); padding: 18px 20px;
+  }
+  .q h3 {
+    font-family: var(--sans); font-size: 16px; font-weight: 600;
+    margin: 0 0 8px; letter-spacing: -0.01em; text-wrap: balance;
+  }
+  .q p { font-size: 14.5px; color: var(--mid); margin: 0; }
+
+  h2 {
+    font-family: var(--sans); font-size: 21px; font-weight: 700;
+    letter-spacing: -0.02em; margin: 0 0 10px; text-wrap: balance;
+  }
+
+  .callout {
+    background: var(--sheet); border: 1px solid var(--rule);
+    border-left: 3px solid var(--blue); padding: 18px 20px;
+  }
+  .callout h3 {
+    font-family: var(--sans); font-size: 15px; font-weight: 600; margin: 0 0 6px;
+  }
+  .callout p { font-size: 14.5px; margin: 0 0 8px; }
+  .callout p:last-child { margin: 0; }
+
+  strong { font-weight: 600; }
+  em.term { font-style: normal; font-family: var(--mono); font-size: 0.92em; }
+
+  ol.steps { margin: 0; padding-left: 20px; max-width: 64ch; }
+  ol.steps li { margin-bottom: 8px; font-size: 15px; }
+  ol.steps li:last-child { margin-bottom: 0; }
+
+  footer {
+    border-top: 2px solid var(--ink); background: var(--sheet); margin-top: 8px;
+  }
+  .foot-inner {
+    max-width: 940px; margin: 0 auto; padding: 20px 28px;
+    font-family: var(--mono); font-size: 11px; color: var(--faint);
+    display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px;
+    letter-spacing: 0.05em;
+  }
+
+  /* Three streams that converge. The point of the picture is the white space
+     between the tracks: nothing there waits for anything above it. */
+  .streams { display: flex; flex-direction: column; gap: 4px; }
+  .track {
+    display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
+    padding: 9px 0; border-bottom: 1px dashed var(--rule-soft);
+  }
+  .track:last-of-type { border-bottom: 0; }
+  .track > .tname {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.07em;
+    text-transform: uppercase; color: var(--faint);
+    min-width: 84px; flex-shrink: 0;
+  }
+  .chip {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.04em;
+    text-transform: uppercase; padding: 4px 9px;
+    border: 1px solid var(--rule); background: var(--sheet); color: var(--ink);
+    white-space: nowrap;
+  }
+  .chip.entry { border-color: var(--blue); color: var(--blue); font-weight: 600; }
+  .chip.join { border-color: var(--amber); color: var(--amber); font-weight: 600; }
+  .arrow { color: var(--faint); font-size: 12px; }
+  .legend {
+    display: flex; gap: 18px; flex-wrap: wrap; margin-top: 14px;
+    font-size: 12.5px; color: var(--mid);
+  }
+  .legend span { display: flex; align-items: center; gap: 7px; }
+  .swatch {
+    width: 11px; height: 11px; border: 1px solid var(--rule); flex-shrink: 0;
+  }
+  .swatch.entry { border-color: var(--blue); }
+  .swatch.join { border-color: var(--amber); }
+
+  table.waits { width: 100%; border-collapse: collapse; }
+  table.waits th {
+    text-align: left; font-family: var(--mono); font-size: 10.5px;
+    letter-spacing: 0.07em; text-transform: uppercase; color: var(--faint);
+    font-weight: 400; padding: 0 12px 7px 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  table.waits td {
+    padding: 7px 12px 7px 0; border-bottom: 1px solid var(--rule-soft);
+    font-size: 14px; vertical-align: top;
+  }
+  table.waits tr:last-child td { border-bottom: 0; }
+  table.waits .dept { font-weight: 600; }
+  table.waits .waitfor { font-family: var(--mono); font-size: 12px; }
+  table.waits .nothing { color: var(--blue); font-weight: 600; }
+
+  @media print {
+    body { background: #fff; font-size: 11pt; }
+    .sheet-head { background-image: none; }
+    .panel, .q, .callout { break-inside: avoid; }
+    main { gap: 20px; padding: 20px 0 0; }
+  }
+</style>
+<style>
+  table.fields { width: 100%; border-collapse: collapse; }
+  table.fields th {
+    text-align: left; font-family: var(--mono); font-size: 10.5px;
+    letter-spacing: 0.07em; text-transform: uppercase; color: var(--faint);
+    font-weight: 400; padding: 0 12px 7px 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  table.fields td {
+    padding: 8px 12px 8px 0; border-bottom: 1px solid var(--rule-soft);
+    font-size: 14px; vertical-align: top;
+  }
+  table.fields tr:last-child td { border-bottom: 0; }
+  table.fields .field { font-weight: 600; white-space: nowrap; }
+  table.fields .why { color: var(--mid); }
+  table.fields .must { color: var(--flag); font-weight: 600; }
+
+  ul.asks { margin: 0; padding-left: 20px; max-width: 64ch; }
+  ul.asks li { margin-bottom: 10px; font-size: 15px; }
+  ul.asks li:last-child { margin-bottom: 0; }
+
+  .callout.warn { border-left-color: var(--amber); }
+  .callout.stop { border-left-color: var(--flag); }
+</style>
+<header class="sheet-head">
+  <div class="wrap head-inner">
+    <div>
+      <p class="eyebrow">Data Brilliance Business Solutions LLP</p>
+      <h1>
+        One export from Panipuri
+        <em>As it comes out of the system — please do not tidy it up</em>
+      </h1>
+    </div>
+    <aside class="refblock">
+      <div><span>Ref</span><span>DBBS/UM/KRAM/05</span></div>
+      <div><span>Revision</span><span>A</span></div>
+      <div><span>Client</span><span>U&amp;M Designs</span></div>
+      <div><span>Status</span><span>Awaiting sample file</span></div>
+    </aside>
+  </div>
+</header>
+
+<div class="wrap">
+  <main>
+
+    <p class="lead">
+      Orders are typed into Kram by hand at the moment. That is fine for showing
+      the software and untenable for running a factory on it. To build the
+      import we need one thing: a real export file out of Panipuri, exactly as
+      Panipuri produces it.
+    </p>
+
+    <div class="callout warn">
+      <h3>Why we are asking now rather than later</h3>
+      <p>
+        This is the only outstanding item where the thing we need does not exist
+        yet — it has to be produced, not found. Everything else on our list is a
+        document someone already holds or figures someone already knows.
+      </p>
+      <p>
+        It is also on the critical path to going live. We would rather the
+        request sat with you for a few weeks than arrive the day we are ready to
+        build against it.
+      </p>
+    </div>
+
+    <section class="panel">
+      <header>
+        <b>What would be most useful</b>
+        <span>One file</span>
+      </header>
+      <div class="body">
+        <ul class="asks">
+          <li>
+            <strong>Twenty to fifty orders</strong> is plenty. We are learning the
+            shape of the file, not loading your order book.
+          </li>
+          <li>
+            <strong>Exactly as it comes out</strong> — its own column headings,
+            its own date format, its own spellings. Please do not tidy it up:
+            the mapping has to be written against what Panipuri actually
+            produces, and a cleaned copy teaches us the wrong thing and hides
+            the problems.
+          </li>
+          <li>
+            <strong>If possible, one order that ships in more than one
+            container.</strong> Kram treats each shipment as its own deadline —
+            400 chairs in August and 600 in September are two separate plans
+            from one order. A file with only single-shipment orders would hide
+            the case the whole design is built around.
+          </li>
+          <li>
+            Excel, CSV, text — whatever it exports. Any of them is fine.
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="panel">
+      <header>
+        <b>What we will be looking for in it</b>
+        <span>Per order</span>
+      </header>
+      <div class="body">
+        <table class="fields">
+          <thead>
+            <tr><th>Field</th><th>Why it matters</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="field">Order number</td>
+              <td class="why">
+                The one field that must be there. It is how re-uploading a file
+                corrects the orders already loaded instead of creating them all
+                over again — without it, one double-click makes hundreds of
+                duplicates.
+              </td>
+            </tr>
+            <tr>
+              <td class="field">Customer</td>
+              <td class="why">Code and name; country too if Panipuri carries it.</td>
+            </tr>
+            <tr>
+              <td class="field">Article or SKU code</td>
+              <td class="why">
+                Ideally the same code that appears on the capacity sheet. If the
+                two systems name things differently, that is worth knowing now —
+                it means a translation table, and it is better built once than
+                maintained by hand forever.
+              </td>
+            </tr>
+            <tr>
+              <td class="field">Quantity and order date</td>
+              <td class="why">As held.</td>
+            </tr>
+            <tr>
+              <td class="field">Confirmed, probable or forecast</td>
+              <td class="why">
+                Whatever Panipuri calls it. Kram can plan on confirmed orders
+                only, or include the likely ones, and the difference is a button
+                on screen.
+              </td>
+            </tr>
+            <tr>
+              <td class="field">Status</td>
+              <td class="why">Open, in production, closed, cancelled.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel">
+      <header>
+        <b>And per shipment</b>
+        <span>The part everything is calculated from</span>
+      </header>
+      <div class="body">
+        <table class="fields">
+          <thead>
+            <tr><th>Field</th><th>Why it matters</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="field must">Stuffing date</td>
+              <td class="why">
+                <strong>Every date Kram produces is counted backwards from
+                this.</strong> See the question below.
+              </td>
+            </tr>
+            <tr>
+              <td class="field">Shipment number and quantity</td>
+              <td class="why">
+                Where an order leaves in more than one container.
+              </td>
+            </tr>
+            <tr>
+              <td class="field">Customer delivery date</td>
+              <td class="why">
+                Shown to the planner as the commitment being protected, and
+                deliberately never used in any calculation.
+              </td>
+            </tr>
+            <tr>
+              <td class="field">Container reference</td>
+              <td class="why">Shipments sharing one leave together.</td>
+            </tr>
+            <tr>
+              <td class="field">Material ready date</td>
+              <td class="why">
+                If Panipuri holds one. Nothing is scheduled before it.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <div class="callout stop">
+      <h3>The question worth answering first</h3>
+      <p>
+        <strong>Does Panipuri hold a container stuffing date at all, or only a
+        customer delivery date?</strong>
+      </p>
+      <p>
+        Everything Kram calculates hangs off the stuffing date. If Panipuri does
+        not carry one, the import still works — orders, customers, quantities
+        and articles all come across — but somebody in merchandising will need
+        to add the stuffing date in Kram before an order can be planned.
+      </p>
+      <p>
+        That is a perfectly workable arrangement. It is just much better decided
+        now, with you, than discovered by us halfway through building the
+        import.
+      </p>
+    </div>
+
+    <section class="panel">
+      <header>
+        <b>Two practical questions</b>
+        <span>They decide how the import works</span>
+      </header>
+      <div class="body">
+        <table class="fields">
+          <thead>
+            <tr><th>Question</th><th>What it changes</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="field">Which report produces it?</td>
+              <td class="why">
+                So we can ask for the same one again, and so the person running
+                it every week knows exactly which button.
+              </td>
+            </tr>
+            <tr>
+              <td class="field">How often can it be run?</td>
+              <td class="why">
+                Nightly, on demand, weekly. If it can be produced to a schedule
+                the import can run by itself; if not, it becomes a file somebody
+                uploads, which is also fine and worth knowing.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <div class="callout">
+      <h3>What we need back</h3>
+      <p>
+        One export file, untidied, and an answer on the stuffing date. Nothing
+        else is blocking, and the file matters more than the answers — most of
+        what we need to know, we can read out of it.
+      </p>
+    </div>
+
+  </main>
+</div>
+
+<footer>
+  <div class="foot-inner">
+    <span>Kram — production planning &amp; control</span>
+    <span>Prepared for U&amp;M Designs · 17 August 2026</span>
+  </div>
+</footer>

@@ -235,13 +235,20 @@ Keep adding to this. Each one was a real dead end.
    Saving a truncated copy would ship an incomplete reference document, so
    nothing was saved. → Save the source document to
    `docs/kram-spec-rev-b.html` and reconcile §20 against this log.
+   **Asked for in `docs/request-specification.html` (DBBS/UM/KRAM/03).**
 2. **No real Panipuri export sample.** The import module is otherwise ready to
    build but would be built against an assumed column layout. **Longest-lead item
    on the critical path** — worth requesting now.
+   **Asked for in `docs/request-panipuri-export.html` (DBBS/UM/KRAM/05)**, which
+   also puts the question that decides the whole workflow: does Panipuri hold a
+   stuffing date at all, or only a customer delivery date?
 3. **The route is placeholder data.** Four departments from the prototype, not
    U&M's real seven, and every rate is invented. The arithmetic is right; the
    numbers are illustrative. Needs a working session with PPC, which is also the
    moment to explain the dedicated-rate convention (§4).
+   **Asked for in `docs/request-route-and-figures.html` (DBBS/UM/KRAM/04)**, with
+   a blank workbook from `scripts/make-capacity-workbook.mjs` to fill in. The
+   what-feeds-what table from `DBBS/UM/KRAM/02` is still owed on top.
 
 **Decisions the client owes us:**
 
@@ -283,7 +290,7 @@ Since 15 Aug it covers **both** of the prototype's modules: the capacity and
 load arithmetic, and the person-hour conversion that turns a shortfall into
 overtime hours and people.
 
-**224 unit and integration tests** against a real native Postgres, booted per run
+**233 unit and integration tests** against a real native Postgres, booted per run
 from an embedded binary. Covers schema shape, RLS (as the `authenticated` role —
 table owners bypass RLS, so a policy test run as superuser proves nothing), the
 working-day calendar, engine correctness, breaches, pins, overrides, the route
@@ -400,6 +407,56 @@ precondition for the planning half being used in anger.
 
 Newest first. One entry per working session — what changed, and anything a
 future reader would not infer from the diff.
+
+### 2026-08-17 — Three asks, and a sheet PPC can actually fill in
+
+Nothing left on the list is code. The three things still open are a document
+someone holds, figures someone knows, and a file that does not exist yet — and
+they have been described as bullet points in §6 for a week, which is not a form
+anybody can act on. They are now three notes, one per audience, in the same
+house style as the route confirmation already sent:
+
+| Ref | File | For |
+|---|---|---|
+| `DBBS/UM/KRAM/03` | `docs/request-specification.html` | Whoever holds Rev B |
+| `DBBS/UM/KRAM/04` | `docs/request-route-and-figures.html` | PPC |
+| `DBBS/UM/KRAM/05` | `docs/request-panipuri-export.html` | Whoever runs Panipuri |
+
+Each says what is needed, why it blocks, and what happens when it lands. The
+PPC note carries the two things most likely to come back wrong in full: that
+**units per day means this article and nothing else** — the everyday mixed
+figure makes a department look like the bottleneck when it is not — and that
+**manpower is the crew that rate was measured with**, without which attendance
+changes nothing at all.
+
+**PPC get a workbook rather than a screen.** Seventy articles across fourteen
+departments is a long session at a machine they may not have, and they already
+work in Excel. `scripts/make-capacity-workbook.mjs` reads whatever Kram holds
+and writes the sheet in exactly the layout `import-capacity-sheet.mjs` reads
+back, with the figures already entered filled in — so a second round arrives
+carrying the first round's answers instead of asking again. A `D-minus` sheet
+sits beside the capacity one; the importer now loads those offsets too, and
+reports **how many articles would still be unschedulable after loading**, which
+is the number PPC actually care about rather than a count of cells.
+
+**Both directions of the file live in one module.** `scripts/lib/capacity-workbook.mjs`
+holds the layout, and the generator and the importer share it. The failure this
+prevents is the quiet kind: a generator and a parser one column apart produce a
+workbook that imports without a single error and files every crew size as a
+rate. Nothing raises, and the plan is simply wrong.
+
+`tests/capacity-workbook.test.ts` round-trips the pair — nine tests, including a
+blank staying blank rather than arriving as a zero, an old workbook with no
+D-minus sheet still loading, and the whole journey through real Postgres into
+`capacity_sheet`, where a figure written in the Stitching Units column has to
+come out as Stitching's rate and not its crew size. That last one is the check
+that could not be run against the live project from here, and did not need to
+be: the schema is the same either way.
+
+One thing the generator cannot answer for itself, so it says it out loud: if
+the project still holds the placeholder route rather than U&M's real SKUs, the
+blank sheet would ask PPC to fill in a factory that is not theirs. It warns
+below ten articles rather than writing that file silently.
 
 ### 2026-08-16 — The last master that needed a developer
 

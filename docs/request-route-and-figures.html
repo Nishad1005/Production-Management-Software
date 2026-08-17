@@ -1,0 +1,544 @@
+<title>Kram — The figures behind the route</title>
+
+<style>
+  /* Kram's own palette and register, carried over from the Rev B specification
+     and the software, so this reads as part of the same product. Light is the
+     document's natural ground; dark is defined token-for-token so the page
+     holds up wherever it is opened. */
+  :root {
+    --paper: #e9edf1;
+    --sheet: #ffffff;
+    --ink: #16202e;
+    --mid: #5c6b7a;
+    --faint: #8996a4;
+    --rule: #c9d3dc;
+    --rule-soft: #dfe6ec;
+    --blue: #2c4a6e;
+    --amber: #b07d1a;
+    --flag: #c4462e;
+    --bar-text: #ffffff;
+    --bar-meta: #93a6b8;
+
+    --sans: 'Archivo', ui-sans-serif, -apple-system, BlinkMacSystemFont,
+      'Segoe UI', sans-serif;
+    --mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  }
+
+  :root:not([data-theme='light']) {
+    @media (prefers-color-scheme: dark) {
+      --paper: #0f151d;
+      --sheet: #16202e;
+      --ink: #e6ecf2;
+      --mid: #a3b1c0;
+      --faint: #7e8d9d;
+      --rule: #2c3a4b;
+      --rule-soft: #223040;
+      --blue: #8fb3dc;
+      --amber: #d8a83f;
+      --flag: #e2745c;
+      --bar-text: #0f151d;
+      --bar-meta: #4a6076;
+    }
+  }
+
+  :root[data-theme='dark'] {
+    --paper: #0f151d;
+    --sheet: #16202e;
+    --ink: #e6ecf2;
+    --mid: #a3b1c0;
+    --faint: #7e8d9d;
+    --rule: #2c3a4b;
+    --rule-soft: #223040;
+    --blue: #8fb3dc;
+    --amber: #d8a83f;
+    --flag: #e2745c;
+    --bar-text: #0f151d;
+    --bar-meta: #4a6076;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .sheet-head {
+    background: var(--sheet);
+    border-bottom: 2px solid var(--ink);
+    background-image:
+      linear-gradient(var(--rule-soft) 1px, transparent 1px),
+      linear-gradient(90deg, var(--rule-soft) 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+
+  .wrap { max-width: 940px; margin: 0 auto; padding: 0 28px; }
+
+  .head-inner {
+    display: flex; flex-wrap: wrap; align-items: flex-end;
+    justify-content: space-between; gap: 32px; padding: 40px 0 28px;
+  }
+
+  .eyebrow {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--blue); margin: 0 0 12px;
+  }
+
+  h1 {
+    font-family: var(--sans); font-weight: 800; letter-spacing: -0.03em;
+    line-height: 1; font-size: clamp(30px, 5vw, 44px); margin: 0;
+    text-wrap: balance;
+  }
+  h1 em {
+    display: block; font-style: normal; color: var(--blue);
+    font-size: clamp(15px, 2.2vw, 19px); font-weight: 600;
+    letter-spacing: -0.01em; margin-top: 8px;
+  }
+
+  .refblock { border: 1.5px solid var(--ink); min-width: 240px; }
+  .refblock div {
+    display: grid; grid-template-columns: 78px 1fr;
+    border-bottom: 1px solid var(--rule);
+  }
+  .refblock div:last-child { border-bottom: 0; }
+  .refblock span {
+    font-family: var(--mono); font-size: 11px; padding: 6px 10px;
+  }
+  .refblock span:first-child {
+    color: var(--faint); border-right: 1px solid var(--rule);
+    text-transform: uppercase; letter-spacing: 0.08em; font-size: 10px;
+  }
+
+  main { padding: 34px 0 72px; display: flex; flex-direction: column; gap: 32px; }
+
+  p { margin: 0 0 14px; max-width: 68ch; }
+  p:last-child { margin-bottom: 0; }
+
+  .lead { font-size: 18px; color: var(--mid); max-width: 64ch; }
+
+  .panel { background: var(--sheet); border: 1px solid var(--ink); }
+  .panel > header {
+    background: var(--ink); color: var(--bar-text);
+    padding: 9px 18px; display: flex; flex-wrap: wrap;
+    justify-content: space-between; align-items: center; gap: 12px;
+  }
+  .panel > header b {
+    font-family: var(--sans); font-size: 14px; font-weight: 600;
+  }
+  .panel > header span {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--bar-meta);
+  }
+  .panel .body { padding: 22px 18px; }
+
+  table { width: 100%; border-collapse: collapse; }
+  .route th {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--blue); text-align: left;
+    padding: 0 10px 8px 0; border-bottom: 1.5px solid var(--ink);
+  }
+  .route td {
+    padding: 9px 10px 9px 0; border-bottom: 1px solid var(--rule-soft);
+    vertical-align: baseline;
+  }
+  .route tr:last-child td { border-bottom: 0; }
+  .pos {
+    font-family: var(--mono); font-variant-numeric: tabular-nums;
+    color: var(--blue); font-size: 13px; width: 58px;
+  }
+  .code {
+    font-family: var(--mono); font-size: 12px; color: var(--mid);
+    width: 96px; text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .dept { font-weight: 600; }
+  .note { color: var(--mid); font-size: 14px; }
+
+  .questions { display: grid; gap: 16px; }
+  @media (min-width: 720px) { .questions { grid-template-columns: 1fr 1fr; } }
+  .q {
+    background: var(--sheet); border: 1px solid var(--rule);
+    border-left: 3px solid var(--amber); padding: 18px 20px;
+  }
+  .q h3 {
+    font-family: var(--sans); font-size: 16px; font-weight: 600;
+    margin: 0 0 8px; letter-spacing: -0.01em; text-wrap: balance;
+  }
+  .q p { font-size: 14.5px; color: var(--mid); margin: 0; }
+
+  h2 {
+    font-family: var(--sans); font-size: 21px; font-weight: 700;
+    letter-spacing: -0.02em; margin: 0 0 10px; text-wrap: balance;
+  }
+
+  .callout {
+    background: var(--sheet); border: 1px solid var(--rule);
+    border-left: 3px solid var(--blue); padding: 18px 20px;
+  }
+  .callout h3 {
+    font-family: var(--sans); font-size: 15px; font-weight: 600; margin: 0 0 6px;
+  }
+  .callout p { font-size: 14.5px; margin: 0 0 8px; }
+  .callout p:last-child { margin: 0; }
+
+  strong { font-weight: 600; }
+  em.term { font-style: normal; font-family: var(--mono); font-size: 0.92em; }
+
+  ol.steps { margin: 0; padding-left: 20px; max-width: 64ch; }
+  ol.steps li { margin-bottom: 8px; font-size: 15px; }
+  ol.steps li:last-child { margin-bottom: 0; }
+
+  footer {
+    border-top: 2px solid var(--ink); background: var(--sheet); margin-top: 8px;
+  }
+  .foot-inner {
+    max-width: 940px; margin: 0 auto; padding: 20px 28px;
+    font-family: var(--mono); font-size: 11px; color: var(--faint);
+    display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px;
+    letter-spacing: 0.05em;
+  }
+
+  /* Three streams that converge. The point of the picture is the white space
+     between the tracks: nothing there waits for anything above it. */
+  .streams { display: flex; flex-direction: column; gap: 4px; }
+  .track {
+    display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
+    padding: 9px 0; border-bottom: 1px dashed var(--rule-soft);
+  }
+  .track:last-of-type { border-bottom: 0; }
+  .track > .tname {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.07em;
+    text-transform: uppercase; color: var(--faint);
+    min-width: 84px; flex-shrink: 0;
+  }
+  .chip {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.04em;
+    text-transform: uppercase; padding: 4px 9px;
+    border: 1px solid var(--rule); background: var(--sheet); color: var(--ink);
+    white-space: nowrap;
+  }
+  .chip.entry { border-color: var(--blue); color: var(--blue); font-weight: 600; }
+  .chip.join { border-color: var(--amber); color: var(--amber); font-weight: 600; }
+  .arrow { color: var(--faint); font-size: 12px; }
+  .legend {
+    display: flex; gap: 18px; flex-wrap: wrap; margin-top: 14px;
+    font-size: 12.5px; color: var(--mid);
+  }
+  .legend span { display: flex; align-items: center; gap: 7px; }
+  .swatch {
+    width: 11px; height: 11px; border: 1px solid var(--rule); flex-shrink: 0;
+  }
+  .swatch.entry { border-color: var(--blue); }
+  .swatch.join { border-color: var(--amber); }
+
+  table.waits { width: 100%; border-collapse: collapse; }
+  table.waits th {
+    text-align: left; font-family: var(--mono); font-size: 10.5px;
+    letter-spacing: 0.07em; text-transform: uppercase; color: var(--faint);
+    font-weight: 400; padding: 0 12px 7px 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  table.waits td {
+    padding: 7px 12px 7px 0; border-bottom: 1px solid var(--rule-soft);
+    font-size: 14px; vertical-align: top;
+  }
+  table.waits tr:last-child td { border-bottom: 0; }
+  table.waits .dept { font-weight: 600; }
+  table.waits .waitfor { font-family: var(--mono); font-size: 12px; }
+  table.waits .nothing { color: var(--blue); font-weight: 600; }
+
+  @media print {
+    body { background: #fff; font-size: 11pt; }
+    .sheet-head { background-image: none; }
+    .panel, .q, .callout { break-inside: avoid; }
+    main { gap: 20px; padding: 20px 0 0; }
+  }
+</style>
+<style>
+  table.fields { width: 100%; border-collapse: collapse; }
+  table.fields th {
+    text-align: left; font-family: var(--mono); font-size: 10.5px;
+    letter-spacing: 0.07em; text-transform: uppercase; color: var(--faint);
+    font-weight: 400; padding: 0 12px 7px 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  table.fields td {
+    padding: 8px 12px 8px 0; border-bottom: 1px solid var(--rule-soft);
+    font-size: 14px; vertical-align: top;
+  }
+  table.fields tr:last-child td { border-bottom: 0; }
+  table.fields .field { font-weight: 600; white-space: nowrap; }
+  table.fields .why { color: var(--mid); }
+  table.fields .must { color: var(--flag); font-weight: 600; }
+
+  ul.asks { margin: 0; padding-left: 20px; max-width: 64ch; }
+  ul.asks li { margin-bottom: 10px; font-size: 15px; }
+  ul.asks li:last-child { margin-bottom: 0; }
+
+  .callout.warn { border-left-color: var(--amber); }
+  .callout.stop { border-left-color: var(--flag); }
+</style>
+<header class="sheet-head">
+  <div class="wrap head-inner">
+    <div>
+      <p class="eyebrow">Data Brilliance Business Solutions LLP</p>
+      <h1>
+        The figures behind the route
+        <em>Every number in the demonstration is invented. These are the real ones.</em>
+      </h1>
+    </div>
+    <aside class="refblock">
+      <div><span>Ref</span><span>DBBS/UM/KRAM/04</span></div>
+      <div><span>Revision</span><span>A</span></div>
+      <div><span>Client</span><span>U&amp;M Designs</span></div>
+      <div><span>Status</span><span>Awaiting figures</span></div>
+    </aside>
+  </div>
+</header>
+
+<div class="wrap">
+  <main>
+
+    <p class="lead">
+      Kram works. What it does not yet have is your figures. Every rate, every
+      yield, every deadline and every crew size in the version you have seen is
+      invented — chosen so the screens had something to say. This note is about
+      replacing them, and there is a workbook with it.
+    </p>
+
+    <div class="callout">
+      <h3>Still outstanding from last time</h3>
+      <p>
+        Our note <em class="term">DBBS/UM/KRAM/02</em> asked one question: is our
+        reading of <strong>what waits for what</strong> correct? The two we were
+        least sure of were whether Foam Pasting really waits for the wood finish
+        to dry, and whether Cutting and Fibre Processing genuinely wait for
+        nothing at all. That answer is still owed, and it matters more than
+        anything below — the numbers hang off it.
+      </p>
+    </div>
+
+    <section class="panel">
+      <header>
+        <b>What is a guess today</b>
+        <span>Everything in this table</span>
+      </header>
+      <div class="body">
+        <table class="fields">
+          <thead>
+            <tr>
+              <th>Figure</th>
+              <th>What we assumed</th>
+              <th>What it decides</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="field">Units per day</td>
+              <td class="why">Invented, per article per department</td>
+              <td class="why">How long each department needs, and therefore every date</td>
+            </tr>
+            <tr>
+              <td class="field">Manpower</td>
+              <td class="why">Invented</td>
+              <td class="why">Whether attendance can change the day's capacity at all</td>
+            </tr>
+            <tr>
+              <td class="field">D-minus</td>
+              <td class="why">Invented</td>
+              <td class="why">The deadline for every department on every order</td>
+            </tr>
+            <tr>
+              <td class="field">Yield</td>
+              <td class="why">98% for all fourteen departments</td>
+              <td class="why">How much extra each department must make to cover losses</td>
+            </tr>
+            <tr>
+              <td class="field">Headcount</td>
+              <td class="why">Invented, per department</td>
+              <td class="why">Overtime and extra-people figures when a day is short</td>
+            </tr>
+            <tr>
+              <td class="field">Holidays</td>
+              <td class="why">Sundays only</td>
+              <td class="why">Which days count as working days at all</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="note" style="margin-top:16px">
+          The arithmetic is right and has been checked against your own capacity
+          model. The numbers are illustrative, and the software says so — the
+          build is labelled <em class="term">Offline draft</em> and the rates
+          carry an <em class="term">ESTIMATED</em> tag, so that nobody in a
+          meeting mistakes the demonstration for a plan.
+        </p>
+      </div>
+    </section>
+
+    <section class="panel">
+      <header>
+        <b>The workbook</b>
+        <span>Two sheets</span>
+      </header>
+      <div class="body">
+        <p>
+          Attached is a blank sheet in the shape you already work in — every
+          department across the top, every article down the side. Fill in what
+          you know and leave the rest; a partly-filled sheet is genuinely
+          useful, and it can be sent back more than once as figures firm up.
+        </p>
+        <table class="fields">
+          <thead>
+            <tr><th>Sheet</th><th>What goes in it</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="field">Capacity</td>
+              <td class="why">
+                Two columns per department — <strong>Manpower</strong> and
+                <strong>Units</strong>. A blank pair means the article does not
+                go through that department at all, which is the usual answer.
+              </td>
+            </tr>
+            <tr>
+              <td class="field">D-minus</td>
+              <td class="why">
+                One number per department per article: how many days
+                <strong>before the container stuffing date</strong> that
+                department must be finished.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="note" style="margin-top:16px">
+          Send it back however suits you. It loads into Kram in one step, and
+          loading it again later corrects what changed rather than duplicating
+          anything — so an early, incomplete sheet costs nothing.
+        </p>
+      </div>
+    </section>
+
+    <h2>Three things worth being precise about</h2>
+
+    <div class="callout warn">
+      <h3>“Units per day” means this article and nothing else</h3>
+      <p>
+        We need what a department produces in a day if it works on
+        <strong>only that article all day</strong> — not what it makes on a
+        normal day with several articles running through it.
+      </p>
+      <p>
+        This is the one figure most likely to come back in the wrong form, and
+        the consequences are not obvious. Kram adds up the fractions of a day
+        each article consumes; that only works if each figure is a whole day's
+        output for one article. Give it the everyday mixed number and a
+        department will look like the bottleneck when it is not, and the
+        software will warn about days that are perfectly fine.
+      </p>
+    </div>
+
+    <div class="callout">
+      <h3>Manpower is the crew that figure was measured with</h3>
+      <p>
+        If stitching makes 30 covers a day with three people, we need both
+        numbers. That is the only way Kram can say anything useful when two of
+        the three are absent — it scales the day to 20 because it knows the
+        three. Without the crew size, attendance changes nothing and the plan
+        carries on as though everybody came in.
+      </p>
+    </div>
+
+    <div class="callout stop">
+      <h3>D-minus is the anchor, and it has one rule</h3>
+      <p>
+        Every date in Kram is counted backwards from the container stuffing
+        date. D-minus is how far back each department sits. A blank one
+        <strong>stops that article being scheduled at all</strong> — deliberately,
+        because treating a missing deadline as zero would produce a plan that
+        looks entirely normal and is impossible.
+      </p>
+      <p>
+        The rule: <strong>a department must finish earlier than anything that
+        depends on it.</strong> If Stitching feeds Stapling, Stitching's D-minus
+        must be the larger number. Kram checks this as you type, names both
+        departments when they contradict, and will not guess which of the two is
+        wrong — that is your call.
+      </p>
+    </div>
+
+    <section class="panel">
+      <header>
+        <b>Not in the workbook, but still needed</b>
+        <span>Four short answers</span>
+      </header>
+      <div class="body">
+        <table class="fields">
+          <thead>
+            <tr><th>What</th><th>Why we are asking</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="field">Yield per department</td>
+              <td class="why">
+                The proportion that survives each operation. All fourteen are
+                set to 98% at the moment. It compounds backwards, so it is not
+                cosmetic — five departments at 98% each cost roughly a tenth of
+                the factory.
+              </td>
+            </tr>
+            <tr>
+              <td class="field">Shifts and headcount</td>
+              <td class="why">
+                Which shifts each department runs, and how many people are on the
+                books for each.
+              </td>
+            </tr>
+            <tr>
+              <td class="field">Shift hours</td>
+              <td class="why">
+                The <strong>net</strong> production hours — time actually
+                available for work, excluding breaks, setup and cleanup — not
+                the clock span. And the overtime ceiling per person.
+              </td>
+            </tr>
+            <tr>
+              <td class="field">Factory holidays</td>
+              <td class="why">
+                For the next twelve months. Sundays we work out; declared
+                holidays we cannot guess.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <div class="callout">
+      <h3>What we need back</h3>
+      <p>
+        The workbook with whatever you can fill in, the four answers above, and
+        the what-feeds-what table from our previous note. In that order of
+        usefulness — but the route table first if you only have time for one
+        thing, because everything else is read through it.
+      </p>
+      <p>
+        Until these arrive Kram is planning a factory that resembles yours and
+        is not yours. Every deadline it reports, every department it calls the
+        bottleneck, and every warning it raises is only as right as these
+        numbers.
+      </p>
+    </div>
+
+  </main>
+</div>
+
+<footer>
+  <div class="foot-inner">
+    <span>Kram — production planning &amp; control</span>
+    <span>Prepared for U&amp;M Designs · 17 August 2026</span>
+  </div>
+</footer>
