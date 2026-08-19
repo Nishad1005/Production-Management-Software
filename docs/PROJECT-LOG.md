@@ -76,7 +76,7 @@ unmodified in the browser, so the demo runs the real engine with no backend.
 `npm run build` produces a static folder.
 
 **Online.** Supabase project `fiqfbbnmksppbpxmhnbv` — *kram*, Mumbai
-(ap-south-1), Postgres 17.6. Thirty-seven migrations applied, the last on 19 Aug (§9).
+(ap-south-1), Postgres 17.6. All forty-four migrations applied, the last on 19 Aug (§9).
 
 > **Migrations are append-only from here.** Editing one now means the file and
 > the live database disagree, silently, until something breaks in a way that
@@ -195,6 +195,15 @@ get abandoned.
 ---
 
 ## 5. Gotchas — things that cost time
+
+**The documents drift, and nothing was checking them.** The log claimed fifteen
+migrations when there were thirty-two, then thirty-seven when there were
+forty-four; the README claimed fifty-three tests for a suite of nearly three
+hundred. Every one was written by somebody who meant it. `tests/docs-are-current.test.ts`
+now checks the migration count, the browser-check counts, and that every screen
+in the navigation has a section in the guide — the claims that are facts about
+the repository rather than prose. Proved by breaking each one on purpose. (19 Aug)
+
 
 **`new Date().toISOString()` is UTC, and India is 5½ hours ahead.** Every screen
 defaulting a date field to "today" returned *yesterday* between midnight and
@@ -339,7 +348,7 @@ Since 15 Aug it covers **both** of the prototype's modules: the capacity and
 load arithmetic, and the person-hour conversion that turns a shortfall into
 overtime hours and people.
 
-**290 unit and integration tests** against a real native Postgres, booted per run
+**293 unit and integration tests** against a real native Postgres, booted per run
 from an embedded binary. Covers schema shape, RLS (as the `authenticated` role —
 table owners bypass RLS, so a policy test run as superuser proves nothing), the
 working-day calendar, engine correctness, breaches, pins, overrides, the route
@@ -352,7 +361,7 @@ Note the task count is lower than the spec's ~40,000 estimate; three components
 across seven departments gives 21 pairs. The row count matches. Worth checking
 against the real route.
 
-**Browser** — `npm run screenshot` drives every screen plus twenty-two
+**Browser** — `npm run screenshot` drives fourteen screens plus twenty-seven
 interactions in headless Chromium and fails on any console error. It checks the
 D-minus edit survives a reload, which is what proves it reached the database
 rather than only React state. Forty-one steps, two of them at phone width.
@@ -610,6 +619,33 @@ traced back to a single line written once and then quoted forward by everything
 that followed, including three documents I wrote yesterday. The log is the
 project's memory and that is exactly what makes an unverified line in it
 expensive.
+
+### 2026-08-19 — Asked whether the docs were current, and they were not
+
+Everything was committed, pushed, and all forty-four migrations were on the live
+project. The documentation was another matter.
+
+The log said **thirty-seven** migrations. The README said the suite runs
+**fifty-three** tests, against a real figure of two hundred and ninety. The
+browser-check sentence said twenty-two interactions when it drives twenty-seven.
+The guide, at least, covered all seventeen screens — which it did because it was
+checked by hand twice, and that is precisely the problem.
+
+Every one of those numbers was written by somebody who meant it at the time, and
+each went stale the next time a phase landed. §5 has recorded since the schema
+version incident that a comment asking somebody to remember is not a mechanism.
+The counts in the documents were exactly that, and they had drifted the way
+`SCHEMA_VERSION` did.
+
+`tests/docs-are-current.test.ts` checks the three claims that are facts about
+the repository rather than judgements: the migration count matches the files,
+the browser-check counts match the script, and every screen in the navigation
+has a section in the guide. It reads the numbers as words, because the documents
+are written in words. Both failure modes were reproduced on purpose before being
+trusted — a check that has never failed is not yet a check.
+
+What it deliberately does not cover: the test count, which cannot check itself,
+and prose, which no machine can verify. Those still need reading.
 
 ### 2026-08-19 — Phase 8: money, and the half it refuses to guess
 

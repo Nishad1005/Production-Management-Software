@@ -58,7 +58,7 @@ visible immediately rather than waiting for someone to remember to recompute.
 | Command | Does |
 |---|---|
 | `npm run dev` | The app, offline, on port 5173 |
-| `npm test` | Boots a throwaway native Postgres, applies every migration, runs 53 tests |
+| `npm test` | Boots a throwaway native Postgres, applies every migration, runs the full suite |
 | `npm run screenshot` | Drives every screen in headless Chromium and captures it |
 | `npm run build` | Type-check and production build |
 | `npm run lint` | oxlint |
