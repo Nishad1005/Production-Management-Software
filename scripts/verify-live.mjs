@@ -85,6 +85,9 @@ async function checkAnonymous(db) {
     'machine_master',
     'machine_status',
     'machine_downtime_list',
+    'article_cost_summary',
+    'purchase_commitments',
+    'cash_out_weekly',
   ]) {
     const { error } = await db.from(view).select('*').limit(1)
     report(
@@ -133,6 +136,9 @@ async function checkAnonymous(db) {
     ['set_material', { p_code: 'X', p_name: 'Nothing' }],
     ['set_defect_type', { p_code: 'X', p_name: 'Nothing' }],
     ['set_machine', { p_code: 'X', p_name: 'Nothing', p_department_code: 'Y' }],
+    ['set_cost_line', { p_code: 'X', p_name: 'Nothing' }],
+    ['set_article_cost_line', { p_article_code: 'X', p_cost_line_code: 'Y', p_amount: 1 }],
+    ['set_material_rate', { p_material_code: 'X', p_rate: 1 }],
     [
       'set_machine_downtime',
       { p_machine_code: 'X', p_from_date: '2026-01-01', p_to_date: '2026-01-02', p_reason: 'probe' },

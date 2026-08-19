@@ -58,9 +58,10 @@ material, cash and customer relationships the system cannot see.
 | 5 | Material — bill of materials, ordering dates, shortages | **Done** |
 | 6 | Quality — defect causes, Pareto, counted yield against claimed | **Done** |
 | 7 | Machines — the master, downtime, and capacity that follows it | **Done** |
-| 8–10 | Cost, command centre, predictive | Not started |
+| 8 | Money — the costing sheet as data, and money out by week | **Done** |
+| 9–10 | Command centre, predictive | Not started |
 
-**Client**: sixteen screens, all reading from database views. Editable: D-minus
+**Client**: seventeen screens, all reading from database views. Editable: D-minus
 matrix, component rates, department yield/route/headcount, what feeds what,
 holidays, orders, shipment lines, article cost, who came in — per person or as a
 head count — and pins by dragging a schedule bar.
@@ -75,7 +76,7 @@ unmodified in the browser, so the demo runs the real engine with no backend.
 `npm run build` produces a static folder.
 
 **Online.** Supabase project `fiqfbbnmksppbpxmhnbv` — *kram*, Mumbai
-(ap-south-1), Postgres 17.6. Thirty-six migrations applied, the last on 17 Aug (§9).
+(ap-south-1), Postgres 17.6. Thirty-seven migrations applied, the last on 19 Aug (§9).
 
 > **Migrations are append-only from here.** Editing one now means the file and
 > the live database disagree, silently, until something breaks in a way that
@@ -338,7 +339,7 @@ Since 15 Aug it covers **both** of the prototype's modules: the capacity and
 load arithmetic, and the person-hour conversion that turns a shortfall into
 overtime hours and people.
 
-**278 unit and integration tests** against a real native Postgres, booted per run
+**290 unit and integration tests** against a real native Postgres, booted per run
 from an embedded binary. Covers schema shape, RLS (as the `authenticated` role —
 table owners bypass RLS, so a policy test run as superuser proves nothing), the
 working-day calendar, engine correctness, breaches, pins, overrides, the route
@@ -354,7 +355,7 @@ against the real route.
 **Browser** — `npm run screenshot` drives every screen plus twenty-two
 interactions in headless Chromium and fails on any console error. It checks the
 D-minus edit survives a reload, which is what proves it reached the database
-rather than only React state. Thirty-nine steps, two of them at phone width.
+rather than only React state. Forty-one steps, two of them at phone width.
 Several real defects came from this that the build was happy with.
 
 Waits are named: `until('the article to become schedulable', …)` fails with that
@@ -609,6 +610,46 @@ traced back to a single line written once and then quoted forward by everything
 that followed, including three documents I wrote yesterday. The log is the
 project's memory and that is exactly what makes an unverified line in it
 expensive.
+
+### 2026-08-19 — Phase 8: money, and the half it refuses to guess
+
+Row five of the scope of work — payment schedule and cash flow planning. It
+delivers the first and half of the second, and says which half out loud.
+
+**Kram knows costs and not prices.** No order in Kram carries a value, so there
+is no money coming in to plan against. The screen could have shown a cash-flow
+chart with an invented revenue line and nobody would have queried it; that
+would have been the most believable wrong number in the system. It says "this
+is money out only" in the panel, not in a footnote.
+
+**The cost structure is U&M's own, finally read rather than shelved.**
+`costing-sheet.xlsx` has sat in `docs/source/` since day one. It is one article
+costed in twenty-six lines — wood, plywood, metal, spring, belt, spring clips,
+tie paper wire, hessian, dacking, non-woven, foam, fibre wadding, poly fibre,
+thread, leather, piping, button, chain, chain puller, brass cup, packing,
+labour, finishing, CNF, miscellaneous, other — totalling ₹16,759.71, which is
+where the demo's article cost came from in the first place. That sheet is now a
+table, and the demo carries it line for line.
+
+**One number, one source.** An article's cost was a box somebody typed; it still
+can be, and a bare total is a perfectly good thing to have while the detail is
+collected. But where lines exist, `articles.unit_cost` is **derived from their
+sum** — written back by the function that edits a line, because the capacity
+sheet and the MD's WIP value already read that column and two ways to arrive at
+a cost is how the two end up disagreeing on screen. Removing the last line
+returns it to null rather than zero: zero is a claim that the chair is free.
+
+**Money out counts what it cannot price.** A material with no rate is carried
+with a null amount rather than dropped, and every weekly total reports how many
+lines it could not cost. The alternative produces a smaller, tidier, wrong
+number with nothing on screen to say so.
+
+**Where the seed had to be moved.** Costing the article that is *in production*
+made WIP value computable — and quietly deleted the best thing the MD's
+dashboard does, which is refuse to invent a rupee figure and name the screen
+where the cost goes. Two browser steps failed and were right to. The costing
+sheet now sits on the Betsy chair, and the counter stool on the floor stays
+uncosted until somebody enters one.
 
 ### 2026-08-18 — Phase 7: machines, and three ways to get it wrong quietly
 

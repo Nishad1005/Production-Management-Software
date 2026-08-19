@@ -29,6 +29,7 @@ const SCREENS = [
   { hash: '#/manpower', name: 'manpower', waitFor: 'text=Who is in' },
   { hash: '#/material', name: 'material', waitFor: 'text=Against the store' },
   { hash: '#/quality', name: 'quality', waitFor: 'text=Where the losses come from' },
+  { hash: '#/money', name: 'money', waitFor: 'text=Money out, week by week' },
 ]
 
 await mkdir(outDir, { recursive: true })
@@ -872,6 +873,44 @@ await step('machine downtime', async () => {
   return `${rows} machines, and booking downtime took stitching to six of eight`
 })
 
+// --- money: the cost sheet, and the half it refuses to guess ----------------
+
+await step('cost and cash out', async () => {
+  await go('#/money', 'text=Money out, week by week')
+  await page.waitForTimeout(900)
+
+  // The Betsy chair carries U&M's own costing sheet. Deliberately not the
+  // article in production — WIP value has to stay unavailable so the dashboard
+  // can demonstrate refusing to invent it.
+  const costed = page.locator('[data-testid="cost-UD354 SPPL WAL"]')
+  if ((await costed.getAttribute('data-breakdown')) !== 'yes') {
+    throw new Error('the costed article is not showing a breakdown')
+  }
+
+  const uncosted = await page
+    .locator('[data-testid^="cost-"][data-breakdown="no"]')
+    .count()
+  if (!uncosted) throw new Error('every article has a breakdown — nothing to tell apart')
+
+  // Opening it shows the twenty-six lines, summing to the unit cost.
+  await costed.click()
+  await page.waitForTimeout(400)
+  const detail = await page.locator('[data-testid="article-costs"]').innerText()
+  if (!/leather/i.test(detail) || !/labour/i.test(detail)) {
+    throw new Error('the cost lines are not showing')
+  }
+
+  // And the cash panel must say what it cannot price rather than quietly
+  // totalling only what it can.
+  const cash = await page.locator('[data-testid="cash-out"]').innerText()
+  if (!/unpriced/i.test(cash)) {
+    throw new Error('the cash panel is not declaring its unpriced lines')
+  }
+
+  await page.screenshot({ path: `${outDir}/money.png`, fullPage: true })
+  return 'cost sheet reads, and cash out declares what it cannot price'
+})
+
 // --- quality: the unexplained balance stays visible -------------------------
 
 await step('quality pareto', async () => {
@@ -1195,6 +1234,7 @@ await step('thumb-sized everywhere', async () => {
     ['#/manpower', 'Who is in'],
     ['#/material', 'Against the store'],
     ['#/quality', 'Where the losses come from'],
+    ['#/money', 'Money out, week by week'],
     ['#/masters', 'Production route'],
   ]
 

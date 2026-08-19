@@ -432,6 +432,42 @@ rejects than were recorded — that is arithmetic, not a judgement.
 
 ---
 
+### Money
+
+Row five of the scope of work. It says what things **cost** and when money must
+**go out** — and deliberately nothing about what comes in.
+
+**Money out, week by week** is every material the plan commits the factory to
+buying, priced, and bucketed by the week the invoice falls due. Each falls due
+the day the material is needed plus that supplier's terms: the invoice follows
+the delivery, not the purchase order.
+
+A material with **no rate** is counted but not costed, and the panel says how
+many. The totals are what we can price, not what the plan will cost — a figure
+that quietly omitted the rest would be smaller, tidier and wrong.
+
+**By supplier** is the same commitment the other way round: what each supplier
+is owed across the plan, on what terms, and when the first invoice lands.
+
+**What each article costs** is your costing sheet as a table — wood, plywood,
+foam, leather, packing, labour, finishing, CNF and the rest. Click a costed
+article to see the lines and what share each takes.
+
+Three states, and the column says which:
+
+- **26 lines** — a breakdown. The unit cost *is* the sum of those lines; there
+  is no second figure to disagree with them.
+- **A typed total** — a cost with nothing behind it. Perfectly usable, and
+  honest about being a single number somebody entered.
+- **Not costed** — nobody has said. WIP value on the dashboard will say so
+  rather than showing a rupee figure it cannot compute.
+
+> **This is money out only.** Kram holds no order values, so it cannot say what
+> comes in. Cash flow planning proper needs both halves; this is the half the
+> data supports, and the screen says so rather than leaving you to notice.
+
+---
+
 ### Capacity sheet
 
 The same grid as the capacity spreadsheet — every article against every
@@ -714,10 +750,14 @@ Worth knowing before showing it to anyone:
   so two people running it see different data and a cleared cache loses
   everything. Save to a file after entering anything real — **Save everything**
   on Masters takes the order book and the production ledger too.
-- **Phases 7 onwards do not exist** — no machines or costing yet.
+- **Phases 9 and 10 do not exist** — no command centre beyond what is already
+  on the Command centre screen, and nothing predictive.
 - **Material planning is in, but its data is not.** The engine, the ordering
   dates and the shortage states all work; what no article has yet is a real bill
   of materials. Until one is entered the Material screen has nothing to report.
+- **Kram knows costs, not prices.** Every article can carry a cost; no order
+  carries a value. So it can say what the factory spends and never what it
+  earns.
 - **WIP is valued only as far as it is costed.** The ledger records quantities,
   which are always real. A rupee figure needs a cost per article, entered on the
   capacity sheet; until one is, the KPI says so rather than showing a zero, and

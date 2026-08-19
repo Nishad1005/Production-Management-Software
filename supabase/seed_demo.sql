@@ -651,3 +651,115 @@ select m.id, current_date + v.from_offset, current_date + v.to_offset,
   ) as v (code, from_offset, to_offset, kind, reason)
   join public.machines m on m.code = v.code
 on conflict do nothing;
+
+-- ---------------------------------------------------------------------------
+-- Money. Phase 8.
+--
+-- The cost lines and their amounts are **real**: they are U&M's own costing
+-- sheet, `docs/source/costing-sheet.xlsx`, read line by line. Twenty-six lines
+-- totalling ₹16,759.71, which is where the demo's article cost came from in the
+-- first place.
+--
+-- They are applied to the Betsy chair, and deliberately **not** to the article
+-- that is in production. WIP value on the MD's dashboard is the demonstration
+-- of a number the software refuses to invent — it stays unavailable, naming the
+-- capacity sheet, until somebody enters a cost for what is actually on the
+-- floor. Costing the in-progress article here would answer that question before
+-- it was asked and quietly delete the best thing the dashboard does.
+--
+-- Every other article is left without a breakdown on purpose: an article with a
+-- cost and an article with a cost you can argue with are different things, and
+-- the screen's job is to show which is which.
+--
+-- Material rates and supplier terms are invented.
+-- ---------------------------------------------------------------------------
+insert into public.cost_lines (code, name, kind, sort_order)
+values
+  ('WOOD',      'Wood',                 'material',  10),
+  ('PLYWOOD',   'Plywood',              'material',  20),
+  ('METAL',     'Metal',                'material',  30),
+  ('SPRING',    'Spring',               'material',  40),
+  ('BELT',      'Belt',                 'material',  50),
+  ('SPRCLIP',   'Spring clips',         'material',  60),
+  ('TIEWIRE',   'Tie paper wire',       'material',  70),
+  ('HESSIAN',   'Hessian fabric',       'material',  80),
+  ('DACKING',   'Satan/dacking fabric', 'material',  90),
+  ('NONWOVEN',  'Non woven',            'material', 100),
+  ('FOAM',      'Foam',                 'material', 110),
+  ('FIBWAD',    'Fibre wadding',        'material', 120),
+  ('POLYFIB',   'Poly fibre',           'material', 130),
+  ('THREAD',    'Thread',               'material', 140),
+  ('LEATHER',   'Leather',              'material', 150),
+  ('PIPING',    'Piping',               'material', 160),
+  ('BUTTON',    'Button',               'material', 170),
+  ('CHAIN',     'Chain',                'material', 180),
+  ('CHAINPUL',  'Chain puller',         'material', 190),
+  ('BRASSCUP',  'Brass cup',            'material', 200),
+  ('PACKING',   'Packing',              'packing',  210),
+  ('LABOUR',    'Labour',               'labour',   220),
+  ('FINISHING', 'Finishing',            'labour',   230),
+  ('CNF',       'CNF',                  'logistics',240),
+  ('MISC',      'Miscellaneous',        'overhead', 250),
+  ('OTHER',     'Other',                'overhead', 260)
+on conflict (code) do nothing;
+
+insert into public.article_costs (article_id, cost_line_id, amount)
+select a.id, cl.id, v.amount
+  from (values
+    ('WOOD',      4745.0521::numeric),
+    ('PLYWOOD',   1440.5),
+    ('METAL',        0),
+    ('SPRING',     125),
+    ('BELT',       105),
+    ('SPRCLIP',     50),
+    ('TIEWIRE',     50),
+    ('HESSIAN',      0),
+    ('DACKING',  238.5),
+    ('NONWOVEN',    10),
+    ('FOAM',    2700.8333),
+    ('FIBWAD',     165),
+    ('POLYFIB',    210),
+    ('THREAD',     100),
+    ('LEATHER',   4185),
+    ('PIPING',       0),
+    ('BUTTON',       0),
+    ('CHAIN',       40),
+    ('CHAINPUL',    10),
+    ('BRASSCUP',     0),
+    ('PACKING',  934.8218),
+    ('LABOUR',     950),
+    ('FINISHING',  400),
+    ('CNF',          0),
+    ('MISC',       150),
+    ('OTHER',      150)
+  ) as v (code, amount)
+  join public.cost_lines cl on cl.code = v.code
+  join public.articles a on a.code = 'UD354 SPPL WAL'
+on conflict (article_id, cost_line_id) do nothing;
+
+-- The derived total, so articles.unit_cost matches the lines rather than the
+-- figure typed earlier. Same rule the function applies on every edit.
+update public.articles a
+   set unit_cost = (select sum(ac.amount) from public.article_costs ac
+                     where ac.article_id = a.id)
+ where exists (select 1 from public.article_costs ac where ac.article_id = a.id);
+
+-- Rates and terms. Invented, and two materials deliberately left unpriced so
+-- the cash figures have to say how much of the plan they actually describe.
+update public.materials m
+   set rate_per_uom = v.rate
+  from (values
+    ('WD-OAK',   250::numeric), ('WD-MANGO', 180), ('PLY-18', 1040),
+    ('PLY-12',   720),          ('MTL-TUBE',  95), ('SPR-60',   14),
+    ('SPR-CLIP',   2),          ('FM-25',    369), ('FM-50',   738),
+    ('FIB-WAD',  120),          ('FAB-LIN',  340), ('LTH-01',  185),
+    ('THR-01',   190)
+  ) as v (code, rate)
+ where m.code = v.code;
+
+update public.suppliers s
+   set payment_terms_days = v.days
+  from (values
+    ('TIMBER', 45), ('FOAMCO', 30), ('FABRIC', 60), ('METALW', 30), ('PACKING', 15)
+  ) as v (code, days)
+ where s.code = v.code;

@@ -7,12 +7,16 @@ describe('migrations', () => {
     const expected = [
       // Phase 0 — masters
       'article_bom',
+      // Phase 8 — money
+      'article_costs',
       'article_dept_dminus',
       'article_materials',
       'articles',
       'capacity_overrides',
       'component_rates',
       'components',
+      // Phase 8 — money
+      'cost_lines',
       'customers',
       // Phase 6 — quality
       'defect_types',
