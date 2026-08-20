@@ -626,14 +626,51 @@ asked for any of it. Worth knowing when PPC ask why we want what we want.
 what happened, what the deck is and is not, how to recover what a section said
 (`grep`; the citations mostly quote the sentence), and why the document is
 **not** being reconstructed: one derived from the build cannot audit the build,
-and it would read as a check that structurally cannot fail. `DBBS/UM/KRAM/03`
-is free for a real client document.
+and it would read as a check that structurally cannot fail. The number `DBBS/UM/KRAM/03` was never free — the demonstration
+script has held it since 12 Aug, and the deleted request note was the
+duplicate.
 
 The lesson is the familiar one in a new place. Every claim about §19 and §20
 traced back to a single line written once and then quoted forward by everything
 that followed, including three documents I wrote yesterday. The log is the
 project's memory and that is exactly what makes an unverified line in it
 expensive.
+
+### 2026-08-20 — Ready to show, once the script caught up
+
+Asked whether everything was pushed for a client demonstration. The code was:
+clean tree, `main` synced, forty-six migrations local and forty-six live.
+
+Two things were worth checking rather than asserting. **`npm run build`** — the
+command Netlify runs, and one this session had never run once in ten phases;
+it succeeds, 18 MB, and the Postgres binary is most of it. Then the browser
+suite against **`vite preview`** rather than the dev server: all forty-eight
+steps pass against the actual built bundle, which is a stronger claim than any
+made before and is what a client will load.
+
+**The demonstration script was eight days and eight screens out of date.**
+Written 12 Aug, it covered WIP, Production, the capacity sheet, Masters and the
+dashboard, and mentioned none of Attention, Manpower, Material, Quality, Money,
+Forecast, the factory map, My department or the floor display. Walking a client
+through it would have shown a third of the software and skipped the parts
+answering their own follow-up list.
+
+Rewritten around what the software now does rather than around the order it was
+built in: open on **Attention** so it tells them what is wrong, follow one order
+through the factory, then show where the numbers come from and end on the empty
+hosted capacity sheet — which makes the ask concrete and is the truth.
+Forty-five minutes, with a `core` marking for a twenty-minute version.
+
+Three things it now says that it could not before: the cost breakdown is
+**their** costing sheet line for line and is the one screen where the figures
+are genuinely theirs; Kram knows costs and not prices, said in the same breath
+so nobody leaves thinking it does cash flow both ways; and the Forecast screen
+refusing to state a figure is the feature, not an unfinished corner.
+
+A numbering error corrected while there: `DBBS/UM/KRAM/03` was recorded on
+17 Aug as freed by deleting the specification request. It was never free — the
+demonstration script has held it since 12 Aug, and the request note was the
+duplicate.
 
 ### 2026-08-20 — Phases 9 and 10: attention, a wall, a map, and a forecast that refuses
 

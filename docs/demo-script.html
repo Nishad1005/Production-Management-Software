@@ -224,7 +224,7 @@
       <div><span>Ref</span><span>DBBS/UM/KRAM/03</span></div>
       <div><span>For</span><span>U&amp;M Designs</span></div>
       <div><span>Runs on</span><span>Offline draft</span></div>
-      <div><span>Length</span><span>~30 min + questions</span></div>
+      <div><span>Length</span><span>~45 min, or 20 short</span></div>
     </aside>
   </div>
 </header>
@@ -232,23 +232,29 @@
 <div class="wrap">
   <main>
     <p class="lead">
-      The order is the arc the software actually has: find a problem, understand
-      it, try a fix, then show where the numbers come from and who keeps them
-      up to date. Steps 5 and 9 are the two worth slowing down for.
+      Twenty screens, in the order the software actually tells its story: let it
+      tell you what is wrong, follow one order through the factory, then show
+      where the numbers come from and who keeps them up to date. If you have
+      twenty minutes rather than forty-five, the steps marked
+      <em class="term">core</em> are the walkthrough and the rest are answers to
+      questions they will ask anyway.
     </p>
 
     <div class="callout warn">
       <h3>Say this in the first minute, before anything else</h3>
-      <p>
-        <strong>The departments and the product codes are yours. Every capacity
-        figure, every date and every order on the screen is made up.</strong>
-        They are there so the screens have something to say. Getting your real
-        numbers in is the next piece of work, and part of what today is for.
+      <p class="quote">
+        “The departments, the product codes and the cost structure are yours.
+        <strong>Every capacity figure, every date, every order and every rupee
+        on the screen is made up.</strong> They are there so the screens have
+        something to say. Getting your real numbers in is the next piece of
+        work, and part of what today is for.”
       </p>
       <p class="say aside">
         Worth being blunt about. The screen will show Ply Cutting making 120 a
         day, and if that goes unchallenged the whole session becomes an argument
-        about a number nobody entered.
+        about a number nobody entered. The one exception is worth naming too:
+        the cost breakdown on the Betsy chair is their own costing sheet, line
+        for line, and saying so buys credit for everything else.
       </p>
     </div>
 
@@ -256,56 +262,37 @@
     <ol class="checks">
       <li>
         <strong>The demonstration runs on your laptop, not on the Netlify
-        link.</strong> Open a terminal and start it:
-        <div style="font-family: var(--mono); font-size: 12.5px; background: var(--paper); border: 1px solid var(--rule); padding: 10px 12px; margin: 9px 0; overflow-x: auto;">
-          cd ~/Desktop/PPM<br>npm run dev
-        </div>
-        then open <em class="term">http://localhost:5173</em>. Nothing goes over
-        the network — the database is inside the browser — so nothing can fail
-        live because of wifi.
+        link.</strong> <em class="term">cd ~/Desktop/PPM</em> then
+        <em class="term">npm run dev</em>, and open
+        <em class="term">http://localhost:5173</em>. Nothing goes over the
+        network — the database is inside the browser — so nothing can fail live
+        because of wifi.
       </li>
       <li>
-        <strong>kraam.netlify.app is the other one.</strong> It is the hosted
-        system, wired to the shared database, and it has no capacity figures in
-        it yet — so its planning screens are empty by design. You use it once,
-        at step&nbsp;10, and its emptiness is the point of that step. Do not run
-        the walkthrough on it.
+        <strong>Sanity check.</strong> The table at the top right should read
+        <em class="term">Build — Offline draft</em>. That is how the offline
+        demonstration and the hosted system tell each other apart at a glance.
       </li>
       <li>
-        <strong>Sanity check.</strong> On localhost, the small table at the top
-        right of the page should have a row reading
-        <em class="term">Build — Offline draft</em>. That is how the two tell
-        each other apart at a glance.
+        <strong>Command centre → Reset demo data</strong>, then
+        <strong>Run the schedule</strong> once. Not optional tidying: a browser
+        that has opened Kram before keeps the database it built then, and the
+        demonstration data has changed a great deal since.
       </li>
       <li>
-        <strong>Command centre → Reset demo data.</strong> Not optional tidying.
-        A browser that has opened Kram before keeps the database it built then,
-        and the demonstration data has changed since — so the capacity sheet can
-        come up completely empty. One click rebuilds it. Then
-        <strong>Run the schedule</strong> once so the first screen is not blank.
+        <strong>Know the one number.</strong> Stitching is the constraint.
+        Almost every question about why something is flagged comes back to it.
       </li>
       <li>
-        <strong>Have this script on a second screen</strong>, not on the one you
+        <strong>Have this script on a second screen</strong>, not the one you
         are sharing.
-      </li>
-      <li>
-        <strong>Know the one number.</strong> Stitching is the constraint at 38
-        a day. Almost every question about why something is flagged comes back
-        to it.
       </li>
     </ol>
 
-    <h2>The walkthrough</h2>
-
     <section class="step">
-      <header><span class="n">01</span><b>What this is for</b><span class="mins">1 min</span></header>
+      <header><span class="n">01</span><b>What this is for</b><span class="mins">1 min · core</span></header>
       <div class="body">
-        <div class="do">
-          <h4>Do</h4>
-          <ol>
-            <li>Nothing. Do not share the screen yet.</li>
-          </ol>
-        </div>
+        <div class="do"><h4>Do</h4><ol><li>Nothing. Do not share the screen yet.</li></ol></div>
         <div class="say">
           <h4>Say</h4>
           <p class="quote">
@@ -316,409 +303,521 @@
             do about it.”
           </p>
           <p class="aside">
-            That last sentence matters. Everything in the software is built to
-            report and stop there, and saying so early prevents “so it will tell
-            us to do overtime?” half an hour in.
+            That last sentence prevents “so it will tell us to do overtime?”
+            half an hour in. Everything in the software reports and stops.
           </p>
         </div>
       </div>
     </section>
 
     <section class="step">
-      <header><span class="n">02</span><b>Command centre — is the factory on track?</b><span class="mins">4 min</span></header>
+      <header><span class="n">02</span><b>Attention — the software tells you</b><span class="mins">4 min · core</span></header>
       <div class="body">
         <div class="do">
           <h4>Do</h4>
           <ol>
-            <li>Open <kbd>Command centre</kbd>.</li>
-            <li>Click <kbd>Run the schedule</kbd> with <kbd>Confirmed + probable</kbd> selected.</li>
-            <li>Point at the four figures.</li>
-            <li>Point at <kbd>Bottleneck utilisation</kbd>.</li>
-            <li>Point at <kbd>Flag triage</kbd> — read down the right column.</li>
-          </ol>
-        </div>
-        <div class="say">
-          <h4>Say</h4>
-          <p>
-            The whole order book rescheduled in well under a second, and every
-            run is saved as its own version — nothing is overwritten, so you can
-            always go back to what you promised last week.
-          </p>
-          <p>
-            <strong>Breaches and flagged days are different things.</strong> A
-            breach is work that cannot be made as planned. A flagged day is a
-            department asked for more than it can produce.
-          </p>
-          <p class="quote">
-            “Stitching is the constraint. Capacity above the bottleneck is
-            decorative — if stitching does 38 a day, the factory does 38 a day,
-            whatever fitting can manage.”
-          </p>
-          <p>
-            Flag triage sorts by how much time is left and labels what is still
-            possible at that lead time — hiring, then overtime and resequencing,
-            then only a conversation with the customer. <strong>A label, not a
-            recommendation.</strong>
-          </p>
-        </div>
-      </div>
-    </section>
-
-    <section class="step">
-      <header><span class="n">03</span><b>Load heatmap — which days hurt</b><span class="mins">3 min</span></header>
-      <div class="body">
-        <div class="do">
-          <h4>Do</h4>
-          <ol>
-            <li>Open <kbd>Load heatmap</kbd>.</li>
-            <li>Scroll sideways so they see the shape of it.</li>
-            <li><strong>Click a red cell.</strong></li>
-            <li>Point at an outlined (idle) cell nearby.</li>
-          </ol>
-        </div>
-        <div class="say">
-          <h4>Say</h4>
-          <p>
-            Every department against every day. Red is over capacity. Clicking
-            one shows exactly which orders are on that day and what share of the
-            day each takes — so a flag is never just a colour.
-          </p>
-          <p class="quote">
-            “The empty ones matter as much as the red ones. Because it schedules
-            backwards, work lands as late as it can — so you often get idle days
-            sitting immediately before a department drowns. That is a
-            resequencing opportunity you cannot see on a spreadsheet.”
-          </p>
-        </div>
-      </div>
-    </section>
-
-    <section class="step">
-      <header><span class="n">04</span><b>Schedule — the plan, and overriding it</b><span class="mins">3 min</span></header>
-      <div class="body">
-        <div class="do">
-          <h4>Do</h4>
-          <ol>
-            <li>Open <kbd>Schedule</kbd>.</li>
-            <li>Filter to <kbd>Breaches only</kbd>.</li>
-            <li><strong>Drag one bar</strong> a few days earlier.</li>
-            <li>Type a reason. Save.</li>
-            <li>Point at the pin appearing in the list below.</li>
-          </ol>
-        </div>
-        <div class="say">
-          <h4>Say</h4>
-          <p>
-            One bar per task, per shipment line. The marker is that department's
-            own deadline.
-          </p>
-          <p class="quote">
-            “A planner always knows something the system does not. So you can
-            move anything — but it asks you why, and it makes you answer. A pin
-            with no reason is indistinguishable from a mistake six weeks later.”
-          </p>
-          <p>
-            From then on the engine schedules <em>around</em> that pin and
-            reports whatever it breaks, rather than quietly putting it back.
-          </p>
-        </div>
-      </div>
-    </section>
-
-    <section class="step">
-      <header><span class="n">05</span><b>Accept an order — the one that matters</b><span class="mins">5 min</span></header>
-      <div class="body">
-        <div class="do">
-          <h4>Do</h4>
-          <ol>
-            <li>Open <kbd>Accept an order</kbd>.</li>
-            <li>Pick <kbd>Boden Dining Chair</kbd>, quantity <kbd>600</kbd>.</li>
-            <li>Stuffing date about <strong>six weeks out</strong>. Click <kbd>Check</kbd>.</li>
-            <li>Read the refusal and which departments break.</li>
-            <li>Now push the date out by <strong>three weeks</strong> and check again.</li>
-            <li>Go to <kbd>Order book</kbd> — show it is not there.</li>
+            <li>Open on <strong>Attention</strong>. Do not start on the command centre.</li>
+            <li>Read the top two or three criticals aloud, whatever they are today.</li>
+            <li>Click <em class="term">Go to the screen that fixes this</em> on one of them, then come back.</li>
+            <li>Point at the red count in the header — it is on every screen.</li>
           </ol>
         </div>
         <div class="say">
           <h4>Say</h4>
           <p class="quote">
-            “A customer is on the phone asking for 600 chairs in six weeks. This
-            is the answer, before you give them one.”
-          </p>
-          <p>
-            It schedules the order provisionally against everything already
-            committed, reports which departments break and by how much, then
-            takes it out again. Nothing was added to the order book — check it
-            yourself.
-          </p>
-          <p>
-            Moving the date and re-checking is the part to linger on. It turns
-            “no” into <strong>“not that date, but this one”</strong>, which is a
-            different conversation with a customer.
+            “Your own brief asks for alerts so you respond in time rather than
+            in a crisis. This is that. Nothing here is a new calculation — every
+            line is something one of the other screens already worked out. You
+            do not have to go looking.”
           </p>
           <p class="aside">
-            Everything else in the system finds problems after the commitment.
-            This is the only screen that finds them before.
-          </p>
-          <p class="aside">
-            <strong>If it says yes first time</strong>, the book is quieter than
-            expected on the day — put the quantity up to 800 and try again. The
-            point of the step is watching a no become a yes, not the number.
+            This is deck slide 2, objective five, and opening on it reframes the
+            whole demonstration: the software is something that tells you, not
+            something you consult. If they ask why there is no dismiss button:
+            an alert you can silence while it is still true stops being read.
           </p>
         </div>
       </div>
     </section>
 
     <section class="step">
-      <header><span class="n">06</span><b>What if — trying it without risking it</b><span class="mins">3 min</span></header>
+      <header><span class="n">03</span><b>Command centre — is the factory on track?</b><span class="mins">4 min · core</span></header>
       <div class="body">
         <div class="do">
           <h4>Do</h4>
           <ol>
-            <li>Open <kbd>What if</kbd>.</li>
-            <li>Department <kbd>Stitching</kbd>, preset <kbd>Department down</kbd>.</li>
-            <li>A window of about a fortnight. Run it.</li>
-            <li>Click <kbd>Compare</kbd>.</li>
-            <li>Do <strong>not</strong> promote it — say you could, and move on.</li>
+            <li>Run the schedule with <em class="term">confirmed only</em>, then again including probable. Watch the figures move.</li>
+            <li>Read the four figures: lines, tasks, breaches, flagged days.</li>
+            <li>Scroll to <strong>bottleneck utilisation</strong> and name the constraint.</li>
+            <li>Show <strong>flag triage</strong> and its three lead-time bands.</li>
           </ol>
         </div>
         <div class="say">
           <h4>Say</h4>
-          <p>
-            A machine breaks, or you are deciding whether a second shift is worth
-            it. This runs the whole plan again under that assumption and shows
-            you the difference against the live one.
-          </p>
           <p class="quote">
-            “The masters are never touched. The capacity change is applied for
-            that one run and taken straight back out — so there is no way to
-            experiment and accidentally leave the factory configured wrong.”
+            “A breach is work that cannot be made as planned. A flagged day is a
+            department asked for more than it can produce. They are different
+            things and both matter. Capacity above the bottleneck is decorative
+            — if stitching runs at 38 a day, the factory runs at 38.”
           </p>
           <p class="aside">
-            If a scenario turns out to be the right answer, one button makes it
-            the live plan.
+            Triage is a sort and a label, never a recommendation: over 45 days
+            you can hire, 15 to 45 you can work overtime or resequence, under 15
+            the honest answer is a conversation with the customer.
           </p>
         </div>
       </div>
     </section>
 
     <section class="step">
-      <header><span class="n">07</span><b>Capacity sheet — where every number comes from</b><span class="mins">4 min</span></header>
+      <header><span class="n">04</span><b>Factory map — the correction they gave us</b><span class="mins">3 min</span></header>
       <div class="body">
         <div class="do">
           <h4>Do</h4>
           <ol>
-            <li>Open <kbd>Capacity sheet</kbd>.</li>
-            <li>Point at the four figures across the top.</li>
-            <li>Switch <kbd>Units per day</kbd> → <kbd>D-minus</kbd>.</li>
-            <li>Click Sanding on the first row, type <kbd>70</kbd>, Enter.</li>
-            <li>Wait for the warning panel. Read it out.</li>
-            <li>Put it back to <kbd>56</kbd>. Watch it clear.</li>
+            <li>Open <strong>Factory map</strong>. Let them look before you talk.</li>
+            <li>Trace the three streams: frame, fabric, metal — and where they join.</li>
+            <li>Say plainly that it is a flow map, not a floor plan.</li>
           </ol>
         </div>
         <div class="say">
           <h4>Say</h4>
           <p class="quote">
-            “This is your capacity spreadsheet, in the software. Same grid,
-            except the engine reads it. Six articles here; you have seventy-one.”
+            “When we showed you the route as a single line, you told us most of
+            these run alongside each other. You were right and we rebuilt it.
+            Columns here run in parallel — nothing in a column waits for
+            anything else in it.”
           </p>
-          <p>
-            A units figure means the article passes through that department at
-            that rate. A blank means it does not go there at all.
-            <strong>The rate is what that department makes in a day doing nothing
-            else</strong> — that convention is what lets the software add up a
-            mixed day correctly, and it is the number we need from PPC.
-          </p>
-          <p>
-            Then the guard: setting Sanding to finish before Assembly, which
-            feeds it, is a contradiction. It names both departments and says
-            whether it is already causing false warnings.
-            <strong>It does not correct anything</strong> — which of the two
-            figures is wrong is your call, not the software's.
+          <p class="aside">
+            Credit where it is theirs. This is also the moment to ask for a
+            floor plan: a real layout can be laid under this drawing, and we
+            have deliberately not invented one.
           </p>
         </div>
       </div>
     </section>
 
     <section class="step">
-      <header><span class="n">08</span><b>Masters — what feeds what</b><span class="mins">3 min</span></header>
+      <header><span class="n">05</span><b>Heatmap and schedule — where it hurts, and moving it</b><span class="mins">5 min · core</span></header>
       <div class="body">
         <div class="do">
           <h4>Do</h4>
           <ol>
-            <li>Open <kbd>Masters</kbd>, scroll to <kbd>What feeds what</kbd>.</li>
-            <li>Point at the four <kbd>Entry point</kbd> tags.</li>
-            <li>Trace one row aloud: Stapling waits for Foam Pasting and Stitching.</li>
+            <li><strong>Load heatmap</strong>: point at a red block and click it.</li>
+            <li><strong>Schedule</strong>: filter to one department, then drag a bar two days later.</li>
+            <li>Give a reason when asked, then re-run the schedule and show the pin held.</li>
           </ol>
         </div>
         <div class="say">
           <h4>Say</h4>
-          <p>
-            This is the structure PPC confirmed. Four departments start on their
-            own; three streams — frame, fabric and metal — come together late.
-          </p>
           <p class="quote">
-            “This drives two things. A department is held back until everything
-            feeding it is due, so wire a feeder into the wrong place and you get
-            warnings that are not real. And losses compound along these lines
-            only — so a leg is never made in larger numbers to cover stitching's
-            rejects, because a leg never goes near stitching.”
+            “Utilisation adds up across everything a department is making that
+            day. It is a share of the day, not a count of chairs — which is why
+            legs and covers can be added together at all.”
           </p>
           <p class="aside">
-            Editable here at any time, and the schedule recalculates as soon as
-            you change it.
+            The pin is the point: the planner overrules the engine, gives a
+            reason, and every later run honours it. Kram never silently
+            un-decides something a person decided.
           </p>
         </div>
       </div>
     </section>
 
     <section class="step">
-      <header><span class="n">09</span><b>Production — the daily sheet, replaced</b><span class="mins">4 min</span></header>
+      <header><span class="n">06</span><b>Accept an order — before the commitment</b><span class="mins">4 min · core</span></header>
       <div class="body">
         <div class="do">
           <h4>Do</h4>
           <ol>
-            <li>Open <kbd>Production</kbd>.</li>
-            <li>Department <kbd>ASSY — Assembly</kbd>.</li>
-            <li>Point at <kbd>Handed to you, not yet counted in</kbd>.</li>
-            <li>Type a <strong>smaller</strong> number than declared. Watch the
-              short tag appear. Click <kbd>Count in</kbd>.</li>
-            <li>Switch to <kbd>STITCH</kbd> and pick a date from the offered days.</li>
-            <li>Enter a good figure and a rejected figure. Enter.</li>
+            <li><strong>Accept an order</strong>: 5,000 units, four weeks out.</li>
+            <li>Let it refuse. Read which department cannot do it and by how much.</li>
+            <li>Try again with a date six months out and watch it accept.</li>
           </ol>
         </div>
         <div class="say">
           <h4>Say</h4>
           <p class="quote">
-            “This replaces the daily production sheet. Two jobs, in the order you
-            actually do them: count in what arrived from the bench before you,
-            then write down what you made.”
-          </p>
-          <p>
-            The department before you says what it made; you count what turned
-            up. If they disagree, <strong>the difference is kept</strong>, not
-            smoothed over. That gap is the reason for counting it twice.
-          </p>
-          <p>
-            Good and rejected go in separately because both are numbers a
-            supervisor can stand behind. The percentage is worked out from them,
-            and gets compared against the yield on Masters — <strong>which is how
-            an assumption slowly turns into a measurement.</strong>
+            “Every other screen finds a problem after you have committed. This
+            one finds it before. A merchandiser can answer a customer in the
+            time it takes to type the quantity.”
           </p>
           <p class="aside">
-            Entering output moves no dates. The plan stays where it is, because
-            it is what everyone is working to today.
+            If one thing lands today, make it this. It is the only screen that
+            changes a decision rather than reporting on one.
           </p>
         </div>
       </div>
     </section>
 
     <section class="step">
-      <header><span class="n">10</span><b>It is real, and it is shared</b><span class="mins">2 min</span></header>
+      <header><span class="n">07</span><b>What if — try it before you do it</b><span class="mins">3 min</span></header>
       <div class="body">
         <div class="do">
           <h4>Do</h4>
           <ol>
-            <li>Open <kbd>kraam.netlify.app</kbd> in a second tab.</li>
-            <li>Sign in.</li>
-            <li>Open <kbd>Users</kbd>, point at the roles.</li>
+            <li>Add a shift to stitching, or move a stuffing date, and run the scenario.</li>
+            <li>Show the comparison against the live plan, then promote it.</li>
           </ol>
         </div>
         <div class="say">
           <h4>Say</h4>
-          <p>
-            Everything so far ran entirely inside the browser, which is why it is
-            instant and needs nothing installed. This is the same software
-            against the shared database — one plan, everyone looking at it.
-          </p>
           <p class="quote">
-            “Who can see and change what is enforced in the database, not in the
-            screen. Hiding a menu is a convenience; being unable to read the data
-            is the actual rule.”
-          </p>
-          <p class="aside">
-            It is deliberately empty of capacity figures. That is the ask, and it
-            leads straight into the questions.
+            “A scenario is a full schedule run that is not live. You compare it
+            side by side, and it only becomes the plan when somebody says so.”
           </p>
         </div>
       </div>
     </section>
 
-    <h2>Say what is not there, before they find it</h2>
-    <div class="callout">
-      <ul class="plain">
-        <li>
-          <strong>The MD dashboard from the deck is not built.</strong> Six of its
-          nine figures — OTIF, daily production, WIP value, efficiency,
-          rejections, shortages — need actuals from the floor. Those only start
-          existing now that Production is in. Building it earlier would have
-          meant six invented numbers sitting beside three real ones.
-        </li>
-        <li>
-          <strong>WIP is counted, not valued.</strong> Rupee value needs a
-          component cost master we have not loaded.
-        </li>
-        <li>
-          <strong>Panipuri orders are not imported yet.</strong> Panipuri gives
-          files, not an interface, so it will be a file drop — and the shape of
-          that file is a question for whoever exports it.
-        </li>
-      </ul>
-    </div>
+    <section class="step">
+      <header><span class="n">08</span><b>My department, and Production on a phone</b><span class="mins">5 min · core</span></header>
+      <div class="body">
+        <div class="do">
+          <h4>Do</h4>
+          <ol>
+            <li><strong>My department</strong> → Stapling. Read “holding you up” and “what you owe”.</li>
+            <li><strong>Production</strong>: count in a handover, then declare a day's output.</li>
+            <li>If you can, do this bit on your phone with the screen mirrored.</li>
+          </ol>
+        </div>
+        <div class="say">
+          <h4>Say</h4>
+          <p class="quote">
+            “You asked for this in your own words: what is pending for the day,
+            in shipping-date order, and which department a component has to come
+            from so I can start. The handover is counted twice on purpose — the
+            bench that made it and the bench that received it — and the
+            difference is kept rather than smoothed away.”
+          </p>
+          <p class="aside">
+            The phone matters: they told us entry happens on the floor as it
+            happens. Every control on these screens is thumb-sized, and the
+            browser check enforces it.
+          </p>
+        </div>
+      </div>
+    </section>
 
-    <h2>The questions — this is the point of the session</h2>
+    <section class="step">
+      <header><span class="n">09</span><b>WIP — where everything is</b><span class="mins">3 min · core</span></header>
+      <div class="body">
+        <div class="do">
+          <h4>Do</h4>
+          <ol>
+            <li><strong>WIP</strong> → open a line in progress and expand it.</li>
+            <li>Read it department by department: asked for, declared, counted in.</li>
+          </ol>
+        </div>
+        <div class="say">
+          <h4>Say</h4>
+          <p class="quote">
+            “Where is order SO-1234 is answered as which bench it is sitting at,
+            not as a percentage. Counted, not valued — the rupee figure is a
+            separate question and it needs a cost.”
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="step">
+      <header><span class="n">10</span><b>Manpower — the first thing on your follow-up list</b><span class="mins">4 min</span></header>
+      <div class="body">
+        <div class="do">
+          <h4>Do</h4>
+          <ol>
+            <li><strong>Manpower</strong> → mark somebody out under Deployment.</li>
+            <li>Go to <strong>Production</strong> → Today's capacity for that department and show the figure has moved.</li>
+            <li>Come back and read “where overtime would close the gap”.</li>
+          </ol>
+        </div>
+        <div class="say">
+          <h4>Say</h4>
+          <p class="quote">
+            “Slide 18 of your own deck asks HR for manpower and overtime
+            tracking. Marking one person out changes what that department can
+            make today, and the plan re-runs. The overtime arithmetic is your
+            capacity model's, not ours — the tests check us against it.”
+          </p>
+          <p class="aside">
+            Days already past are not offered for overtime. Nobody can staff
+            yesterday, and offering to would be advice that cannot be taken.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="step">
+      <header><span class="n">11</span><b>Material — the ordering date</b><span class="mins">4 min</span></header>
+      <div class="body">
+        <div class="do">
+          <h4>Do</h4>
+          <ol>
+            <li><strong>Material</strong> → read the top of “order now, or it will be late”.</li>
+            <li>Scroll to “against the store” and point at the three states.</li>
+            <li>Type a count into <em class="term">On hand</em> for a never-counted material.</li>
+          </ol>
+        </div>
+        <div class="say">
+          <h4>Say</h4>
+          <p class="quote">
+            “Also slide 18: material ordering date to the supplier, D-minus
+            article-wise. Counted back from the day the department that uses it
+            starts — leather when cutting begins, not when the container sails —
+            less the supplier's lead time.”
+          </p>
+          <p class="aside">
+            The third state is the one to dwell on. Covered, short, and
+            <strong>nobody has counted it</strong> — an uncounted shelf is not an
+            empty one, and calling it a shortage would bury the real ones.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="step">
+      <header><span class="n">12</span><b>Quality — which two causes fix half of it</b><span class="mins">3 min</span></header>
+      <div class="body">
+        <div class="do">
+          <h4>Do</h4>
+          <ol>
+            <li><strong>Quality</strong> → read the top two bars and the running percentage.</li>
+            <li>Point at the amber “not attributed to a cause” bar.</li>
+            <li>Show a department running below the yield its master claims.</li>
+          </ol>
+        </div>
+        <div class="say">
+          <h4>Say</h4>
+          <p class="quote">
+            “A rejection rate tells a department it is bad at something without
+            saying what. Causes are grouped by who can fix them — workmanship to
+            the department, material to purchase, machine to maintenance.”
+          </p>
+          <p class="aside">
+            Nobody is required to explain every reject. The unexplained balance
+            is shown at its real size, because an unexplained majority makes the
+            rest of the screen a guess.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="step">
+      <header><span class="n">13</span><b>Money — their costing sheet, as data</b><span class="mins">4 min</span></header>
+      <div class="body">
+        <div class="do">
+          <h4>Do</h4>
+          <ol>
+            <li><strong>Money</strong> → open the Betsy chair's cost breakdown.</li>
+            <li>Let them recognise it. Twenty-six lines, ₹16,759.71.</li>
+            <li>Scroll up to money out by week and read the unpriced caveat.</li>
+          </ol>
+        </div>
+        <div class="say">
+          <h4>Say</h4>
+          <p class="quote">
+            “This is your costing sheet, line for line — wood, plywood, foam,
+            leather, packing, labour, finishing, CNF. It is the one screen today
+            where the numbers are genuinely yours.”
+          </p>
+          <p class="aside">
+            Then the limit, in the same breath: Kram knows costs and not prices.
+            No order carries a value, so it can say what the factory spends and
+            never what it earns. Do not let them leave thinking it does cash
+            flow both ways.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="step">
+      <header><span class="n">14</span><b>Forecast — the screen that refuses</b><span class="mins">3 min</span></header>
+      <div class="body">
+        <div class="do">
+          <h4>Do</h4>
+          <ol>
+            <li><strong>Forecast</strong> → read the readiness panel first.</li>
+            <li>Point at a rate saying <em class="term">too few to say</em>.</li>
+            <li>Show the shipment risk bands and the “because” column.</li>
+          </ol>
+        </div>
+        <div class="say">
+          <h4>Say</h4>
+          <p class="quote">
+            “Under ten observations it will not state a figure — it shows the
+            count instead. A number from two days and a number from two hundred
+            look identical on a screen, and only one of them should be acted on.”
+          </p>
+          <p class="aside">
+            Expect “so it does not work yet”. The answer: it works exactly as it
+            should on a factory with no history. On the hosted system today
+            every panel here would say the same thing, and in three months it
+            will not. Risk is banded rather than scored for the same reason — a
+            percentage would be read as a probability we have not earned.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="step">
+      <header><span class="n">15</span><b>Dashboard — and the number it refuses to invent</b><span class="mins">3 min · core</span></header>
+      <div class="body">
+        <div class="do">
+          <h4>Do</h4>
+          <ol>
+            <li><strong>Dashboard</strong> → the ten KPI cards.</li>
+            <li>Stop on <strong>WIP value</strong> showing a dash, and read what it says.</li>
+            <li>Scroll to “planned against made”.</li>
+          </ol>
+        </div>
+        <div class="say">
+          <h4>Say</h4>
+          <p class="quote">
+            “Nine of these are your slide 6. The tenth is WIP in units, which
+            needs no cost data. WIP value is empty because nobody has costed the
+            article that is on the floor — and it says so instead of showing a
+            zero.”
+          </p>
+          <p class="aside">
+            This is the single best thing to show an MD. A dashboard is
+            believed; one that refuses to invent a figure is worth more than one
+            that fills every box.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="step">
+      <header><span class="n">16</span><b>The floor display</b><span class="mins">2 min</span></header>
+      <div class="body">
+        <div class="do">
+          <h4>Do</h4>
+          <ol>
+            <li>Open <em class="term">#/display</em> in a second tab, full screen.</li>
+            <li>Pick a department and stand back from the laptop.</li>
+          </ol>
+        </div>
+        <div class="say">
+          <h4>Say</h4>
+          <p class="quote">
+            “This is the LED screen from your slide 3. One department, what is
+            due today, what it is waiting on, who is in. No navigation, and it
+            refreshes itself — you put it on a wall and nobody touches it.”
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="step">
+      <header><span class="n">17</span><b>Where the numbers come from</b><span class="mins">5 min · core</span></header>
+      <div class="body">
+        <div class="do">
+          <h4>Do</h4>
+          <ol>
+            <li><strong>Capacity sheet</strong> → type a rate into a blank cell and watch the count change.</li>
+            <li>Switch to <em class="term">D-minus</em> and enter a contradiction; let the warning appear.</li>
+            <li><strong>Masters</strong> → “What feeds what”, then the Machines panel.</li>
+            <li>Book downtime on a machine and show the department's day drop.</li>
+          </ol>
+        </div>
+        <div class="say">
+          <h4>Say</h4>
+          <p class="quote">
+            “Everything you have seen comes from this grid. Seventy-one of your
+            articles against fourteen departments, and today not one figure in
+            it is real. This is the piece of work that turns the demonstration
+            into a plan.”
+          </p>
+          <p class="aside">
+            The contradiction warning is worth provoking: it names both
+            departments and refuses to guess which figure is wrong. That is the
+            software's whole character in one interaction.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="step">
+      <header><span class="n">18</span><b>The hosted system, and why it is empty</b><span class="mins">3 min · core</span></header>
+      <div class="body">
+        <div class="do">
+          <h4>Do</h4>
+          <ol>
+            <li>Open <em class="term">kraam.netlify.app</em> and sign in.</li>
+            <li>Open the capacity sheet. Let the emptiness sit there.</li>
+            <li>Show Users and the twelve roles.</li>
+          </ol>
+        </div>
+        <div class="say">
+          <h4>Say</h4>
+          <p class="quote">
+            “Same software, shared database, real accounts. Your fourteen
+            departments and seventy-one SKUs are already in it. What is missing
+            is 994 numbers, and they are the ones only PPC can give us.”
+          </p>
+          <p class="aside">
+            Ending on the empty grid is deliberate. It makes the ask concrete
+            and it is the truth: everything else is built.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <h2>What to ask them, while you have them</h2>
     <div class="qs">
       <div class="q">
-        <h3>Is the capacity sheet the right shape?</h3>
+        <h3>Can PPC fill in the workbook?</h3>
         <p>
-          It is modelled on the one you sent. What is missing from it, and what
-          on it do you not actually use?
+          The sheet we send is laid out exactly as their capacity sheet already
+          is. Partly filled is genuinely useful; it can come back more than once.
         </p>
       </div>
       <div class="q">
-        <h3>Can you give a dedicated-day rate?</h3>
+        <h3>Is the what-feeds-what table right?</h3>
         <p>
-          “What this department makes in a day doing only this article.” If you
-          only ever think in mixed days, we need to know now — it changes how the
-          arithmetic works.
+          Still owed from our note of 12 August. Everything else is read through
+          it, so a wrong edge quietly poisons every warning.
         </p>
       </div>
       <div class="q">
-        <h3>Who enters production, and when?</h3>
+        <h3>One export file out of Panipuri</h3>
         <p>
-          End of shift, or as it happens? On a phone on the floor, or on a
-          computer in an office? It changes what that screen should be.
+          Untidied. And the question that decides the workflow: does Panipuri
+          hold a container stuffing date at all, or only a customer delivery
+          date?
         </p>
       </div>
       <div class="q">
-        <h3>Will the receiving department really count?</h3>
+        <h3>Who should see what?</h3>
         <p>
-          Two-sided handovers are the honest model, but they are twice the
-          typing. Is that a step too far for your floor?
+          Every role currently reads everything. Should maintenance see the
+          customer order book? Easier decided now than after twelve people have
+          logins.
         </p>
       </div>
       <div class="q">
-        <h3>What would you open first thing?</h3>
+        <h3>A floor plan</h3>
         <p>
-          If you looked at one screen at 9am, which is it — and what would you
-          want on it that is not there?
+          The factory map draws the route because nobody has given us a layout.
+          A real plan can be laid under it.
         </p>
       </div>
       <div class="q">
-        <h3>What would stop you using this?</h3>
+        <h3>Bills of materials, and costs</h3>
         <p>
-          The most useful answer of the session, and the one people only give if
-          you ask for it directly.
+          How much of each material per chair, and at which department. The
+          screens are waiting; the data is not there.
         </p>
       </div>
     </div>
 
-    <h2>Afterwards</h2>
+    <h2>Afterwards, the same day</h2>
     <ol class="checks">
       <li>
         <strong>If anything real was entered during the session</strong> —
-        Masters → <em class="term">Save masters to a file</em>. The offline build
-        lives in one browser; the file is how that work travels.
+        Masters → <em class="term">Save masters to a file</em>, and
+        <em class="term">Save everything to a file</em> if any production was
+        declared. The offline build lives in one browser.
       </li>
       <li>
         <strong>The blocking item is the capacity sheet.</strong> Nothing on the
@@ -727,7 +826,8 @@
       </li>
       <li>
         <strong>Write down what they said in their words</strong>, the same day.
-        The phrasing is worth as much as the content.
+        The phrasing is worth as much as the content — “on a phone on the floor
+        as it happens” shaped three screens.
       </li>
     </ol>
   </main>
