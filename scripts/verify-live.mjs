@@ -88,6 +88,11 @@ async function checkAnonymous(db) {
     'article_cost_summary',
     'purchase_commitments',
     'cash_out_weekly',
+    'attention',
+    'attention_count',
+    'measured_rate',
+    'shipment_risk',
+    'forecast_readiness',
   ]) {
     const { error } = await db.from(view).select('*').limit(1)
     report(

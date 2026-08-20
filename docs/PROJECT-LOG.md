@@ -59,9 +59,10 @@ material, cash and customer relationships the system cannot see.
 | 6 | Quality — defect causes, Pareto, counted yield against claimed | **Done** |
 | 7 | Machines — the master, downtime, and capacity that follows it | **Done** |
 | 8 | Money — the costing sheet as data, and money out by week | **Done** |
-| 9–10 | Command centre, predictive | Not started |
+| 9 | Attention, the floor display, the flow map | **Done** |
+| 10 | Prediction, with its evidence attached | **Done** |
 
-**Client**: seventeen screens, all reading from database views. Editable: D-minus
+**Client**: twenty screens, all reading from database views. Editable: D-minus
 matrix, component rates, department yield/route/headcount, what feeds what,
 holidays, orders, shipment lines, article cost, who came in — per person or as a
 head count — and pins by dragging a schedule bar.
@@ -76,7 +77,7 @@ unmodified in the browser, so the demo runs the real engine with no backend.
 `npm run build` produces a static folder.
 
 **Online.** Supabase project `fiqfbbnmksppbpxmhnbv` — *kram*, Mumbai
-(ap-south-1), Postgres 17.6. All forty-four migrations applied, the last on 19 Aug (§9).
+(ap-south-1), Postgres 17.6. All forty-six migrations applied, the last on 20 Aug (§9).
 
 > **Migrations are append-only from here.** Editing one now means the file and
 > the live database disagree, silently, until something breaks in a way that
@@ -348,7 +349,7 @@ Since 15 Aug it covers **both** of the prototype's modules: the capacity and
 load arithmetic, and the person-hour conversion that turns a shortfall into
 overtime hours and people.
 
-**293 unit and integration tests** against a real native Postgres, booted per run
+**309 unit and integration tests** against a real native Postgres, booted per run
 from an embedded binary. Covers schema shape, RLS (as the `authenticated` role —
 table owners bypass RLS, so a policy test run as superuser proves nothing), the
 working-day calendar, engine correctness, breaches, pins, overrides, the route
@@ -361,10 +362,10 @@ Note the task count is lower than the spec's ~40,000 estimate; three components
 across seven departments gives 21 pairs. The row count matches. Worth checking
 against the real route.
 
-**Browser** — `npm run screenshot` drives fourteen screens plus twenty-seven
+**Browser** — `npm run screenshot` drives eighteen screens plus thirty
 interactions in headless Chromium and fails on any console error. It checks the
 D-minus edit survives a reload, which is what proves it reached the database
-rather than only React state. Forty-one steps, two of them at phone width.
+rather than only React state. Forty-eight steps, three of them at other viewports — two phones and a 1920×1080 wall.
 Several real defects came from this that the build was happy with.
 
 Waits are named: `until('the article to become schedulable', …)` fails with that
@@ -390,24 +391,38 @@ could call every function on it while all tests were green.
 
 ## 8. What is next
 
-1. ~~**The full Rev B specification.**~~ Closed 17 Aug. There is no document —
-   see `docs/note-the-missing-specification.html`. The concept deck is the
-   requirements source and has been audited against the build.
-2. **The real route and D-minus values.** Still the single change that would make
-   the biggest difference to how the demo lands. Blocked on a session with PPC.
-   `docs/GUIDE.md` covers saving the masters to a file afterwards, so that
-   session's work is not held hostage by one browser.
-3. **The Panipuri export sample.** The import module is otherwise ready to build
-   but would be built against an assumed column layout. U&M say it will take
-   time, which is the reason to have asked already.
-4. **Article costs.** One box per article on the capacity sheet, and WIP value
-   turns from "—" into rupees for as much of the floor as is filled in. Nobody
-   is blocked on it; it improves one KPI in proportion to how much is entered.
-5. **Phase 5 — material.** The next phase in the spec's own order, and the one
-   the deck's "material shortage" alerts need.
-6. ~~**Articles as masters.**~~ **Done 16 Aug.** Components are still seeded
-   only, but the capacity sheet creates the one component per article per
-   department that the engine actually plans, so nothing is blocked on it.
+Rewritten 20 Aug, with phases 0–10 complete. Nothing on this list is a phase:
+the software is built, and what remains is data, decisions and one deployment
+setting.
+
+**Blocked on U&M** — two request notes are written and ready to forward:
+
+1. **PPC's figures.** The single blocker. The live project holds the real route
+   — fourteen departments, seventy-one SKUs — and not one rate against any of
+   the 994 cells. Every date Kram produces is arithmetic on invented numbers
+   until they arrive. `DBBS/UM/KRAM/04`, with the workbook from
+   `scripts/make-capacity-workbook.mjs`. The what-feeds-what table from
+   `DBBS/UM/KRAM/02` is still owed on top, and everything is read through it.
+2. **The Panipuri export sample** (`DBBS/UM/KRAM/05`). Does not block going
+   live — orders can be entered by hand — but it is the longest-lead item.
+3. **A floor plan**, new: the factory map draws the route graph because nobody
+   has given us a layout of the building. A real plan can be laid under it.
+4. **Bills of materials and article costs**, both of which now have screens
+   waiting for them and neither of which anyone has entered.
+
+**Ours, before U&M's own people have accounts:**
+
+5. **Point the deployed site at Supabase.** Netlify reads `VITE_SUPABASE_URL`
+   and `VITE_SUPABASE_ANON_KEY` from its own environment; unset, the build is
+   the offline demo.
+6. **The signed-in half of `verify:hosted-ui`.** The anonymous half passes; the
+   fourteen screens behind the login have been driven once, by hand.
+7. **The roles decision.** Today every role reads everything. `kiosk` is now the
+   one role with a genuinely narrow answer — the floor display and nothing else.
+
+**Not built, and deliberately:** email and WhatsApp alerts (in-app first, and it
+is the half that has to exist before a channel is worth wiring up), barcode and
+QR, which the deck marks *Ideal*.
 
 ### Why the MD dashboard came last
 
@@ -619,6 +634,63 @@ traced back to a single line written once and then quoted forward by everything
 that followed, including three documents I wrote yesterday. The log is the
 project's memory and that is exactly what makes an unverified line in it
 expensive.
+
+### 2026-08-20 — Phases 9 and 10: attention, a wall, a map, and a forecast that refuses
+
+The last two phases, and the point at which the phase list runs out. Worth
+saying plainly: the numbering came from the specification's §19, and that
+document was established on 17 Aug never to have existed as a file. So what
+these two phases *are* came from the concept deck, which does exist.
+
+**The deck had an objective nobody had built.** Slide 2 lists five; the fifth is
+"create alerts for timely response without getting into crisis points". Nothing
+in Kram did it — every finding the software made required somebody to open the
+right screen and look, which is fine on the day they think to look. The
+`attention` view unions eight findings other views already reach and **computes
+nothing of its own**; recomputing any of them would be a second implementation
+to be wrong, and the two would disagree on screen with neither obviously at
+fault.
+
+**No dismiss button, deliberately.** An alert somebody can silence while it is
+still true becomes wallpaper. The list stays readable by being short and
+ordered, and every row links to the screen that makes it go away — the
+difference between an alert and a complaint. If it proves unreadable in use,
+that is evidence for building acknowledgement, not a reason to have built it
+now.
+
+**The `kiosk` role finally has a screen.** One of the twelve roles, described in
+the code as "read-only department display", with nothing routed to it since
+Phase 0 — the fifth built-and-tested thing to turn out invisible. `/display`
+sits *outside* the Shell, because a masthead, a nav bar and a reference block
+are four hundred pixels nobody standing ten feet from a wall can read. It
+refreshes itself and remembers its department, so a screen that loses power
+comes back showing the same thing.
+
+**The factory map draws the route, not the building.** Nobody has given us a
+floor plan, and a map is the one picture nobody checks against reality — a
+guessed layout would be believed on sight. It draws what Kram knows: departments
+by dependency depth, columns that genuinely run in parallel, coloured by their
+worst day. Labelled on the screen as a flow map. A real plan is now an open item.
+
+**Phase 10 was built through a disagreement, recorded here because it matters.**
+I recommended measuring before modelling: the live project holds zero
+declarations, and a model trained on nothing is a confident wrong one rather
+than a cautious one. Nishad chose to build the models. They are built, with one
+condition: **nothing states a figure without stating what it is based on**.
+Under ten observations every view reports `too few to say` and shows the count.
+The threshold lives in `forecast_threshold()` so it can be argued with in one
+place. Risk is reported in bands, never a percentage — a percentage would be
+read as a probability and would be a number invented to look like one.
+
+The browser check asserts the refusal, which is the thing most likely to be
+quietly removed later: four rates decline to guess on four declarations, and a
+`measured` confidence on that data fails the step.
+
+**A bug the browser found that the tests could not.** Two attention findings
+came back with the same React key — one declaration owed to two departments
+where the route forks. The uniqueness assertion existed and passed, because the
+parity fixture is a single line and cannot fork. The test now runs against the
+demo factory, and was proved to catch it by putting the bug back.
 
 ### 2026-08-19 — Asked whether the docs were current, and they were not
 

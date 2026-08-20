@@ -141,9 +141,10 @@ tests/           schema, RLS, calendar, engine, parity, scale, planning views
 
 ## Open items
 
-Two of these have a request note against them in `docs/`, written to be
-forwarded as it stands — `request-route-and-figures.html` and
-`request-panipuri-export.html`.
+All ten phases are built. What remains is data and decisions, not code — §8 of
+the project log has the current list. Two items have a request note against them
+in `docs/`, written to be forwarded as it stands —
+`request-route-and-figures.html` and `request-panipuri-export.html`.
 
 1. ~~**The Rev B specification is not in the repo.**~~ Closed 17 Aug: no such
    file was ever written. See `docs/note-the-missing-specification.html`.

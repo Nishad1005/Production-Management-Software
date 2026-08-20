@@ -30,6 +30,10 @@ const SCREENS = [
   { hash: '#/material', name: 'material', waitFor: 'text=Against the store' },
   { hash: '#/quality', name: 'quality', waitFor: 'text=Where the losses come from' },
   { hash: '#/money', name: 'money', waitFor: 'text=Money out, week by week' },
+  { hash: '#/attention', name: 'attention', waitFor: 'text=Needs an answer today' },
+  { hash: '#/map', name: 'factory-map', waitFor: 'text=The factory, as it flows' },
+  { hash: '#/forecast', name: 'forecast', waitFor: 'text=How much of this is worth believing' },
+  { hash: '#/display', name: 'floor-display', waitFor: 'text=Waiting on' },
 ]
 
 await mkdir(outDir, { recursive: true })
@@ -873,6 +877,114 @@ await step('machine downtime', async () => {
   return `${rows} machines, and booking downtime took stitching to six of eight`
 })
 
+// --- attention: findings appear, and the header says so ---------------------
+
+await step('attention', async () => {
+  await go('#/attention', 'text=Needs an answer today')
+  await page.waitForTimeout(700)
+
+  const critical = Number(
+    await page.locator('[data-testid="attention-critical"]').getAttribute('data-count'),
+  )
+  const warning = Number(
+    await page.locator('[data-testid="attention-warning"]').getAttribute('data-count'),
+  )
+  if (critical + warning === 0) {
+    throw new Error('the demo factory has nothing wrong with it, which cannot be right')
+  }
+
+  // Every finding must name a screen. A finding with nowhere to go is a
+  // complaint, and this is the assertion that keeps it that way.
+  const links = await page
+    .locator('[data-testid^="finding-"] a')
+    .count()
+  const cards = await page.locator('[data-testid^="finding-"]').count()
+  if (links !== cards) {
+    throw new Error(`${cards - links} findings have nowhere to go`)
+  }
+
+  // The badge in the header carries the same critical count, on every screen.
+  await go('#/wip', 'text=Ready to stuff')
+  const badge = page.locator('[data-testid="attention-badge"]')
+  if (critical > 0) {
+    const shown = Number(await badge.getAttribute('data-critical'))
+    if (shown !== critical) {
+      throw new Error(`badge says ${shown}, the screen says ${critical}`)
+    }
+  } else if (await badge.count()) {
+    throw new Error('a badge is showing with nothing critical behind it')
+  }
+
+  await go('#/attention', 'text=Needs an answer today')
+  await page.screenshot({ path: `${outDir}/attention.png`, fullPage: true })
+  return `${critical} critical, ${warning} warnings, every one linked`
+})
+
+// --- the wall display, at the size a wall display is ------------------------
+
+await step('floor display', async () => {
+  const wall = await browser.newContext({
+    viewport: { width: 1920, height: 1080 },
+    deviceScaleFactor: 1,
+  })
+  const screen = await wall.newPage()
+  screen.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`))
+
+  try {
+    await screen.goto(`${baseUrl}/#/display`)
+    await screen.waitForSelector('text=Waiting on', { timeout: 60_000 })
+    await screen.waitForTimeout(900)
+
+    // No chrome. The whole point is that a wall display is not an application
+    // window — a masthead and a nav bar are four hundred pixels nobody standing
+    // ten feet away can read.
+    const chrome = await screen.locator('nav').count()
+    if (chrome) throw new Error('the display is rendering the navigation')
+
+    await screen.selectOption('[data-testid="display-department"]', 'STITCH')
+    await screen.waitForTimeout(600)
+
+    // The choice survives a power cut, which is what localStorage is for here.
+    await screen.reload()
+    await screen.waitForSelector('text=Waiting on', { timeout: 60_000 })
+    const kept = await screen.inputValue('[data-testid="display-department"]')
+    if (kept !== 'STITCH') throw new Error(`came back showing ${kept}`)
+
+    await screen.screenshot({ path: `${outDir}/floor-display.png` })
+    return 'no chrome, and it remembers its department across a reload'
+  } finally {
+    await wall.close()
+  }
+})
+
+// --- forecast: the refusal is the feature -----------------------------------
+
+await step('forecast refuses', async () => {
+  await go('#/forecast', 'text=How much of this is worth believing')
+  await page.waitForTimeout(900)
+
+  // The demo has three declarations. Three is not ten, so every rate on this
+  // screen must decline to state a figure — that refusal is the whole point of
+  // the phase and the thing most likely to be quietly removed later.
+  const thin = await page.locator('[data-testid^="rate-"][data-confidence="too few to say"]').count()
+  const measured = await page.locator('[data-testid^="rate-"][data-confidence="measured"]').count()
+  if (thin === 0) throw new Error('nothing is reporting "too few to say" on three days of data')
+  if (measured > 0) throw new Error(`${measured} rates claim to be measured on three declarations`)
+
+  const text = await page.locator('[data-testid="measured-rates"]').innerText()
+  if (!/too few to say/i.test(text)) {
+    throw new Error('the refusal is not visible on screen')
+  }
+
+  // And the readiness panel leads, so nobody reads the rest without it.
+  const declarations = await page
+    .locator('[data-testid="forecast-readiness"]')
+    .getAttribute('data-declarations')
+
+  await page.screenshot({ path: `${outDir}/forecast.png`, fullPage: true })
+  return `${thin} rates decline to guess on ${declarations} declarations`
+})
+
 // --- money: the cost sheet, and the half it refuses to guess ----------------
 
 await step('cost and cash out', async () => {
@@ -1235,6 +1347,8 @@ await step('thumb-sized everywhere', async () => {
     ['#/material', 'Against the store'],
     ['#/quality', 'Where the losses come from'],
     ['#/money', 'Money out, week by week'],
+    ['#/attention', 'Needs an answer today'],
+    ['#/forecast', 'How much of this is worth believing'],
     ['#/masters', 'Production route'],
   ]
 

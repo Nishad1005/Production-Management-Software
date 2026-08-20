@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { HashRouter, NavLink, Route, Routes } from 'react-router'
+import { HashRouter, Link, NavLink, Route, Routes } from 'react-router'
 import { AccessContext, useAccess } from '@/lib/access-context'
 import { clearWriteError, onWriteError } from '@/lib/queryClient'
 import { backend } from '@/lib/backend'
@@ -27,14 +27,21 @@ import { Manpower } from '@/routes/Manpower'
 import { Material } from '@/routes/Material'
 import { Quality } from '@/routes/Quality'
 import { Money } from '@/routes/Money'
+import { Attention } from '@/routes/Attention'
+import { Display } from '@/routes/Display'
+import { FactoryMap } from '@/routes/FactoryMap'
+import { Forecast } from '@/routes/Forecast'
+import { useAttentionCount } from '@/data/attention'
 import { WhatIf } from '@/routes/WhatIf'
 import { Users } from '@/routes/Users'
 import { Login, NoAccess } from '@/routes/Login'
 
 /** Which roles each screen is for. Cosmetic — RLS is the real boundary. */
 const NAV: { to: string; label: string; end?: boolean; roles: Role[] }[] = [
+  { to: '/attention', label: 'Attention', roles: ['md', 'planner', 'hod', 'purchase', 'store', 'quality', 'admin'] },
   { to: '/', label: 'Command centre', end: true, roles: ['md', 'planner', 'merchandiser', 'admin'] },
   { to: '/dashboard', label: 'Dashboard', roles: ['md', 'planner', 'admin'] },
+  { to: '/map', label: 'Factory map', roles: ['md', 'planner', 'hod', 'admin'] },
   { to: '/heatmap', label: 'Load heatmap', roles: ['md', 'planner', 'merchandiser', 'admin'] },
   { to: '/gantt', label: 'Schedule', roles: ['md', 'planner', 'admin'] },
   { to: '/orders', label: 'Order book', roles: ['md', 'planner', 'merchandiser', 'admin'] },
@@ -46,6 +53,7 @@ const NAV: { to: string; label: string; end?: boolean; roles: Role[] }[] = [
   { to: '/manpower', label: 'Manpower', roles: ['hod', 'hr', 'planner', 'md', 'admin'] },
   { to: '/material', label: 'Material', roles: ['purchase', 'store', 'planner', 'md', 'admin'] },
   { to: '/quality', label: 'Quality', roles: ['quality', 'hod', 'planner', 'md', 'admin'] },
+  { to: '/forecast', label: 'Forecast', roles: ['md', 'planner', 'admin'] },
   { to: '/money', label: 'Money', roles: ['accounts', 'purchase', 'md', 'admin'] },
   { to: '/capacity', label: 'Capacity sheet', roles: ['planner', 'admin'] },
   { to: '/masters', label: 'Masters', roles: ['planner', 'admin'] },
@@ -173,6 +181,32 @@ function WriteErrorBanner() {
   )
 }
 
+/**
+ * The count that makes the rest of the software something you are told rather
+ * than something you consult.
+ *
+ * Criticals only. A badge that counts everything is a badge that always shows a
+ * number, and a number that is always there stops being read — the same reason
+ * the Attention screen has no dismiss.
+ */
+function AttentionBadge() {
+  const count = useAttentionCount()
+  const critical = count.data?.critical ?? 0
+  if (!critical) return null
+
+  return (
+    <Link
+      to="/attention"
+      data-testid="attention-badge"
+      data-critical={critical}
+      className="border-flag text-flag bg-sheet flex min-h-11 items-center gap-2 self-end border px-3 py-2 text-[12px] font-semibold hover:underline sm:min-h-0"
+    >
+      <span className="bg-flag inline-block h-2 w-2 rounded-full" />
+      {critical} {critical === 1 ? 'thing needs' : 'things need'} an answer today
+    </Link>
+  )
+}
+
 function Shell({ children }: { children: React.ReactNode }) {
   const access = useAccess()
   const visible = NAV.filter((item) => has(access, ...item.roles))
@@ -201,6 +235,8 @@ function Shell({ children }: { children: React.ReactNode }) {
                 asked for more than it can make.
               </p>
             </div>
+
+            <AttentionBadge />
 
             <div className="border-ink hidden min-w-[240px] border-[1.5px] sm:block">
               {[
@@ -294,27 +330,42 @@ export function App() {
     <HashRouter>
       <Boot>
         <AuthGate>
-          <Shell>
-            <Routes>
-              <Route path="/" element={<CommandCentre />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/heatmap" element={<Heatmap />} />
-              <Route path="/gantt" element={<Gantt />} />
-              <Route path="/orders" element={<OrderBook />} />
-              <Route path="/accept" element={<Acceptance />} />
-              <Route path="/whatif" element={<WhatIf />} />
-              <Route path="/wip" element={<Wip />} />
-              <Route path="/board" element={<DepartmentBoard />} />
-              <Route path="/production" element={<Production />} />
-              <Route path="/manpower" element={<Manpower />} />
-              <Route path="/material" element={<Material />} />
-              <Route path="/quality" element={<Quality />} />
-              <Route path="/money" element={<Money />} />
-              <Route path="/capacity" element={<CapacitySheet />} />
-              <Route path="/masters" element={<Masters />} />
-              <Route path="/users" element={<Users />} />
-            </Routes>
-          </Shell>
+          <Routes>
+            {/* Outside the Shell on purpose. A wall display has no masthead, no
+                navigation and no reference block — that is four hundred pixels
+                of chrome nobody standing ten feet away can read, and a control
+                nobody should press. */}
+            <Route path="/display" element={<Display />} />
+            <Route
+              path="*"
+              element={
+                <Shell>
+                        <Routes>
+                    <Route path="/" element={<CommandCentre />} />
+                    <Route path="/dashboard" element={<Dashboard />} />
+                    <Route path="/map" element={<FactoryMap />} />
+                    <Route path="/heatmap" element={<Heatmap />} />
+                    <Route path="/gantt" element={<Gantt />} />
+                    <Route path="/orders" element={<OrderBook />} />
+                    <Route path="/accept" element={<Acceptance />} />
+                    <Route path="/whatif" element={<WhatIf />} />
+                    <Route path="/wip" element={<Wip />} />
+                    <Route path="/board" element={<DepartmentBoard />} />
+                    <Route path="/production" element={<Production />} />
+                    <Route path="/manpower" element={<Manpower />} />
+                    <Route path="/material" element={<Material />} />
+                    <Route path="/quality" element={<Quality />} />
+                    <Route path="/forecast" element={<Forecast />} />
+                    <Route path="/money" element={<Money />} />
+                    <Route path="/attention" element={<Attention />} />
+                    <Route path="/capacity" element={<CapacitySheet />} />
+                    <Route path="/masters" element={<Masters />} />
+                    <Route path="/users" element={<Users />} />
+                  </Routes>
+                </Shell>
+              }
+            />
+          </Routes>
         </AuthGate>
       </Boot>
     </HashRouter>

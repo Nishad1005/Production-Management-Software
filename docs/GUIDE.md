@@ -73,6 +73,31 @@ run from any static web host.
 
 ## The screens
 
+### Attention
+
+Everything the software has noticed, in one place. It is the screen to open
+first, and the only one that tells you whether you need to open any of the
+others.
+
+**Needs an answer today** is what cannot wait: work that cannot be made as
+planned inside a fortnight, a material past the last day it could be ordered, a
+D-minus that contradicts the route. **Worth knowing** is everything else —
+shortages, machines down, articles that cannot be scheduled. **For the record**
+is a handover somebody declared and nobody counted in.
+
+Every line links to the screen that makes it go away. That is the difference
+between an alert and a complaint.
+
+**There is no dismiss button, deliberately.** An alert you can silence while it
+is still true becomes wallpaper, and the list stops being read. If it is long,
+that is the finding.
+
+Nothing here is computed twice: every line is a conclusion another screen
+already reaches. When the count in the header shows nothing, no check has been
+skipped — they have all run and found nothing critical.
+
+---
+
 ### Command centre
 
 Where to start, and the screen to open every morning.
@@ -105,6 +130,26 @@ is still possible at that lead time:
 
 It is a label, not a recommendation. Its purpose is to turn a flat list of two
 hundred flags into a triaged one.
+
+---
+
+### Factory map
+
+**A flow map, not a floor plan.** Nobody has given us a layout of the building,
+and a drawing that guessed at one would be believed on sight — a map is the one
+picture nobody checks against reality.
+
+What it shows is what Kram genuinely knows: which department waits for which,
+laid out left to right by how far down the chain each sits. **Columns run in
+parallel** — nothing in a column waits for anything else in it, which is the
+thing hardest to see in a list and obvious here.
+
+Each box is coloured by its worst day in the current plan — red for over
+capacity, amber for running above 85% — and carries how many of its machines are
+running. A thick border means the department starts on its own and waits for
+nothing.
+
+When U&M send a real floor plan this can be laid over it.
 
 ---
 
@@ -432,6 +477,38 @@ rejects than were recorded — that is arithmetic, not a judgement.
 
 ---
 
+### Forecast
+
+What the floor actually does, against what the masters claim — and what that
+implies for the containers.
+
+**How much of this is worth believing** comes first on purpose. Every figure
+below it can print a confident number the moment ten observations sit behind it,
+and ten days is not much factory. This panel says how much history exists.
+
+> **Under ten observations nothing states a figure.** It reports *too few to
+> say* and shows the count instead. A figure from two days and a figure from two
+> hundred look identical on a screen, and only one of them should be acted on.
+> On a factory that has just started using Kram, every panel here will say *too
+> few to say* — that is the correct answer, not a fault.
+
+**Which shipments look like missing their container** bands each open line as on
+track, at risk or likely late, with the reason. Bands rather than a percentage:
+a percentage would be read as a probability and it would be a number invented to
+look like one. The comparison underneath is simply how much of the window has
+gone against how much of the work.
+
+**What each department actually achieves** puts the measured rate beside the one
+on the capacity sheet. **Reported, never applied** — nothing here edits a
+master. A rate that corrected itself would move every date in the system with no
+entry anywhere saying why.
+
+**How long each article really takes** is measured only from lines that have
+been through every department. A line still moving has a span that grows every
+day, and averaging those in would make everything look faster than it is.
+
+---
+
 ### Money
 
 Row five of the scope of work. It says what things **cost** and when money must
@@ -465,6 +542,22 @@ Three states, and the column says which:
 > **This is money out only.** Kram holds no order values, so it cannot say what
 > comes in. Cash flow planning proper needs both halves; this is the half the
 > data supports, and the screen says so rather than leaving you to notice.
+
+---
+
+### The floor display
+
+A screen for a monitor on the wall, at `#/display`. No navigation, no masthead,
+large type, and it refreshes itself every minute because nobody is going to
+press anything.
+
+It shows one department: what is **due today or overdue**, what it is **waiting
+on**, and the day's crew and machines. Pick the department once when the screen
+goes up — it is remembered, so a display that loses power comes back showing the
+same thing.
+
+This is the screen the **kiosk** role exists for. An account with only that role
+can see this and nothing else.
 
 ---
 
