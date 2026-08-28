@@ -42,6 +42,8 @@ describe('migrations', () => {
       'production_declarations',
       'production_defects',
       'profiles',
+      // Interim data, and the banner that says so
+      'provisional_load',
       // Phase 2 — schedule output
       'schedule_daily_capacity',
       'schedule_daily_load',

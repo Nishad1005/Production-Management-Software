@@ -31,7 +31,7 @@ import { Attention } from '@/routes/Attention'
 import { Display } from '@/routes/Display'
 import { FactoryMap } from '@/routes/FactoryMap'
 import { Forecast } from '@/routes/Forecast'
-import { useAttentionCount } from '@/data/attention'
+import { useAttentionCount, useProvisionalState } from '@/data/attention'
 import { WhatIf } from '@/routes/WhatIf'
 import { Users } from '@/routes/Users'
 import { Login, NoAccess } from '@/routes/Login'
@@ -189,6 +189,41 @@ function WriteErrorBanner() {
  * number, and a number that is always there stops being read — the same reason
  * the Attention screen has no dismiss.
  */
+/**
+ * The hosted system's version of "Offline draft".
+ *
+ * The offline build has said what it is on every screen since Phase 1, and the
+ * rates carry an ESTIMATED tag, because a figure nobody entered must never look
+ * like one somebody did. The hosted system had no equivalent — and it is the one
+ * people believe, because it has real accounts and their own SKUs in it.
+ *
+ * Across the top rather than tucked in a corner: it is answering "should I act
+ * on what I am about to read", which is not a footnote.
+ */
+function ProvisionalBanner() {
+  const state = useProvisionalState()
+  if (!state.data?.is_provisional) return null
+
+  return (
+    <div
+      className="border-amber bg-amber/10 border-b-2"
+      data-testid="provisional-banner"
+    >
+      <div className="mx-auto max-w-[1400px] px-4 py-2.5 sm:px-6">
+        <p className="text-amber font-sans text-[13px] font-semibold">
+          These figures are placeholders, not U&amp;M's
+        </p>
+        <p className="text-mid mt-0.5 max-w-[95ch] text-[11.5px]">
+          {state.data.what} Rates and D-minus will be replaced cell by cell when
+          PPC's sheet is loaded; the {state.data.provisional_orders} orders
+          marked <em className="not-italic">{state.data.order_prefix}</em> are
+          removed in one command.
+        </p>
+      </div>
+    </div>
+  )
+}
+
 function AttentionBadge() {
   const count = useAttentionCount()
   const critical = count.data?.critical ?? 0
@@ -213,6 +248,7 @@ function Shell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-full">
+      <ProvisionalBanner />
       <header className="gridpaper bg-sheet border-ink border-b-2">
         <div className="mx-auto max-w-[1400px] px-4 pt-3 sm:px-6 sm:pt-7">
           <div className="flex flex-wrap items-end justify-between gap-6">

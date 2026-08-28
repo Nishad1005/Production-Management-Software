@@ -832,6 +832,10 @@ in the browser and reloads the seed. There is no undo.
 
 Worth knowing before showing it to anyone:
 
+- **A banner appears when the figures are placeholders.** Both builds show it
+  while the database holds numbers entered by us rather than confirmed by U&M.
+  It names what went in and how it comes out. When it is gone, what you are
+  looking at is yours.
 - **The data is illustrative.** The department names, what feeds what and the
   article codes are U&M's own; every rate, yield, D-minus, order and employee in
   the offline build is invented, so the screens have something to say.

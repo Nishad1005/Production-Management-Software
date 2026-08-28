@@ -77,7 +77,7 @@ unmodified in the browser, so the demo runs the real engine with no backend.
 `npm run build` produces a static folder.
 
 **Online.** Supabase project `fiqfbbnmksppbpxmhnbv` — *kram*, Mumbai
-(ap-south-1), Postgres 17.6. All forty-six migrations applied, the last on 20 Aug (§9).
+(ap-south-1), Postgres 17.6. All forty-seven migrations applied, the last on 23 Aug (§9).
 
 > **Migrations are append-only from here.** Editing one now means the file and
 > the live database disagree, silently, until something breaks in a way that
@@ -349,7 +349,7 @@ Since 15 Aug it covers **both** of the prototype's modules: the capacity and
 load arithmetic, and the person-hour conversion that turns a shortfall into
 overtime hours and people.
 
-**309 unit and integration tests** against a real native Postgres, booted per run
+**316 unit and integration tests** against a real native Postgres, booted per run
 from an embedded binary. Covers schema shape, RLS (as the `authenticated` role —
 table owners bypass RLS, so a policy test run as superuser proves nothing), the
 working-day calendar, engine correctness, breaches, pins, overrides, the route
@@ -362,10 +362,10 @@ Note the task count is lower than the spec's ~40,000 estimate; three components
 across seven departments gives 21 pairs. The row count matches. Worth checking
 against the real route.
 
-**Browser** — `npm run screenshot` drives eighteen screens plus thirty
+**Browser** — `npm run screenshot` drives eighteen screens plus thirty-one
 interactions in headless Chromium and fails on any console error. It checks the
 D-minus edit survives a reload, which is what proves it reached the database
-rather than only React state. Forty-eight steps, three of them at other viewports — two phones and a 1920×1080 wall.
+rather than only React state. Forty-nine steps, three of them at other viewports — two phones and a 1920×1080 wall.
 Several real defects came from this that the build was happy with.
 
 Waits are named: `until('the article to become schedulable', …)` fails with that
@@ -394,6 +394,13 @@ could call every function on it while all tests were green.
 Rewritten 20 Aug, with phases 0–10 complete. Nothing on this list is a phase:
 the software is built, and what remains is data, decisions and one deployment
 setting.
+
+**Interim figures can now go into the hosted project** so U&M's people can be
+given accounts and something to argue with —
+`node scripts/seed-live-interim.mjs <email> <password>`, and `--purge` to take
+it out again. It writes through `import_masters`, the same path PPC's completed
+workbook takes, so their sheet overwrites the rates cell by cell. A banner shows
+on every screen for as long as it is loaded.
 
 **Blocked on U&M** — two request notes are written and ready to forward:
 
@@ -635,6 +642,53 @@ traced back to a single line written once and then quoted forward by everything
 that followed, including three documents I wrote yesterday. The log is the
 project's memory and that is exactly what makes an unverified line in it
 expensive.
+
+### 2026-08-23 — Interim figures, and the banner that stops them passing
+
+The live project held U&M's route and nothing else — not one rate in any of the
+994 cells, no orders, no production — which made it impossible to hand anybody
+an account and ask what they thought. Interim data fixes that and creates
+exactly the risk this software has been built against: an invented number that
+looks normal.
+
+**The live project is not production yet**, which is what makes this safe. It
+holds no real transactional data, so there is nothing to contaminate — provided
+what goes in can come out cleanly before U&M start entering anything real.
+
+Three things make it come out cleanly, and two already existed.
+
+**The masters overwrite themselves.** Rates and D-minus go in through
+`import_masters` — the same function the Load-from-a-file button uses and the
+same path PPC's completed workbook will take — upserting by code. Their sheet
+replaces these cell by cell with nothing left behind, so there is no cleanup
+step for them because none is needed. One call rather than two thousand round
+trips, and a path that is already tested rather than one written for a script.
+
+**The orders carry a prefix.** `PROV-`, and `purge_provisional()` deletes
+exactly those; shipment lines, tasks and the whole production ledger cascade
+from the order. It refuses when nothing is marked rather than deleting on a
+guess — an order that happens to start with the prefix is not a licence.
+
+**And it says so.** The offline build has said "Offline draft" on every screen
+since Phase 1 and tags its rates ESTIMATED, because a figure nobody entered must
+never look like one somebody did. The hosted system had no equivalent, and it is
+the one people believe — real accounts, their own SKUs. `provisional_load` is
+one row; while it exists the shell shows a banner across the top naming what
+went in and how it comes out.
+
+The demonstration seed marks itself the same way, which is both true — every
+figure in it is invented — and the only way the banner gets browser coverage.
+
+**The figures are crude on purpose.** One rate and one D-minus per department
+across all seventy-one SKUs. A dining chair and an ottoman do not take the same
+time at stitching, and anybody who knows the factory will say so within a minute
+— which is the reaction wanted. A subtler set of invented numbers would be
+likelier to be believed.
+
+**Production stops short of the forecast threshold, deliberately.** Enough for
+WIP, the department boards and quality to have something in them; fewer than ten
+observations, so the forecast keeps saying *too few to say*. A measured rate
+computed from invented output is the one number this software must never show.
 
 ### 2026-08-20 — Ready to show, once the script caught up
 

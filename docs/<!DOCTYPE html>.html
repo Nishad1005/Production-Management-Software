@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kram — Technical Specification Rev B</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#E9EDF1;--sheet:#fff;--ink:#16202E;--mid:#5C6B7A;--faint:#8996A4;
+--rule:#C9D3DC;--rule-soft:#DFE6EC;--blue:#2C4A6E;--flag:#C4462E;--clear:#1F6B4D;--amber:#B07D1A;--maxw:1200px}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:'Source Serif 4',Georgia,serif;font-size:17px;line-height:1.6}
+.sheet-head{background:var(--sheet);border-bottom:2px solid var(--ink);
+ background-image:linear-gradient(var(--rule-soft) 1px,transparent 1px),linear-gradient(90deg,var(--rule-soft) 1px,transparent 1px);background-size:28px 28px}
+.head-inner{max-width:var(--maxw);margin:0 auto;padding:44px 32px 0;display:grid;grid-template-columns:1fr 300px;gap:40px;align-items:end}
+.eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--blue);margin:0 0 14px}
+h1{font-family:'Archivo',sans-serif;font-weight:800;letter-spacing:-.03em;line-height:.95;font-size:clamp(38px,6.2vw,70px);margin:0 0 18px}
+h1 em{font-style:normal;color:var(--blue)}
+.standfirst{font-size:19px;color:var(--mid);margin:0 0 34px;max-width:54ch}
+.tblock{border:1.5px solid var(--ink);background:var(--sheet);margin-bottom:34px}
+.tblock div{display:grid;grid-template-columns:82px 1fr;border-bottom:1px solid var(--rule)}
+.tblock div:last-child{border-bottom:0}
+.tblock span{font-family:'IBM Plex Mono',monospace;font-size:11px;padding:7px 10px}
+.tblock span:first-child{color:var(--faint);border-right:1px solid var(--rule);text-transform:uppercase;letter-spacing:.08em}
+.tblock span:last-child{font-weight:500}
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 32px;display:grid;grid-template-columns:206px 1fr;gap:44px}
+nav{position:sticky;top:0;align-self:start;padding-top:52px;max-height:100vh;overflow-y:auto}
+nav ol{list-style:none;margin:0;padding:0}
+nav li{margin-bottom:8px}
+nav a{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--faint);text-decoration:none;display:block;line-height:1.35;border-left:2px solid transparent;padding-left:10px}
+nav a:hover,nav a:focus-visible{color:var(--blue);border-left-color:var(--blue)}
+nav .grp{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--blue);margin:18px 0 7px;padding-left:12px}
+main{padding:52px 0 100px;min-width:0}
+section{margin-bottom:58px;scroll-margin-top:24px}
+.snum{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.16em;color:var(--blue);display:block;margin-bottom:8px}
+h2{font-family:'Archivo',sans-serif;font-weight:700;letter-spacing:-.02em;font-size:29px;line-height:1.12;margin:0 0 8px;padding-bottom:12px;border-bottom:1.5px solid var(--ink)}
+h3{font-family:'Archivo',sans-serif;font-weight:600;font-size:19px;letter-spacing:-.01em;margin:30px 0 8px}
+h4{font-family:'Archivo',sans-serif;font-weight:600;font-size:15px;margin:22px 0 6px}
+p{margin:0 0 15px;max-width:72ch}
+.lead{font-size:19px;color:var(--mid);max-width:66ch}
+.note{font-size:15px;color:var(--mid);border-left:2px solid var(--rule);padding-left:16px;max-width:66ch}
+.tw{overflow-x:auto;margin:18px 0}
+table{width:100%;border-collapse:collapse;font-family:'IBM Plex Mono',monospace;font-size:12.5px}
+th{text-align:left;font-weight:600;color:var(--blue);padding:9px 12px 9px 0;border-bottom:1.5px solid var(--ink);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}
+td{padding:10px 12px 10px 0;border-bottom:1px solid var(--rule-soft);vertical-align:top}
+td.n,th.n{text-align:right;padding-right:0}
+tr:last-child td{border-bottom:0}
+code{font-family:'IBM Plex Mono',monospace;font-size:.88em;background:var(--sheet);padding:1px 5px;border:1px solid var(--rule-soft);border-radius:2px}
+.callout{background:var(--sheet);border:1px solid var(--rule);border-left:3px solid var(--blue);padding:20px 24px;margin:22px 0}
+.callout.warn{border-left-color:var(--flag)}
+.callout.new{border-left-color:var(--clear)}
+.callout h4{margin:0 0 8px}
+.callout p{font-size:15.5px;margin:0 0 10px}
+.callout p:last-child{margin-bottom:0}
+.ent{background:var(--sheet);border:1px solid var(--rule);margin:14px 0}
+.ent-h{background:var(--ink);color:#fff;padding:8px 16px;font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.06em;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.ent-h i{font-style:normal;color:#93A6B8;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase}
+.ent-b{padding:4px 16px 12px}
+.ent-b table{font-size:12px}
+.ent-b td{border-bottom:1px solid var(--rule-soft);padding:7px 12px 7px 0}
+.tag{display:inline-block;font-size:10px;letter-spacing:.05em;text-transform:uppercase;padding:2px 6px;border:1px solid currentColor;border-radius:2px;font-weight:600}
+.t-new{color:var(--clear)}.t-chg{color:var(--amber)}.t-fk{color:var(--mid)}
+.t-s{color:var(--clear)}.t-m{color:var(--amber)}.t-l{color:var(--flag)}
+ul.plain{list-style:none;padding:0;margin:16px 0;max-width:70ch}
+ul.plain li{padding:11px 0 11px 26px;border-bottom:1px solid var(--rule-soft);position:relative;font-size:16px}
+ul.plain li:last-child{border-bottom:0}
+ul.plain li::before{content:"";position:absolute;left:4px;top:20px;width:9px;height:1.5px;background:var(--blue)}
+.phase{display:grid;grid-template-columns:78px 1fr 58px;gap:18px;padding:15px 0;border-bottom:1px solid var(--rule-soft);align-items:start}
+.phase:last-child{border-bottom:0}
+.phase>b{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.09em;color:var(--blue);text-transform:uppercase;padding-top:4px}
+.phase h4{font-family:'Archivo',sans-serif;font-size:17px;font-weight:600;margin:0 0 4px}
+.phase p{font-size:15px;color:var(--mid);margin:0}
+.phase>span{text-align:right;padding-top:3px}
+pre{background:var(--sheet);border:1px solid var(--rule);padding:16px 18px;overflow-x:auto;
+ font-family:'IBM Plex Mono',monospace;font-size:12.5px;line-height:1.65;margin:18px 0}
+footer{border-top:2px solid var(--ink);background:var(--sheet);margin-top:20px}
+.foot-inner{max-width:var(--maxw);margin:0 auto;padding:26px 32px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--faint);display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;letter-spacing:.06em}
+@media (max-width:900px){
+ .head-inner{grid-template-columns:1fr;gap:0;padding:32px 20px 0}
+ .wrap{grid-template-columns:1fr;gap:0;padding:0 20px}
+ nav{display:none}main{padding:34px 0 70px}h2{font-size:24px}
+ .phase{grid-template-columns:64px 1fr;gap:14px}.phase>span{display:none}}
+@media print{body{background:#fff;font-size:10pt}nav{display:none}
+ .wrap{grid-template-columns:1fr;padding:0}section{break-inside:avoid;margin-bottom:24px}
+ .sheet-head{background-image:none}.ent,.callout{break-inside:avoid}}
+</style>
+</head>
+<body>
+
+<header class="sheet-head">
+ <div class="head-inner">
+  <div>
+   <p class="eyebrow">Data Brilliance Business Solutions LLP</p>
+   <h1>Kram <em>&mdash; production planning &amp; control</em></h1>
+   <p class="standfirst">Complete technical specification for U&amp;M Designs. Backward scheduling,
+   component-level WIP, capacity flagging, manpower, material, quality, machines and cost across
+   eleven phases.</p>
+  </div>
+  <aside>
+   <div class="tblock">
+    <div><span>Ref</span><span>DBBS/UM/KRAM/01</span></div>
+    <div><span>Revision</span><span>B &mdash; complete</span></div>
+    <div><span>Date</span><span>10 Aug 2026</span></div>
+    <div><span>Status</span><span>For review</span></div>
+    <div><span>Client</span><span>U&amp;M Designs</span></div>
+    <div><span>Phases</span><span>0 &ndash; 10</span></div>
+   </div>
+  </aside>
+ </div>
+</header>
+
+<div class="wrap">
+<nav aria-label="Contents">
+ <ol>
+  <li class="grp">Basis</li>
+  <li><a href="#s1">01 Product summary</a></li>
+  <li><a href="#s2">02 Changes in Rev B</a></li>
+  <li><a href="#s3">03 Confirmed parameters</a></li>
+  <li><a href="#s4">04 Core concepts</a></li>
+  <li class="grp">Model</li>
+  <li><a href="#s5">05 Masters &amp; shifts</a></li>
+  <li><a href="#s6">06 Orders &amp; schedule</a></li>
+  <li><a href="#s7">07 Execution &amp; WIP</a></li>
+  <li><a href="#s8">08 People &amp; machines</a></li>
+  <li><a href="#s9">09 Material &amp; quality</a></li>
+  <li><a href="#s10">10 Cost &amp; cash</a></li>
+  <li class="grp">Behaviour</li>
+  <li><a href="#s11">11 Scheduling engine</a></li>
+  <li><a href="#s12">12 WIP mechanics</a></li>
+  <li><a href="#s13">13 Manpower &amp; OT</a></li>
+  <li><a href="#s14">14 Planning outputs</a></li>
+  <li><a href="#s15">15 ERP import</a></li>
+  <li class="grp">Delivery</li>
+  <li><a href="#s16">16 Roles &amp; screens</a></li>
+  <li><a href="#s17">17 AI position</a></li>
+  <li><a href="#s18">18 Technology</a></li>
+  <li><a href="#s19">19 Phasing</a></li>
+  <li><a href="#s20">20 Open items</a></li>
+ </ol>
+</nav>
+
+<main>
+
+<section id="s1">
+ <span class="snum">01</span>
+ <h2>Product summary</h2>
+ <p class="lead">Kram (&#2325;&#2381;&#2352;&#2350; &mdash; sequence) schedules every open order backwards from its
+ container stuffing date, spreads the work across the production route by component, and flags the
+ days on which a department is asked to produce more than it can.</p>
+ <p>It then records what actually happened. Heads of department enter completed component counts,
+ the next department accepts them, and the gap between plan and actual feeds back into the capacity
+ figures the engine uses. The system becomes more accurate the longer it runs.</p>
+ <div class="tw"><table>
+  <tr><th>Module</th><th>Covers</th><th>Primary user</th><th class="n">Phase</th></tr>
+  <tr><td>Planning</td><td>Backward schedule, flagging, feasibility, what-if, acceptance</td><td>PPC / Merchandising</td><td class="n">1&ndash;2</td></tr>
+  <tr><td>Production</td><td>WIP entry, factory flow, bottlenecks, department screens</td><td>HOD / Production</td><td class="n">3</td></tr>
+  <tr><td>Manpower</td><td>Shifts, attendance, leave, skills, overtime, productivity</td><td>HR / Production</td><td class="n">4</td></tr>
+  <tr><td>Material</td><td>Stock, shortages, PO, GRN, issue, supplier performance</td><td>PPC / Purchase / Store</td><td class="n">5</td></tr>
+  <tr><td>Quality</td><td>Checkpoints, rejections, NCR, CAPA, calibration, audit, complaints</td><td>Quality</td><td class="n">6</td></tr>
+  <tr><td>Machines</td><td>Machine master, breakdowns, downtime, maintenance</td><td>Maintenance</td><td class="n">7</td></tr>
+  <tr><td>Cost &amp; cash</td><td>Costing rollup, WIP value, payment schedule, cash flow</td><td>Accounts</td><td class="n">8</td></tr>
+  <tr><td>Command centre</td><td>MD dashboard, KPIs, alerts, mobile, natural-language query</td><td>Leadership</td><td class="n">9</td></tr>
+ </table></div>
+ <div class="callout">
+  <h4>What Kram is not</h4>
+  <p>It does not decide. It reports load against capacity, shortfall in hours and people, and the
+  slack available in the same window. Whether to run overtime, add people, resequence or talk to the
+  customer remains a production decision resting on material, cash and customer relationships the
+  system cannot see.</p>
+ </div>
+</section>
+
+<section id="s2">
+ <span class="snum">02</span>
+ <h2>Changes in Rev B</h2>
+ <p class="lead">Rev A was audited against the concept deck and against the design discussions.
+ Nine items were missing; one of them was structural.</p>
+ <div class="tw"><table>
+  <tr><th>Change</th><th>Why</th><th class="n">Impact</th></tr>
+  <tr><td>Multi-shift model</td><td>Three shifts run (A, B, General). Rev A assumed one.</td><td class="n"><span class="tag t-chg">Structural</span></td></tr>
+  <tr><td>Employee master</td><td>Skill mix and leave tracking need individuals, not head counts</td><td class="n"><span class="tag t-chg">Structural</span></td></tr>
+  <tr><td>Machines &amp; maintenance</td><td>Whole module in the deck, absent from Rev A</td><td class="n"><span class="tag t-new">New module</span></td></tr>
+  <tr><td>Cash flow &amp; payment schedule</td><td>"Money" row in Scope of Work</td><td class="n"><span class="tag t-new">New module</span></td></tr>
+  <tr><td>Manual schedule pins (Gantt)</td><td>Drag-and-drop rescheduling requested</td><td class="n"><span class="tag t-new">New</span></td></tr>
+  <tr><td>Barcode / QR entry</td><td>Directly serves the 15-second WIP entry constraint</td><td class="n"><span class="tag t-new">New</span></td></tr>
+  <tr><td>Bottleneck utilisation view</td><td>Proposed, then omitted from Rev A</td><td class="n"><span class="tag t-new">New</span></td></tr>
+  <tr><td>Flag triage by lead time</td><td>Proposed, then omitted from Rev A</td><td class="n"><span class="tag t-new">New</span></td></tr>
+  <tr><td>Idle capacity as an output</td><td>Half the value of flagging; was computed, never surfaced</td><td class="n"><span class="tag t-new">New</span></td></tr>
+  <tr><td>Calibration, audit, complaints</td><td>Quality module was incomplete</td><td class="n"><span class="tag t-new">New</span></td></tr>
+ </table></div>
+ <div class="callout warn">
+  <h4>Why multi-shift was the serious one</h4>
+  <p>A department running two shifts has roughly double the daily capacity, the overtime ceiling
+  applies per person per shift rather than per day, and attendance is recorded per shift. With a
+  single headcount field, every capacity figure in the system would have been wrong &mdash; and
+  wrong in a way that looks entirely normal on screen.</p>
+ </div>
+</section>
+
+<section id="s3">
+ <span class="snum">03</span>
+ <h2>Confirmed parameters</h2>
+ <div class="tw"><table>
+  <tr><th>#</th><th>Parameter</th><th>Setting</th></tr>
+  <tr><td>1</td><td>Schedule anchor</td><td>Container stuffing date</td></tr>
+  <tr><td>2</td><td>D-minus basis</td><td>Calendar days, working-day toggle</td></tr>
+  <tr><td>3</td><td>D-minus granularity</td><td>Article &times; department, entered manually</td></tr>
+  <tr><td>4</td><td>Working week</td><td>Six days, Sunday off, plus holiday calendar</td></tr>
+  <tr><td>5</td><td>Department flow</td><td>Batch handoff</td></tr>
+  <tr><td>6</td><td>Shipping</td><td>Phased &mdash; one order, many shipment lines</td></tr>
+  <tr><td>7</td><td>Production day</td><td>8 hours net production time per shift</td></tr>
+  <tr><td>8</td><td>Overtime ceiling</td><td>5 hours per person per shift</td></tr>
+  <tr><td>9</td><td>Shifts</td><td>Multiple per department, configurable</td></tr>
+  <tr><td>10</td><td>Unit of production</td><td>Components, resolved to finished units by BOM</td></tr>
+  <tr><td>11</td><td>Rejections</td><td>Return path to originating department</td></tr>
+  <tr><td>12</td><td>WIP entry</td><td>Head of department, barcode-assisted</td></tr>
+  <tr><td>13</td><td>Order confidence</td><td>Confirmed / Probable / Forecast</td></tr>
+  <tr><td>14</td><td>Costing</td><td>In scope, department level</td></tr>
+  <tr><td>15</td><td>Concurrent orders</td><td>~324 live</td></tr>
+  <tr><td>16</td><td>Departments</td><td>User-configurable master, not hardcoded</td></tr>
+  <tr><td>17</td><td>ERP</td><td>Panipuri, file export (Excel)</td></tr>
+ </table></div>
+ <div class="callout warn">
+  <h4>For the client's compliance adviser</h4>
+  <p>Five hours of overtime on top of an eight-hour net production shift is a long day under the
+  Factories Act's daily and quarterly limits, and multi-shift working adds its own provisions. The
+  ceiling is configurable and the figure above is what has been specified. It is not a legal
+  opinion and should be confirmed independently before go-live.</p>
+ </div>
+</section>
+
+<section id="s4">
+ <span class="snum">04</span>
+ <h2>Core concepts</h2>
+
+ <h3>The shipment line is the scheduling unit</h3>
+ <p>Orders ship in phases, so an order is not a single dated commitment. A 1,000-chair order may
+ leave as 400 on 1 August and 600 on 20 August &mdash; two independent backward schedules from two
+ stuffing dates. Every date calculation keys on the shipment line, never the order.</p>
+
+ <h3>D-minus is an article &times; department matrix</h3>
+ <p>Each article takes a different time through each department, so the offset is held per pair and
+ entered manually. Adding a department creates blank rows flagged incomplete rather than defaulting
+ to zero, so a missing value is visible rather than silently producing an impossible schedule.</p>
+
+ <h3>Departments produce components, not chairs</h3>
+ <pre>chairs_ready = MIN over components of ( accepted_qty / bom_qty_per_unit )
+
+  400 legs / 4        = 100
+   80 seat frames / 1 =  80   &larr; limiting
+  100 back frames / 1 = 100
+  chairs_ready = 80   (100 legs and 20 back frames stranded)</pre>
+ <p>A department can therefore be ahead and behind at the same time. Stranded components are real
+ material and real labour producing nothing shippable, and must be surfaced or they accumulate
+ invisibly.</p>
+
+ <h3>Capacity is per department, per shift, per component</h3>
+ <p>Rev B's central correction. A single "40 a day" figure conceals three separate variables, each
+ of which moves independently: which shifts are running, how many people are on them, and which
+ component is being made.</p>
+
+ <h3>Yield compounds backwards</h3>
+ <p>Losses multiply along the route, so a department must produce the shipped quantity divided by
+ its own yield and the yield of every department after it. Five departments at 98% each cost roughly
+ a tenth of factory capacity.</p>
+</section>
+
+<section id="s5">
+ <span class="snum">05</span>
+ <h2>Masters &amp; shifts</h2>
+ <p class="lead">Every table carries <code>id</code>, <code>created_at</code>,
+ <code>updated_at</code> and <code>created_by</code>; omitted below for brevity.</p>
+
+ <div class="ent"><div class="ent-h"><span>departments</span><i>Configurable route</i></div><div class="ent-b"><table>
+  <tr><td>code, name</td><td>Short code and display name</td></tr>
+  <tr><td>route_position</td><td>Integer ordering along the route</td></tr>
+  <tr><td>yield_pct, buffer_pct</td><td>Planned loss and rework absorption</td></tr>
+  <tr><td>is_active</td><td>Soft delete &mdash; never hard-delete one with history</td></tr>
+ </table></div></div>
+
+ <div class="ent"><div class="ent-h"><span>shifts</span><i><span class="tag t-new">New</span> Rev B</i></div><div class="ent-b"><table>
+  <tr><td>code, name</td><td>A, B, General</td></tr>
+  <tr><td>start_time, end_time</td><td></td></tr>
+  <tr><td>net_production_hours</td><td>Defaults to 8 &mdash; excludes breaks, setup, cleanup</td></tr>
+  <tr><td>max_ot_hours</td><td>Ceiling per person on this shift, defaults to 5</td></tr>
+ </table></div></div>
+
+ <div class="ent"><div class="ent-h"><span>department_shifts</span><i><span class="tag t-new">New</span> Which shifts run where</i></div><div class="ent-b"><table>
+  <tr><td>department_id, shift_id</td><td><span class="tag t-fk">FK</span> composite key</td></tr>
+  <tr><td>sanctioned_headcount</td><td>Establishment for this department on this shift</td></tr>
+  <tr><td>is_active</td><td>A shift can be switched off without losing history</td></tr>
+ </table></div></div>
+
+ <div class="ent"><div class="ent-h"><span>articles &middot; components &middot; article_bom</span><i>Product structure</i></div><div class="ent-b"><table>
+  <tr><td>articles</td><td>code, name, category, is_active</td></tr>
+  <tr><td>components</td><td>code, name, uom &mdash; leg, seat frame, cut fabric panel</td></tr>
+  <tr><td>article_bom</td><td>article_id, component_id, qty_per_unit</td></tr>
+ </table></div></div>
+
+ <div class="ent"><div class="ent-h"><span>article_dept_dminus</span><i>The D-minus matrix</i></div><div class="ent-b"><table>
+  <tr><td>article_id, department_id</td><td><span class="tag t-fk">FK</span> composite key</td></tr>
+  <tr><td>dminus_days</td><td>Calendar days before stuffing date</td></tr>
+  <tr><td>is_complete</td><td>False until entered &mdash; blocks scheduling for that article</td></tr>
+ </table></div></div>
+
+ <div class="ent"><div class="ent-h"><span>component_rates</span><i><span class="tag t-chg">Changed</span> Now shift-aware</i></div><div class="ent-b"><table>
+  <tr><td>component_id, department_id, shift_id</td><td><span class="tag t-fk">FK</span> composite key</td></tr>
+  <tr><td>units_per_day</td><td>At sanctioned headcount for that shift</td></tr>
+  <tr><td>is_measured</td><td>True once derived from actuals rather than estimated</td></tr>
+ </table></div></div>
+
+ <div class="ent"><div class="ent-h"><span>capacity_overrides &middot; holidays</span><i>Exceptions</i></div><div class="ent-b"><table>
+  <tr><td>capacity_overrides</td><td>department, shift, component (nullable), from_date, to_date, units_per_day, reason</td></tr>
+  <tr><td>holidays</td><td>holiday_date, description &mdash; Sundays derived from the week pattern</td></tr>
+ </table></div></div>
+</section>
+
+<section id="s6">
+ <span class="snum">06</span>
+ <h2>Orders &amp; schedule</h2>
+
+ <div class="ent"><div class="ent-h"><span>orders</span><i>Commercial header</i></div><div class="ent-b"><table>
+  <tr><td>erp_order_no</td><td>Unique &mdash; the idempotency key for imports</td></tr>
+  <tr><td>customer_id, article_id</td><td><span class="tag t-fk">FK</span></td></tr>
+  <tr><td>total_qty, order_date</td><td></td></tr>
+  <tr><td>confidence</td><td>Confirmed / Probable / Forecast</td></tr>
+  <tr><td>status</td><td>Open, in production, closed, cancelled</td></tr>
+ </table></div></div>
+
+ <div class="ent"><div class="ent-h"><span>shipment_lines</span><i>The scheduling unit</i></div><div class="ent-b"><table>
+  <tr><td>order_id, line_no, qty</td><td>Phase quantity, sums to the order total</td></tr>
+  <tr><td>stuffing_date</td><td>Anchor for every backward calculation</td></tr>
+  <tr><td>delivery_date</td><td>Customer date &mdash; reference only, never used in maths</td></tr>
+  <tr><td>container_ref</td><td>Lines sharing a ref stuff together</td></tr>
+  <tr><td>material_ready_date</td><td>Hard floor &mdash; nothing schedules before it</td></tr>
+ </table></div></div>
+
+ <div class="ent"><div class="ent-h"><span>schedule_runs &middot; schedule_tasks &middot; schedule_daily_load</span><i>Versioned output</i></div><div class="ent-b"><table>
+  <tr><td>schedule_runs</td><td>run_at, run_by, params, is_current &mdash; old runs retained for plan-vs-actual</td></tr>
+  <tr><td>schedule_tasks</td><td>run, shipment_line, department, shift, component, due_date, start_date, qty_required, days_needed, is_feasible, breach_reason</td></tr>
+  <tr><td>schedule_daily_load</td><td>run, department, shift, component, load_date, qty_planned, capacity, variance</td></tr>
+ </table></div></div>
+
+ <div class="ent"><div class="ent-h"><span>schedule_pins</span><i><span class="tag t-new">New</span> Manual overrides from the Gantt</i></div><div class="ent-b"><table>
+  <tr><td>shipment_line_id, department_id, component_id</td><td><span class="tag t-fk">FK</span></td></tr>
+  <tr><td>pinned_start_date</td><td>Set by dragging a bar on the Gantt</td></tr>
+  <tr><td>pinned_by, reason, pinned_at</td><td>Reason is mandatory</td></tr>
+  <tr><td>is_active</td><td>Released manually; the engine never clears a pin silently</td></tr>
+ </table></div></div>
+ <div class="callout new">
+  <h4>Pins are respected, not overwritten</h4>
+  <p>A planner who drags a task has made a decision the engine cannot see the reasons for. Every
+  subsequent run honours active pins and schedules around them, and reports any breach a pin causes
+  rather than quietly undoing it. A schedule that silently reverts a planner's work will not be
+  used twice.</p>
+ </div>
+</section>
+
+<section id="s7">
+ <span class="snum">07</span>
+ <h2>Execution &amp; WIP</h2>
+ <div class="ent"><div class="ent-h"><span>wip_movements</span><i>Append-only ledger</i></div><div class="ent-b"><table>
+  <tr><td>shipment_line_id, department_id, component_id</td><td><span class="tag t-fk">FK</span></td></tr>
+  <tr><td>shift_id</td><td><span class="tag t-chg">Changed</span> movements attribute to a shift</td></tr>
+  <tr><td>movement_type</td><td>declared_out, accepted_in, rejected, returned, scrapped, reworked</td></tr>
+  <tr><td>qty, moved_at, entered_by</td><td></td></tr>
+  <tr><td>return_to_department_id</td><td>Populated on returned only</td></tr>
+  <tr><td>reason_code</td><td>Required on rejected, returned and scrapped</td></tr>
+  <tr><td>scan_ref</td><td><span class="tag t-new">New</span> barcode or QR payload where scanned</td></tr>
+ </table></div></div>
+ <p class="note">Append-only, enforced by a trigger rejecting UPDATE and DELETE. A correction is a
+ new compensating movement, never an edit. Without this the WIP position cannot be audited and every
+ reconciliation figure is meaningless.</p>
+</section>
+
+<section id="s8">
+ <span class="snum">08</span>
+ <h2>People &amp; machines</h2>
+
+ <div class="ent"><div class="ent-h"><span>employees</span><i><span class="tag t-new">New</span> Rev B</i></div><div class="ent-b"><table>
+  <tr><td>emp_code, name</td><td></td></tr>
+  <tr><td>department_id, default_shift_id</td><td><span class="tag t-fk">FK</span></td></tr>
+  <tr><td>skill_level</td><td>skilled / semi_skilled / unskilled</td></tr>
+  <tr><td>employment_type</td><td>permanent / contract</td></tr>
+  <tr><td>is_active</td><td></td></tr>
+ </table></div></div>
+
+ <div class="ent"><div class="ent-h"><span>attendance</span><i><span class="tag t-chg">Changed</span> Per employee per shift</i></div><div class="ent-b"><table>
+  <tr><td>work_date, employee_id, shift_id</td><td>Composite key</td></tr>
+  <tr><td>status</td><td>present / absent_informed / absent_uninformed / leave</td></tr>
+  <tr><td>ot_hours</td><td>Actual overtime worked by this person</td></tr>
+ </table></div></div>
+ <div class="callout">
+  <h4>A choice worth confirming before Phase 4</h4>
+  <p>Per-employee attendance is what skill mix and "four skilled carpenters on leave tomorrow"
+  require. It is also more entry than aggregate head counts. If HR's existing sheet is aggregate
+  only, the model supports a department-level fallback &mdash; but skill mix and leave management
+  are then not deliverable. This should be decided with HR rather than assumed.</p>
+ </div>
+
+ <div class="ent"><div class="ent-h"><span>leave_requests</span><i><span class="tag t-new">New</span></i></div><div class="ent-b"><table>
+  <tr><td>employee_id, leave_type</td><td>casual / medical / earned</td></tr>
+  <tr><td>from_date, to_date, status</td><td>Approved leave reduces forward capacity</td></tr>
+ </table></div></div>
+
+ <div class="ent"><div class="ent-h"><span>machines</span><i><span class="tag t-new">New</span> Rev B</i></div><div class="ent-b"><table>
+  <tr><td>code, name, department_id</td><td><span class="tag t-fk">FK</span></td></tr>
+  <tr><td>component_ids</td><td>What this machine can produce</td></tr>
+  <tr><td>status</td><td>running / down / under_maintenance / idle</td></tr>
+ </table></div></div>
+
+ <div class="ent"><div class="ent-h"><span>machine_breakdowns &middot; maintenance_schedules</span><i><span class="tag t-new">New</span></i></div><div class="ent-b"><table>
+  <tr><td>breakdowns</td><td>machine, reported_at, resolved_at, reason_code, downtime_hours, capacity_impact</td></tr>
+  <tr><td>maintenance</td><td>machine, type (preventive/breakdown), due_date, last_done_at, interval_days</td></tr>
+ </table></div></div>
+ <p class="note">A breakdown writes a <code>capacity_override</code> for its duration, so downtime
+ flows into the schedule automatically rather than being a number on a separate dashboard.</p>
+</section>
+
+<section id="s9">
+ <span class="snum">09</span>
+ <h2>Material &amp; quality</h2>
+ <div class="ent"><div class="ent-h"><span>materials &middot; stock &middot; purchase_orders &middot; grn &middot; material_issues</span><i>Material module</i></div><div class="ent-b"><table>
+  <tr><td>materials</td><td>code, description, uom (CFT, KG, MTR, NOS), category, reorder_level</td></tr>
+  <tr><td>stock</td><td>material, qty_on_hand, qty_in_transit, valuation, as_of</td></tr>
+  <tr><td>purchase_orders</td><td>po_no, supplier, material, qty, value, expected_date, status</td></tr>
+  <tr><td>grn</td><td>grn_no, po, supplier, material, qty_received, value, received_at</td></tr>
+  <tr><td>material_issues</td><td>material, department, shipment_line, qty, issued_at &mdash; absorbs the existing CFT and plank-issuance work</td></tr>
+ </table></div></div>
+
+ <div class="ent"><div class="ent-h"><span>inspections &middot; ncr &middot; calibration &middot; audits &middot; customer_complaints</span><i>Quality module</i></div><div class="ent-b"><table>
+  <tr><td>inspections</td><td>checkpoint (incoming/in_process/final/dispatch), shipment_line, department, component, qty_inspected, accepted, rejected, rework, reason_code</td></tr>
+  <tr><td>ncr</td><td>raised_against, description, severity, corrective_action, preventive_action, owner, due_date, status</td></tr>
+  <tr><td>calibration</td><td><span class="tag t-new">New</span> instrument, last_calibrated, due_date, certificate_ref</td></tr>
+  <tr><td>audits</td><td><span class="tag t-new">New</span> audit_type, audited_at, auditor, findings, closure_status</td></tr>
+  <tr><td>customer_complaints</td><td><span class="tag t-new">New</span> customer, order, reason_code, severity, status, resolved_at</td></tr>
+ </table></div></div>
+</section>
+
+<section id="s10">
+ <span class="snum">10</span>
+ <h2>Cost &amp; cash</h2>
+ <div class="ent"><div class="ent-h"><span>wage_rates &middot; payment_schedule &middot; receipts</span><i>Cost module</i></div><div class="ent-b"><table>
+  <tr><td>wage_rates</td><td>department, shift, skill_level, effective_from, normal_rate_hour, ot_multiplier, contract_day_rate &mdash; effective-dated, never updated in place</td></tr>
+  <tr><td>payment_schedule</td><td><span class="tag t-new">New</span> supplier, po, amount, due_date, status</td></tr>
+  <tr><td>receipts</td><td><span class="tag t-new">New</span> customer, order, amount, expected_date, received_at</td></tr>
+ </table></div></div>
+ <div class="tw"><table>
+  <tr><th>Derived figure</th><th>From</th></tr>
+  <tr><td>Labour cost per shift</td><td>present &times; net_hours &times; rate + ot_hours &times; rate &times; multiplier + contract &times; day_rate</td></tr>
+  <tr><td>Cost per component</td><td>Department shift cost &divide; components completed</td></tr>
+  <tr><td>WIP value</td><td>Material issued + accumulated labour on in-hand quantities</td></tr>
+  <tr><td>Stranded WIP value</td><td>As above, restricted to stranded components</td></tr>
+  <tr><td>Cost of poor quality</td><td>Scrap + rework + customer return</td></tr>
+  <tr><td>Cash position</td><td>Receipts expected &minus; payments due, by week</td></tr>
+ </table></div>
+ <div class="callout">
+  <h4>Why not per-order labour costing</h4>
+  <p>A department runs several orders in a shift. Splitting its hours between them requires every
+  worker to log which order they touched &mdash; a discipline shop floors reliably fail to sustain,
+  and the point at which systems like this are abandoned. Department-level costing gives most of the
+  value for a fraction of the friction, and it is the figure that feeds the planner. Per-order
+  costing can be added later if the floor proves it will maintain the data.</p>
+ </div>
+</section>
+
+<section id="s11">
+ <span class="snum">11</span>
+ <h2>Scheduling engine</h2>
+ <p class="lead">A pure function of the masters and the order book. It writes a new
+ <code>schedule_run</code> and never mutates an existing one, so any past plan can be recovered and
+ compared against what actually happened.</p>
+ <pre>for each shipment_line where confidence in (filter)
+  for each department in route (by route_position)
+    dminus   = article_dept_dminus[article, department]
+    due_date = roll_back_to_working_day( stuffing_date - dminus )
+
+    for each component in article_bom[article] made by department
+      gross = line.qty x bom.qty_per_unit
+            / product( yield of this and all downstream departments )
+
+      capacity = SUM over active shifts of
+                 ( capacity_override(dept, shift, component, date)
+                   ?? component_rates[component, dept, shift] )
+
+      days   = ceil( gross / capacity )
+      window = last `days` working days ending at due_date
+
+      if pin exists          &rarr; honour pinned_start_date, re-derive window
+      if window.start &lt; material_ready_date  &rarr; breach: material
+      if window.start &lt; upstream_due_date    &rarr; breach: runway
+
+      distribute capacity per day, remainder on the earliest day
+      accumulate into schedule_daily_load</pre>
+ <h3>Feasibility checks</h3>
+ <ul class="plain">
+  <li><strong>Runway breach.</strong> Working days between consecutive D-minus dates are fewer than
+  the downstream department needs. Overtime cannot fix this &mdash; the department physically cannot
+  start earlier under batch handoff.</li>
+  <li><strong>Material breach.</strong> The window opens before material is available. The schedule
+  is arithmetically valid and physically impossible.</li>
+  <li><strong>Pin breach.</strong> A manual pin has pushed a task past its due date. Reported, not
+  corrected.</li>
+ </ul>
+ <h3>Scale</h3>
+ <p>324 orders averaging two shipment lines, across seven departments, three components and up to
+ three shifts gives roughly 40,000 tasks and 300,000&ndash;400,000 daily-load rows per run. A
+ set-based Postgres workload measured in seconds. Recomputation runs on order or master change
+ (debounced), on demand, and nightly. What-if runs write a non-current run for side-by-side
+ comparison, then discard or promote.</p>
+</section>
+
+<section id="s12">
+ <span class="snum">12</span>
+ <h2>WIP mechanics</h2>
+ <h3>Two-sided handoff</h3>
+ <div class="tw"><table>
+  <tr><th>Event</th><th>Movement</th><th>Effect</th></tr>
+  <tr><td>Wood finishes 100 legs</td><td>declared_out</td><td>Leaves wood's in-hand, enters the buffer</td></tr>
+  <tr><td>Sanding accepts 95</td><td>accepted_in</td><td>Enters sanding's in-hand</td></tr>
+  <tr><td>5 unreconciled</td><td>&mdash;</td><td>Flagged for same-day resolution</td></tr>
+  <tr><td>Sanding rejects 3</td><td>rejected + returned</td><td>Returns to wood with a reason code</td></tr>
+  <tr><td>Wood scraps 1</td><td>scrapped</td><td>Permanently removed; increases remaining requirement</td></tr>
+ </table></div>
+ <pre>in_hand      = accepted_in - declared_out - scrapped + returned_in
+chairs_ready = MIN over components of ( in_hand / bom.qty_per_unit )
+stranded     = in_hand - ( chairs_ready x bom.qty_per_unit )</pre>
+ <div class="callout warn">
+  <h4>The acknowledgement step is not optional</h4>
+  <p>A single-entry system drifts. Wood says 100, sanding says 95, and within a month no figure is
+  trusted. Two-sided entry with same-day flagging is the difference between a WIP ledger people rely
+  on and a screen they stop opening.</p>
+ </div>
+ <h3>Department screen</h3>
+ <p>Kiosk view on a wall-mounted tablet or LED panel per department, auto-refreshing, plus an entry
+ mode for the HOD. Because the engine already knows each department's D-minus date, the screen shows
+ commitments rather than raw counts.</p>
+ <ul class="plain">
+  <li><strong>Ready for me</strong> &mdash; declared out upstream, not yet accepted</li>
+  <li><strong>In hand</strong> &mdash; accepted, not yet declared out, stranded flagged</li>
+  <li><strong>Due</strong> &mdash; order, article, component, remaining, days to D-minus</li>
+  <li><strong>Entry</strong> &mdash; scan or select, count, submit</li>
+ </ul>
+ <p class="note">Entry must complete in under about fifteen seconds or it will not happen
+ consistently, and inconsistent data is worse than none. Barcode or QR scanning of the order and
+ component exists for exactly this reason; every other design decision on this screen is
+ subordinate to it.</p>
+</section>
+
+<section id="s13">
+ <span class="snum">13</span>
+ <h2>Manpower &amp; overtime</h2>
+ <pre>units_per_person_hour = shift_capacity / ( shift_headcount x net_hours )
+
+shortfall_hours = shortfall_units / ( units_per_person_hour x ot_efficiency )
+ot_hours_person = shortfall_hours / shift_headcount
+
+if ot_hours_person &lt;= shift.max_ot_hours   &rarr; within overtime
+else
+  covered = shift_headcount x max_ot_hours x units_per_person_hour x ot_efficiency
+  extra   = ceil( (shortfall_units - covered) / (units_per_person_hour x net_hours) )</pre>
+ <p>Overtime efficiency defaults to 85%. Hour eleven does not produce what hour three produces, and
+ planning overtime at full productivity is the standard way these systems overpromise. It is
+ configurable so the assumption stays visible.</p>
+ <p>Extra people are counted at full productivity, which is generous &mdash; a new hire is not at
+ standard output in week one. Reported headcount shortfalls should be read as a floor.</p>
+ <p>Skill mix modifies effective capacity: a shift staffed with a higher proportion of unskilled
+ workers produces less than its sanctioned rate. The weighting factor per skill level is
+ configurable and defaults to parity until measured.</p>
+ <h3>Self-correction</h3>
+ <p>Actual attendance and actual output together give real productivity per department per shift per
+ day, written back as the measured capacity figure with <code>is_measured</code> set. This is what
+ makes the engine improve: capacity stops being an assertion and becomes a measurement.</p>
+</section>
+
+<section id="s14">
+ <span class="snum">14</span>
+ <h2>Planning outputs</h2>
+ <p class="lead">Four views over the same schedule run. Three of these were proposed during design
+ and omitted from Rev A.</p>
+
+ <h3>Load heatmap</h3>
+ <p>Department &times; date grid, coloured by load against capacity. The daily symptom view.</p>
+
+ <h3>Bottleneck utilisation <span class="tag t-new">New</span></h3>
+ <p>Average utilisation per department across the horizon. The heatmap shows which days hurt; this
+ shows which department is structurally the constraint. Capacity above the bottleneck is decorative
+ &mdash; if stitching runs at 30 a day against wood's 40, the factory's real throughput is 30. This
+ is the view that answers where to put the next person or the next machine, and the heatmap
+ cannot.</p>
+
+ <h3>Flag triage <span class="tag t-new">New</span></h3>
+ <div class="tw"><table>
+  <tr><th>Horizon</th><th>Still possible</th></tr>
+  <tr><td>45+ days</td><td>Hiring</td></tr>
+  <tr><td>15&ndash;45 days</td><td>Overtime, resequencing, subcontract</td></tr>
+  <tr><td>Under 15 days</td><td>Customer conversation</td></tr>
+ </table></div>
+ <p>A sort and a label, no recommendation attached. It converts a flat list of two hundred flags
+ into a triaged one, which is the difference between a report people act on and one they scroll
+ past.</p>
+
+ <h3>Idle capacity <span class="tag t-new">New</span></h3>
+ <p>Backward scheduling places work as late as possible, so empty days frequently sit immediately
+ before a breach. Reporting idle days alongside flagged days is half the value of the exercise
+ &mdash; and the trend matters more than the number, because a floor with no idle days has no
+ absorption left for the next rush order.</p>
+
+ <h3>Gantt with manual pins</h3>
+ <p>Drag-and-drop rescheduling writing to <code>schedule_pins</code>, with a mandatory reason. Pins
+ survive every subsequent run. Given 324 orders, the Gantt is filtered by department, customer or
+ date window rather than attempting to render the whole book.</p>
+
+ <h3>Order acceptance check</h3>
+ <p>A merchandiser enters a proposed article, quantity and stuffing date. Kram provisionally
+ schedules it against the live book and reports which departments breach and when, or returns the
+ earliest date that breaches nothing. Everything else finds problems after the commitment; this
+ finds them before, which makes it the highest-value screen in the product.</p>
+</section>
+
+<section id="s15">
+ <span class="snum">15</span>
+ <h2>ERP import</h2>
+ <p class="lead">Panipuri exports files. No API, no database access &mdash; so the bridge is an
+ import module with a validation gate. Nothing lands directly in live tables.</p>
+ <div class="tw"><table>
+  <tr><th>Feed</th><th>Contents</th><th>Frequency</th></tr>
+  <tr><td>sales_orders</td><td>Customer PO, article, quantity, dates</td><td>Daily</td></tr>
+  <tr><td>article_master</td><td>Article codes and descriptions</td><td>On change</td></tr>
+  <tr><td>bom</td><td>Component structure per article</td><td>On change</td></tr>
+  <tr><td>stock</td><td>Material on hand by item</td><td>Daily</td></tr>
+  <tr><td>purchase_orders</td><td>Open POs, supplier, expected date</td><td>Daily</td></tr>
+  <tr><td>grn</td><td>Receipts against PO</td><td>Daily</td></tr>
+  <tr><td>employees</td><td>Employee master if held in the ERP</td><td>On change</td></tr>
+ </table></div>
+ <ul class="plain">
+  <li><strong>Saved column mappings.</strong> An admin maps export columns to Kram fields once per
+  feed. When the export format changes &mdash; and it will &mdash; someone remaps on a screen
+  instead of waiting for a release.</li>
+  <li><strong>Idempotent on the ERP document number.</strong> Re-uploading the same file updates
+  rather than duplicating. Without it, one double-click creates hundreds of phantom orders.</li>
+  <li><strong>Row-level validation with preview.</strong> Errors flagged per row, batch committed
+  only after a person confirms. Partial commits allowed; rejected rows downloadable for
+  correction.</li>
+ </ul>
+ <div class="callout warn">
+  <h4>Data freshness must be shown honestly</h4>
+  <p>The concept deck carries a single "Live" badge. That is only true of data Kram captures itself.
+  Production and manpower are near real-time because HODs and HR enter them directly; orders,
+  material, purchase orders and stock are only as current as the last export. Each panel therefore
+  carries its own timestamp rather than one global badge. An MD acting on a stale number because the
+  screen claimed to be live is the fastest way to lose confidence in the system.</p>
+ </div>
+</section>
+
+<section id="s16">
+ <span class="snum">16</span>
+ <h2>Roles &amp; screens</h2>
+ <div class="tw"><table>
+  <tr><th>Role</th><th>Can do</th></tr>
+  <tr><td>MD / Leadership</td><td>Read everything, no edit</td></tr>
+  <tr><td>PPC / Planner</td><td>Orders, shipment lines, masters, run schedule, what-if, pins</td></tr>
+  <tr><td>Merchandiser</td><td>Orders, date commitment, order acceptance check</td></tr>
+  <tr><td>HOD</td><td>WIP entry and acceptance for own department only</td></tr>
+  <tr><td>HR</td><td>Employees, attendance, leave, overtime</td></tr>
+  <tr><td>Purchase</td><td>Purchase orders, supplier performance, payment schedule</td></tr>
+  <tr><td>Store</td><td>GRN, material issue, stock</td></tr>
+  <tr><td>Quality</td><td>Inspections, NCR, CAPA, calibration, audit, complaints</td></tr>
+  <tr><td>Maintenance</td><td>Machines, breakdowns, maintenance schedules</td></tr>
+  <tr><td>Accounts</td><td>Rates, costing, cash flow</td></tr>
+  <tr><td>Admin</td><td>Departments, shifts, mappings, users</td></tr>
+  <tr><td>Kiosk</td><td>Read-only department display, no login</td></tr>
+ </table></div>
+ <p>Access is enforced at the database with row-level security rather than in the client, so an HOD
+ cannot read or write another department's WIP regardless of how the request is made.</p>
+</section>
+
+<section id="s17">
+ <span class="snum">17</span>
+ <h2>AI position</h2>
+ <p class="lead">Most of what the concept deck describes as AI is deterministic logic. That is good
+ news, and should be said plainly to the client rather than sold as something else.</p>
+ <div class="tw"><table>
+  <tr><th>Claim</th><th>What it actually is</th><th class="n">Phase</th></tr>
+  <tr><td>Identifying likely bottlenecks</td><td>Capacity flagging &mdash; arithmetic</td><td class="n">2</td></tr>
+  <tr><td>Predicting shipment risk</td><td>Remaining work vs days vs capacity &mdash; arithmetic</td><td class="n">2</td></tr>
+  <tr><td>What-if simulation</td><td>Re-running the engine on altered inputs</td><td class="n">2</td></tr>
+  <tr><td>Optimal production sequence</td><td>Job-shop scheduling &mdash; classical optimisation</td><td class="n">10</td></tr>
+  <tr><td>&mdash;</td><td>Natural-language query and daily narrative &mdash; LLM</td><td class="n">9</td></tr>
+  <tr><td>&mdash;</td><td>Cycle-time, lead-time, rejection prediction &mdash; ML</td><td class="n">10</td></tr>
+ </table></div>
+ <p>Deterministic logic is the right answer for the first three, and not as a compromise. A
+ production head can see exactly why a flag fired and will act on it; a model that says "this order
+ is at risk" without showing its reasoning gets ignored by the third week.</p>
+ <div class="callout">
+  <h4>Predictive models cannot come first</h4>
+  <p>Cycle-time prediction, supplier lead-time forecasting and rejection likelihood all need
+  historical actuals that do not exist yet. The WIP tracker must run for roughly six months before
+  there is anything to train on. This should be put to the client in writing now, because it
+  protects the engagement from a commitment that cannot be met on any timeline.</p>
+ </div>
+</section>
+
+<section id="s18">
+ <span class="snum">18</span>
+ <h2>Technology</h2>
+ <div class="tw"><table>
+  <tr><th>Layer</th><th>Choice</th><th>Reason</th></tr>
+  <tr><td>Database</td><td>Postgres (Supabase)</td><td>Set-based scheduling workload, row-level security</td></tr>
+  <tr><td>Auth &amp; access</td><td>Supabase Auth + RLS</td><td>Department isolation at the data layer</td></tr>
+  <tr><td>Engine</td><td>SQL functions via a job runner</td><td>400k rows per run stays in the database</td></tr>
+  <tr><td>Web client</td><td>React, TypeScript, Vite, Tailwind</td><td>Consistent with existing builds</td></tr>
+  <tr><td>Data layer</td><td>TanStack Query</td><td>Cache invalidation on schedule runs</td></tr>
+  <tr><td>Kiosk</td><td>Same client, kiosk route, auto-refresh</td><td>No separate codebase for LED panels</td></tr>
+  <tr><td>Scanning</td><td>Camera-based barcode/QR in the web client</td><td>Avoids dedicated hardware where possible</td></tr>
+  <tr><td>Mobile</td><td>Capacitor shell, push alerts</td><td>Later phase</td></tr>
+  <tr><td>Import parsing</td><td>SheetJS for Excel</td><td>Excel path is reliable; PDF fallback only</td></tr>
+ </table></div>
+ <p class="note">The service role key must never reach the client bundle &mdash; it bypasses
+ row-level security entirely. All privileged operations run server-side.</p>
+</section>
+
+<section id="s19">
+ <span class="snum">19</span>
+ <h2>Phasing</h2>
+ <p class="lead">Eleven phases. Relative sizing only &mdash; calendar estimates need the department
+ list and team size before they mean anything.</p>
+ <div class="phase"><b>Phase 0</b><div><h4>Foundation</h4>
+  <p>Auth, roles, RLS. Departments, shifts, department_shifts, articles, components, BOM, employees,
+  skill levels, holidays. Seeded with a placeholder route the client replaces.</p></div><span class="tag t-m">M</span></div>
+ <div class="phase"><b>Phase 1</b><div><h4>Order book &amp; import</h4>
+  <p>Orders, shipment lines, D-minus matrix, container consolidation, material ready dates.
+  Sales-order, article and BOM feeds with mapping, validation and preview.</p></div><span class="tag t-m">M</span></div>
+ <div class="phase"><b>Phase 2</b><div><h4>Scheduling engine</h4>
+  <p>Backward scheduling, BOM explosion, yield inflation, shift-aware capacity, load flagging,
+  feasibility, idle reporting, bottleneck utilisation, flag triage, what-if, order acceptance,
+  Gantt with pins. Validated against completed orders before anything is trusted.</p></div><span class="tag t-l">L</span></div>
+ <div class="phase"><b>Phase 3</b><div><h4>WIP tracking</h4>
+  <p>Two-sided handoff, return path, scrap, rework, barcode entry, department screens, kiosk
+  displays, stranded-component reporting.</p></div><span class="tag t-l">L</span></div>
+ <div class="phase"><b>Phase 4</b><div><h4>Manpower</h4>
+  <p>Attendance by shift, leave management, skill mix, overtime predictor, productivity, and
+  plan-against-actual feeding measured capacity back into the engine.</p></div><span class="tag t-m">M</span></div>
+ <div class="phase"><b>Phase 5</b><div><h4>Material</h4>
+  <p>Stock, shortages, purchase orders, GRN, material issue, supplier performance. Absorbs the
+  existing CFT and plank-issuance work.</p></div><span class="tag t-l">L</span></div>
+ <div class="phase"><b>Phase 6</b><div><h4>Quality</h4>
+  <p>Four checkpoints, rejection reasons, FPY, rework, NCR and CAPA, calibration, audit, customer
+  complaints.</p></div><span class="tag t-m">M</span></div>
+ <div class="phase"><b>Phase 7</b><div><h4>Machines &amp; maintenance</h4>
+  <p>Machine master, breakdown logging, downtime, preventive maintenance schedules, and automatic
+  capacity override on breakdown.</p></div><span class="tag t-s">S</span></div>
+ <div class="phase"><b>Phase 8</b><div><h4>Cost &amp; cash</h4>
+  <p>Wage rates, department costing, WIP and stranded value, cost of poor quality, payment schedule,
+  cash-flow view.</p></div><span class="tag t-m">M</span></div>
+ <div class="phase"><b>Phase 9</b><div><h4>Command centre</h4>
+  <p>MD dashboard, KPI rollup, alert engine, mobile notifications, natural-language query and daily
+  narrative.</p></div><span class="tag t-m">M</span></div>
+ <div class="phase"><b>Phase 10</b><div><h4>Predictive</h4>
+  <p>Cycle-time and lead-time models, rejection likelihood, sequencing optimisation. Requires roughly
+  six months of accumulated actuals.</p></div><span class="tag t-l">L</span></div>
+ <div class="callout warn">
+  <h4>Phase 2 is the one to validate hardest</h4>
+  <p>Every later phase inherits its date arithmetic. If the working-day counting is out by one, all
+  eleven phases are wrong and nothing on screen will look unusual. Reproducing the windows of two or
+  three completed orders is what proves it.</p>
+ </div>
+ <div class="callout">
+  <h4>A usable product exists at Phase 4</h4>
+  <p>Phases 0 to 4 deliver the planner, the flagger, WIP tracking and the manpower loop &mdash; the
+  original brief, and the part that closes the plan-versus-actual cycle. Material, quality, machines
+  and cost extend it; they do not complete it. If the programme has to stop or pause anywhere, the
+  end of Phase 4 is the place.</p>
+ </div>
+</section>
+
+<section id="s20">
+ <span class="snum">20</span>
+ <h2>Open items</h2>
+ <div class="tw"><table>
+  <tr><th>Item</th><th>Blocks</th><th>Owner</th></tr>
+  <tr><td>Department list with route order</td><td>Phase 0</td><td>Production</td></tr>
+  <tr><td>Shift definitions and headcount per department</td><td>Phase 0</td><td>HR / Production</td></tr>
+  <tr><td>Per-employee or aggregate attendance</td><td>Phase 0</td><td>HR</td></tr>
+  <tr><td>Component list and BOM per article</td><td>Phase 0</td><td>PDE</td></tr>
+  <tr><td>Article-wise D-minus per department</td><td>Phase 2</td><td>Merchandising / PPC</td></tr>
+  <tr><td>Component rates per department per shift</td><td>Phase 2</td><td>Production</td></tr>
+  <tr><td>Holiday calendar, six months</td><td>Phase 2</td><td>HR</td></tr>
+  <tr><td>Two or three completed orders for validation</td><td>Phase 2 sign-off</td><td>PPC</td></tr>
+  <tr><td>Sample Panipuri exports, one per feed</td><td>Phase 1</td><td>IT</td></tr>
+  <tr><td>Wage rates and overtime multiplier</td><td>Phase 8</td><td>HR / Accounts</td></tr>
+  <tr><td>Quality checkpoints and reason codes</td><td>Phase 6</td><td>Quality</td></tr>
+  <tr><td>Machine list per department</td><td>Phase 7</td><td>Maintenance</td></tr>
+  <tr><td>Overtime ceiling confirmation</td><td>Phase 4</td><td>Compliance</td></tr>
+  <tr><td>Clarify "CRM only for 1st order"</td><td>Unscoped</td><td>Client</td></tr>
+ </table></div>
+ <div class="callout">
+  <h4>Expect the feasibility check to fail orders the floor believes are fine</h4>
+  <p>Batch handoff, yield inflation and BOM explosion each stretch every window, and a six-day week
+  with festival closures stretches them further. When the engine first runs against the live order
+  book it will likely flag orders nobody thought were at risk. That is a real finding rather than a
+  fault, and it is better raised before the first red cells appear than after.</p>
+ </div>
+</section>
+
+</main>
+</div>
+
+<footer><div class="foot-inner">
+ <span>Data Brilliance Business Solutions LLP &middot; DBBS/UM/KRAM/01 &middot; Rev B</span>
+ <span>Complete specification &mdash; for review</span>
+</div></footer>
+</body>
+</html>

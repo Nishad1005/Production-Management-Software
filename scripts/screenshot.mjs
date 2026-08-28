@@ -877,6 +877,35 @@ await step('machine downtime', async () => {
   return `${rows} machines, and booking downtime took stitching to six of eight`
 })
 
+// --- the banner that stops invented figures passing as real -----------------
+
+await step('provisional banner', async () => {
+  await go('#/wip', 'text=Ready to stuff')
+  const banner = page.locator('[data-testid="provisional-banner"]')
+  if (!(await banner.count())) {
+    throw new Error('the demo data is not announcing itself as placeholders')
+  }
+
+  const text = await banner.innerText()
+  if (!/placeholder/i.test(text)) {
+    throw new Error(`the banner does not say what it is: ${text.slice(0, 100)}`)
+  }
+
+  // On every screen, not just the first one. A notice that appears once is one
+  // somebody scrolls past on the way in and never sees again.
+  for (const [hash, wait] of [
+    ['#/attention', 'Needs an answer today'],
+    ['#/capacity', 'Capacity sheet'],
+  ]) {
+    await go(hash, `text=${wait}`)
+    if (!(await page.locator('[data-testid="provisional-banner"]').count())) {
+      throw new Error(`the banner is missing on ${hash}`)
+    }
+  }
+
+  return 'shown on every screen, and it says the figures are placeholders'
+})
+
 // --- attention: findings appear, and the header says so ---------------------
 
 await step('attention', async () => {

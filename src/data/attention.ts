@@ -49,3 +49,32 @@ export function useAttentionCount() {
       },
   })
 }
+
+/**
+ * Whether the figures on screen are U&M's or ours.
+ *
+ * The hosted system has no equivalent of the offline build's "Offline draft"
+ * badge, and it is the one people believe. While interim data is loaded this
+ * returns what went in, and the shell shows a standing banner.
+ */
+export type ProvisionalState = {
+  is_provisional: boolean
+  what: string | null
+  loaded_at: string | null
+  order_prefix: string | null
+  provisional_orders: number
+}
+
+export function useProvisionalState() {
+  return useQuery({
+    queryKey: ['provisional-state'],
+    queryFn: async () =>
+      (await select<ProvisionalState>('provisional_state'))[0] ?? {
+        is_provisional: false,
+        what: null,
+        loaded_at: null,
+        order_prefix: null,
+        provisional_orders: 0,
+      },
+  })
+}

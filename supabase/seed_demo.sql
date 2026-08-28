@@ -763,3 +763,19 @@ update public.suppliers s
     ('TIMBER', 45), ('FOAMCO', 30), ('FABRIC', 60), ('METALW', 30), ('PACKING', 15)
   ) as v (code, days)
  where s.code = v.code;
+
+-- ---------------------------------------------------------------------------
+-- And say so, on every screen.
+--
+-- Everything above this line is invented. The header badge already reads
+-- "Offline draft", which says where the database lives; this says something
+-- different and more important — that the *numbers* are not U&M's. The hosted
+-- system shows the same banner whenever interim figures are loaded into it, so
+-- the sentence a person learns to recognise here means the same thing there.
+-- ---------------------------------------------------------------------------
+select public.mark_provisional(
+  'Every rate, date, order and rupee in this build was invented by DBBS so the '
+  || 'screens have something to say.',
+  'SO/26-27/',
+  'seed_demo.sql'
+);
