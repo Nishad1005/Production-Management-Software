@@ -197,6 +197,15 @@ get abandoned.
 
 ## 5. Gotchas — things that cost time
 
+**An optional method on the backend interface is a control that silently does
+nothing.** `Backend.reset?()` is implemented by PGlite and not by Supabase, so
+"Reset demo data" on the hosted system called nothing, reported success and
+changed the database not at all — and it is mislabelled there anyway, because a
+shared database has no demo data. Now rendered only when `access.isOffline`, and
+`verify-hosted-ui` fails if it appears on the hosted build. Worth a look at any
+other `?.()` call on that interface. (23 Aug)
+
+
 **The documents drift, and nothing was checking them.** The log claimed fifteen
 migrations when there were thirty-two, then thirty-seven when there were
 forty-four; the README claimed fifty-three tests for a suite of nearly three

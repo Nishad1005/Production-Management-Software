@@ -179,6 +179,22 @@ if (!email || !password) {
 
 // --- signed in, every screen renders against Supabase -----------------------
 
+await step('no offline-only controls', async () => {
+  await page.fill('input[type=email]', email)
+  await page.fill('input[type=password]', password)
+  await page.click('button:has-text("Sign in")')
+  await page.waitForSelector('text=Bottleneck utilisation', { timeout: 60_000 })
+
+  // `reset()` throws away a browser database and reapplies the seed. The hosted
+  // backend has no such method, so this button reported success and changed
+  // nothing — and on a shared database it is mislabelled as well, because there
+  // is no demo data to reset.
+  if (await page.locator('[data-testid="reset-demo"]').count()) {
+    throw new Error('the offline-only reset button is on the hosted build')
+  }
+  return 'the reset button is not offered where it would do nothing'
+}, { allow: /status of 400|auth\/v1\/token/ })
+
 await step('sign in', async () => {
   await page.fill('input[type=email]', email)
   await page.fill('input[type=password]', password)

@@ -9,6 +9,7 @@ import {
   useRunSchedule,
 } from '@/data/planning'
 import { Button, Empty, Metric, Panel, Table, Tag, Td, Th } from '@/components/ui'
+import { useAccess } from '@/lib/access-context'
 import { formatDate, formatDateLong, formatNumber } from '@/components/format'
 
 const CONFIDENCE_SETS: Record<string, string[]> = {
@@ -35,6 +36,7 @@ export function CommandCentre() {
   const triage = useFlagTriage(run.data?.id)
   const runSchedule = useRunSchedule()
   const reset = useResetDemo()
+  const access = useAccess()
 
   const busy = runSchedule.isPending || reset.isPending
 
@@ -76,9 +78,25 @@ export function CommandCentre() {
               {runSchedule.isPending ? 'Scheduling…' : 'Run the schedule'}
             </Button>
           </div>
-          <Button variant="quiet" onClick={() => reset.mutate()} disabled={busy}>
-            {reset.isPending ? 'Resetting…' : 'Reset demo data'}
-          </Button>
+          {/*
+            Offline only. `reset()` throws away the browser's database and
+            reapplies the seed; the hosted backend has no such thing, so on the
+            hosted system this button called an optional method that is not
+            there, reported success and changed nothing — a control that looks
+            like it worked and did not, which is the failure this project keeps
+            refusing. It is also mislabelled there: a shared database has no
+            demo data to reset.
+          */}
+          {access.isOffline ? (
+            <Button
+              variant="quiet"
+              onClick={() => reset.mutate()}
+              disabled={busy}
+              testId="reset-demo"
+            >
+              {reset.isPending ? 'Resetting…' : 'Reset demo data'}
+            </Button>
+          ) : null}
         </div>
 
         <p className="text-mid mt-3 max-w-[80ch] text-[12px]">
