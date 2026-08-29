@@ -77,7 +77,7 @@ unmodified in the browser, so the demo runs the real engine with no backend.
 `npm run build` produces a static folder.
 
 **Online.** Supabase project `fiqfbbnmksppbpxmhnbv` — *kram*, Mumbai
-(ap-south-1), Postgres 17.6. All forty-nine migrations applied, the last on 23 Aug (§9).
+(ap-south-1), Postgres 17.6. All fifty migrations applied, the last on 23 Aug (§9).
 
 > **Migrations are append-only from here.** Editing one now means the file and
 > the live database disagree, silently, until something breaks in a way that
@@ -712,6 +712,20 @@ This view was the odd one out. Behaviour is unchanged, and
 `tests/article-master.test.ts` and `tests/attention.test.ts` are what say so:
 the capacity sheet writes exactly one stage component per article per
 department, so both formulations pick out the same rows.
+
+**`attention` was still cancelled after that fix**, because it unions the
+route-order contradiction and `route_order_conflicts` read `capacity_sheet` —
+1021 ms for 994 rows. A second alone is tolerable; a second inside a union of
+eight branches under RLS is not. So the alert screen, the one built to say what
+is wrong, was the screen that failed. It now reads `article_dept_dminus`,
+`articles` and `departments` on real keys.
+
+Rebuilding that view had its own lesson, and it is the same one as 18 Aug: the
+first attempt was written from the **original** Phase 2 definition and silently
+reverted the graph walk to a consecutive comparison. Three tests caught it in
+seconds, which is the only reason it is a footnote rather than an incident. Take
+the current text and change one thing in it; never retype a view or a function
+from an older migration.
 
 `capacity_sheet` uses the same constructed-code pattern and came in at 1021 ms
 for 994 rows — under the ceiling, and left alone deliberately. Changing it would
