@@ -77,7 +77,7 @@ unmodified in the browser, so the demo runs the real engine with no backend.
 `npm run build` produces a static folder.
 
 **Online.** Supabase project `fiqfbbnmksppbpxmhnbv` — *kram*, Mumbai
-(ap-south-1), Postgres 17.6. All forty-eight migrations applied, the last on 23 Aug (§9).
+(ap-south-1), Postgres 17.6. All forty-nine migrations applied, the last on 23 Aug (§9).
 
 > **Migrations are append-only from here.** Editing one now means the file and
 > the live database disagree, silently, until something breaks in a way that
@@ -196,6 +196,19 @@ get abandoned.
 ---
 
 ## 5. Gotchas — things that cost time
+
+**The tests bypass row-level security, so a policy's cost is invisible to all of
+them.** `article_master` matched a *constructed* component code —
+`c.code = a.code || '::' || d.code` — which is not indexable. Measured locally at
+seventy-one articles by fourteen departments: **8 ms**. On Supabase, where
+`security_invoker` makes every underlying table apply its policy, the same query
+passed the API's eight-second ceiling and was cancelled, taking `attention` down
+with it and breaking the Masters screen. Rewritten to join `article_bom` to
+`component_rates`, which is how `capacity_sheet.is_routed` had always done it.
+**Never join on a constructed string**, and remember that a local timing says
+nothing about a view under RLS. `verify:live` now times every view signed in.
+(23 Aug)
+
 
 **Supabase gives `authenticated` an eight-second statement timeout, and the
 engine needs longer.** `run_schedule` came back `canceling statement due to
@@ -664,6 +677,47 @@ traced back to a single line written once and then quoted forward by everything
 that followed, including three documents I wrote yesterday. The log is the
 project's memory and that is exactly what makes an unverified line in it
 expensive.
+
+### 2026-08-23 — Two views the local suite could never have timed
+
+Loading interim data into the live project turned up a second production-only
+failure, and a sharper lesson than the first.
+
+`verify:live`, now timing every view as a signed-in user, came back:
+
+    FAIL article_master —
+    ok   capacity_sheet   1021 ms · 994 rows
+    ok   order_book         82 ms · 12 rows
+    FAIL attention —
+
+`article_master` found an article's routed departments by *constructing* a
+component code and matching on it — `c.code = a.code || '::' || d.code` — which
+no index can serve. Measured locally at exactly U&M's shape, seventy-one
+articles by fourteen departments: **eight milliseconds**. On Supabase it passed
+the eight-second ceiling and was cancelled. `attention` fell with it, because it
+unions that view.
+
+**The Masters screen reads it.** So this was never about a script: it was a
+screen that would have failed for U&M with a message nobody could act on.
+
+The reason the local suite can never see this is worth stating plainly: **the
+tests run as the table owner, which bypasses row-level security entirely.** Every
+policy on every table is free in every test we have. `security_invoker` views
+make the caller's policies apply to each underlying table, and that is where the
+cost lives.
+
+Fixed by joining `article_bom` to `component_rates` — real foreign keys, real
+indexes — which is how `capacity_sheet.is_routed` had done it since Phase 2.
+This view was the odd one out. Behaviour is unchanged, and
+`tests/article-master.test.ts` and `tests/attention.test.ts` are what say so:
+the capacity sheet writes exactly one stage component per article per
+department, so both formulations pick out the same rows.
+
+`capacity_sheet` uses the same constructed-code pattern and came in at 1021 ms
+for 994 rows — under the ceiling, and left alone deliberately. Changing it would
+alter what the parity fixture shows, where an article has several named
+components in one department, and that is a fixture worth more than a second.
+Recorded here so the next person meets it as a known thing.
 
 ### 2026-08-23 — The engine timed out in production, which is where it would have
 
