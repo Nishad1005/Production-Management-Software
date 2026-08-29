@@ -184,6 +184,51 @@ async function checkAnonymous(db) {
   }
 }
 
+/**
+ * How long each view takes as a signed-in user, which is the only place it can
+ * be measured.
+ *
+ * Local Postgres runs the tests as the table owner and bypasses row-level
+ * security entirely, so a view that is 8ms here can be seconds on Supabase where
+ * every underlying table applies a policy. `article_master` crossed the API's
+ * eight-second ceiling on the live project and killed a script on a *read* —
+ * the Masters screen reads the same view, so this is a screen that breaks for a
+ * real user, not a scripting inconvenience.
+ *
+ * Reported rather than asserted: the right threshold depends on the project's
+ * size, and a number invented here would fail for the wrong reasons.
+ */
+async function timeViews(db) {
+  console.log('\nHow long each view takes, signed in')
+  const views = [
+    'article_master', 'capacity_sheet', 'order_book', 'schedule_gantt',
+    'attention', 'material_shortage', 'measured_rate', 'shipment_risk',
+    'wip_by_order', 'quality_by_department', 'machine_master', 'department_master',
+  ]
+  const slow = []
+  for (const view of views) {
+    const t0 = Date.now()
+    const { error, count } = await db
+      .from(view)
+      .select('*', { count: 'exact', head: true })
+    const ms = Date.now() - t0
+    if (error) {
+      console.log(`  ${'FAIL'} ${view} — ${error.message.slice(0, 60)}`)
+      failures += 1
+      continue
+    }
+    const mark = ms > 2000 ? 'SLOW' : 'ok  '
+    if (ms > 2000) slow.push(view)
+    console.log(`  ${mark} ${view.padEnd(24)} ${String(ms).padStart(6)} ms · ${count ?? 0} rows`)
+  }
+  if (slow.length) {
+    console.log(
+      `\n  ${slow.length} view(s) over two seconds. The API cancels at eight, so` +
+        ' these are screens\n  that will fail for a user before they fail here.',
+    )
+  }
+}
+
 /** What a signed-in account can actually reach. */
 async function checkSignedIn(db, email, password) {
   console.log(`\nSigned in as ${email}`)
@@ -199,6 +244,8 @@ async function checkSignedIn(db, email, password) {
   const { data: access } = await db.from('my_access').select('*')
   const roles = access?.[0]?.roles ?? []
   console.log(`  roles: ${roles.length ? roles.join(', ') : '(none)'}`)
+
+  await timeViews(db)
 
   const isAdmin = roles.includes('admin')
 

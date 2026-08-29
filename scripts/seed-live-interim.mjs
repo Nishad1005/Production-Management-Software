@@ -139,8 +139,21 @@ await call(
   'marker',
 )
 
+/*
+ * `article_list`, not `article_master`.
+ *
+ * All this needs is a code and whether the article is switched on.
+ * `article_master` additionally works out, per article, how many departments it
+ * is routed through and how many of those lack a D-minus — which on the live
+ * project, with 994 components behind row-level security, took longer than the
+ * eight-second API timeout and killed this script on a read.
+ *
+ * Ask for the cheapest thing that answers the question. The Masters screen does
+ * need the full view and may have the same problem; `verify:live` now times
+ * every view so that can be measured rather than guessed at.
+ */
 const { data: articles, error: articleError } = await db
-  .from('article_master')
+  .from('article_list')
   .select('code, name, is_active')
   .order('code')
 if (articleError) throw new Error(`articles: ${articleError.message}`)
