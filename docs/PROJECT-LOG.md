@@ -77,7 +77,7 @@ unmodified in the browser, so the demo runs the real engine with no backend.
 `npm run build` produces a static folder.
 
 **Online.** Supabase project `fiqfbbnmksppbpxmhnbv` — *kram*, Mumbai
-(ap-south-1), Postgres 17.6. All forty-seven migrations applied, the last on 23 Aug (§9).
+(ap-south-1), Postgres 17.6. All forty-eight migrations applied, the last on 23 Aug (§9).
 
 > **Migrations are append-only from here.** Editing one now means the file and
 > the live database disagree, silently, until something breaks in a way that
@@ -196,6 +196,19 @@ get abandoned.
 ---
 
 ## 5. Gotchas — things that cost time
+
+**Supabase gives `authenticated` an eight-second statement timeout, and the
+engine needs longer.** `run_schedule` came back `canceling statement due to
+statement timeout` on the live project the moment the masters held 994 routed
+cells. The scale test has always put the engine at ~4.6s for U&M's stated
+workload on native Postgres — close enough to eight that a real order book
+crosses it, so **this would have failed in production on the operation the whole
+system is built around**. Raised to 120s on `run_schedule`, `run_what_if` and
+`rebuild_working_days` via `alter function … set statement_timeout`, which is
+per-call and leaves every other query on the API default. Asserted in
+`tests/engine-timeout.test.ts`, including that nothing else quietly acquires
+one. (23 Aug)
+
 
 **An optional method on the backend interface is a control that silently does
 nothing.** `Backend.reset?()` is implemented by PGlite and not by Supabase, so
@@ -358,7 +371,7 @@ Since 15 Aug it covers **both** of the prototype's modules: the capacity and
 load arithmetic, and the person-hour conversion that turns a shortfall into
 overtime hours and people.
 
-**316 unit and integration tests** against a real native Postgres, booted per run
+**318 unit and integration tests** against a real native Postgres, booted per run
 from an embedded binary. Covers schema shape, RLS (as the `authenticated` role —
 table owners bypass RLS, so a policy test run as superuser proves nothing), the
 working-day calendar, engine correctness, breaches, pins, overrides, the route
@@ -651,6 +664,40 @@ traced back to a single line written once and then quoted forward by everything
 that followed, including three documents I wrote yesterday. The log is the
 project's memory and that is exactly what makes an unverified line in it
 expensive.
+
+### 2026-08-23 — The engine timed out in production, which is where it would have
+
+The interim loader got through 3,976 masters rows and twelve orders and then
+died on `run_schedule`: *canceling statement due to statement timeout*.
+
+Supabase gives the `authenticated` role eight seconds, and is right to — it is a
+web API, and a query running for a minute over PostgREST is nearly always a
+mistake. But §7 has recorded since Phase 2 that the engine takes about 4.6
+seconds for U&M's stated workload on a native Postgres, which is close enough to
+eight that a colder cache or a longer order book crosses it. **This was never a
+seeding problem.** At U&M's real scale a planner pressing Run the schedule would
+have seen that message, on the one operation the system exists to perform.
+
+Raised to two minutes on `run_schedule`, `run_what_if` and
+`rebuild_working_days` — on the functions rather than the role, so every other
+read stays on the eight seconds that keeps the API honest. Two minutes rather
+than thirty seconds because the point is to remove a ceiling the engine can
+reach, not to install a slightly higher one to be surprised by later; if a run
+ever approaches it, the answer is a faster engine, and `run_history` records how
+long each one took.
+
+Third time production has said something the local suite could not: after the
+`safeupdate` bare-UPDATE and the anon key reaching every function, and for the
+same reason each time — local Postgres and Supabase differ in their defaults,
+and only production says how.
+
+**And a design error of mine, found by the same failure.** The loader wrote its
+provisional marker *last*, reasoning that a half-finished load should not be
+announced. That is exactly backwards: a load that fails partway is precisely
+when the banner needs to be up and the purge needs to work, and the live project
+was left holding twelve orders with no marker and therefore no way to remove
+them. The marker is now written first, and the loader resumes rather than
+failing on an order the previous attempt created.
 
 ### 2026-08-23 — Interim figures, and the banner that stops them passing
 

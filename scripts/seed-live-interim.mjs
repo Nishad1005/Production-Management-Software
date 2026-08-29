@@ -27,6 +27,12 @@
  * 3. **The orders carry a prefix.** `PROV-`, so `--purge` removes exactly what
  *    this created and nothing anybody has entered since.
  *
+ * The marker is written **first**, before anything is created. The first version
+ * wrote it last, reasoning that a half-finished load should not be announced —
+ * which was exactly backwards. A load that fails partway is precisely when you
+ * need the banner up and the purge available, and the first real run failed
+ * partway.
+ *
  * ---------------------------------------------------------------------------
  * The figures are crude on purpose.
  *
@@ -122,6 +128,16 @@ if (purge) {
   await db.auth.signOut()
   process.exit(0)
 }
+
+/*
+ * Before anything is created, so a load that fails halfway is still announced
+ * and still removable. Re-running is safe: mark_provisional replaces the row.
+ */
+await call(
+  'mark_provisional',
+  { p_what: WHAT, p_order_prefix: 'PROV-', p_note: 'scripts/seed-live-interim.mjs' },
+  'marker',
+)
 
 const { data: articles, error: articleError } = await db
   .from('article_master')
@@ -227,11 +243,24 @@ const today = new Date()
 const iso = (d) => d.toISOString().slice(0, 10)
 const plus = (days) => iso(new Date(today.getTime() + days * 86_400_000))
 
+const { data: existingOrders } = await db
+  .from('order_book')
+  .select('erp_order_no')
+  .like('erp_order_no', 'PROV-%')
+const already = new Set((existingOrders ?? []).map((o) => o.erp_order_no))
+
 let made = 0
+let skipped = 0
 for (const [i, a] of live.slice(0, 12).entries()) {
   const qty = [180, 240, 120, 300, 90, 150, 200, 260, 110, 340, 160, 130][i]
   // A couple inside the route's own span, which is what raises a real flag.
   const days = [95, 88, 40, 110, 30, 76, 120, 64, 25, 140, 58, 100][i]
+  // Re-running after a failure should carry on rather than stop on a unique
+  // violation for an order the previous attempt already created.
+  if (already.has(`PROV-${String(1001 + i)}`)) {
+    skipped += 1
+    continue
+  }
   await call(
     'create_order',
     {
@@ -247,9 +276,26 @@ for (const [i, a] of live.slice(0, 12).entries()) {
   )
   made += 1
 }
-console.log(`  ${made} orders`)
+console.log(`  ${made} orders${skipped ? `, ${skipped} already there` : ''}`)
 
-await call('run_schedule', { p_note: 'Interim data loaded' }, 'schedule')
+/*
+ * The first real run of this script died here: Supabase gives the
+ * `authenticated` role an eight-second statement timeout and the engine needs
+ * longer over 994 routed cells. The functions now carry their own timeout —
+ * migration 20260823100000 — so if this fails again it is worth reading rather
+ * than retrying.
+ */
+try {
+  await call('run_schedule', { p_note: 'Interim data loaded' }, 'schedule')
+} catch (e) {
+  console.error(`\n${e.message}`)
+  console.error(
+    'The masters and the orders are in and the banner is up; only the run failed.\n' +
+      'If this is a statement timeout, check migration 20260823100000 has been\n' +
+      'pushed (npm run db:push), then run this script again — it resumes.',
+  )
+  process.exit(1)
+}
 
 // A fortnight of production against the earliest orders, so WIP, quality and
 // the department boards have something in them. Deliberately short of the
@@ -281,12 +327,6 @@ for (const [i, t] of (gantt ?? []).entries()) {
   declared += 1
 }
 console.log(`  ${declared} production entries`)
-
-await call(
-  'mark_provisional',
-  { p_what: WHAT, p_order_prefix: 'PROV-', p_note: 'scripts/seed-live-interim.mjs' },
-  'marker',
-)
 
 await db.auth.signOut()
 console.log('\nLoaded. The application will show a provisional banner until this is removed.')
