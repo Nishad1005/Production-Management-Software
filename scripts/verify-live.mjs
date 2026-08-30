@@ -204,6 +204,13 @@ async function timeViews(db) {
     'article_master', 'capacity_sheet', 'order_book', 'schedule_gantt',
     'attention', 'material_shortage', 'measured_rate', 'shipment_risk',
     'wip_by_order', 'quality_by_department', 'machine_master', 'department_master',
+    // The eight the Attention screen actually asks for, in parallel. The union
+    // above is kept in the list because it is worth knowing whether it still
+    // exceeds the API's ceiling — but no screen depends on it any more.
+    'attention_breach', 'attention_overloaded', 'attention_material_late',
+    'attention_material_short', 'attention_route_conflict',
+    'attention_machine_down', 'attention_article_unplannable',
+    'attention_handover',
   ]
   const slow = []
   for (const view of views) {

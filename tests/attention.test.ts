@@ -210,3 +210,69 @@ describe('every finding can be acted on', () => {
     })
   })
 })
+
+/**
+ * Each finding has its own view as well as a place in the union.
+ *
+ * The union costs more than the API allows once row-level security is paid on
+ * eight nested views, so the screen fetches the branches in parallel. That only
+ * works if the two agree — a branch view that drifted from its place in the
+ * union would show a finding on the screen that the list does not have, or the
+ * reverse, and neither would be visible without looking at both.
+ */
+describe('the branches and the union say the same thing', () => {
+  const BRANCHES = [
+    'attention_breach',
+    'attention_overloaded',
+    'attention_material_late',
+    'attention_material_short',
+    'attention_route_conflict',
+    'attention_machine_down',
+    'attention_article_unplannable',
+    'attention_handover',
+  ]
+
+  it('add up to exactly the union, on a factory with things wrong with it', async () => {
+    await withRollback(async (c) => {
+      await applySeed(c)
+      await applyDemoSeed(c)
+      await runSchedule(c)
+      await c.query(`select set_machine('ST-1', 'Lockstitch 1', 'STITCH')`)
+      await c.query(
+        `select set_machine_downtime('ST-1', current_date, current_date, 'Timing belt')`,
+      )
+
+      const union = (await c.query<{ key: string }>(`select key from attention`)).rows
+      expect(union.length).toBeGreaterThan(5)
+
+      const fromBranches: string[] = []
+      for (const view of BRANCHES) {
+        const { rows } = await c.query<{ key: string }>(`select key from ${view}`)
+        fromBranches.push(...rows.map((r) => r.key))
+      }
+
+      expect(fromBranches.sort()).toEqual(union.map((r) => r.key).sort())
+    })
+  })
+
+  it('gives every branch the same columns, so the screen can treat them alike', async () => {
+    await withRollback(async (c) => {
+      for (const view of BRANCHES) {
+        const { rows } = await c.query<{ column_name: string }>(
+          `select column_name from information_schema.columns
+            where table_name = $1 order by ordinal_position`,
+          [view],
+        )
+        expect(rows.map((r) => r.column_name), view).toEqual([
+          'kind',
+          'severity',
+          'title',
+          'detail',
+          'route',
+          'key',
+          'days_out',
+        ])
+      }
+    })
+  })
+})

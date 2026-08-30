@@ -77,7 +77,7 @@ unmodified in the browser, so the demo runs the real engine with no backend.
 `npm run build` produces a static folder.
 
 **Online.** Supabase project `fiqfbbnmksppbpxmhnbv` — *kram*, Mumbai
-(ap-south-1), Postgres 17.6. All fifty-one migrations applied, the last on 30 Aug (§9).
+(ap-south-1), Postgres 17.6. All fifty-two migrations applied, the last on 30 Aug (§9).
 
 > **Migrations are append-only from here.** Editing one now means the file and
 > the live database disagree, silently, until something breaks in a way that
@@ -688,6 +688,40 @@ traced back to a single line written once and then quoted forward by everything
 that followed, including three documents I wrote yesterday. The log is the
 project's memory and that is exactly what makes an unverified line in it
 expensive.
+
+### 2026-08-30 — The shape was the problem, and three rounds of tuning had not said so
+
+`article_master` came down 931 ms → 536, every other view on the live project
+measured between 48 and 303 ms, and `attention` was still cancelled at the API's
+eight seconds. That is the moment to stop making branches cheaper.
+
+**Why it compounds rather than adds.** `attention` unioned eight findings, each
+of which is itself a multi-table view. `security_invoker` means every nested
+table re-applies its policy, so eight views over roughly twenty tables is not the
+sum of eight measurements — and the sum was under two seconds anyway.
+
+**What it cost, precisely.** The Attention screen would not load on the hosted
+system, and neither would the red count in the header — on *every* screen, since
+`attention_count` read the same union. A badge that is absent looks exactly like
+a factory with nothing wrong with it, which is the worst way for that particular
+feature to fail.
+
+Each finding now has its own view. The screen asks for all eight at once, so the
+wall clock is the slowest branch rather than the total, and the header badge asks
+only for the four that can produce a critical. `attention` itself stays,
+unioning them, because it is the honest definition of what the screen shows and
+the browser check reads it.
+
+The bodies were split at the `union all`s programmatically rather than retyped —
+the last two hand-rebuilt views both reverted something silently, and only tests
+caught the second. Two new tests hold the pieces together: the branches must add
+up to exactly the union, and every branch must expose the same seven columns.
+
+**Four rounds on one screen.** Worth naming what would have found it sooner: the
+first three were guesses at which part was slow, and the only measurement that
+ever meant anything came from `verify:live` timing views as a signed-in user
+against the real project. That instrument did not exist until this week, and
+every conclusion drawn before it was speculation.
 
 ### 2026-08-30 — Paying for row-level security once instead of seventy-one times
 
