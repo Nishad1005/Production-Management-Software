@@ -77,7 +77,7 @@ unmodified in the browser, so the demo runs the real engine with no backend.
 `npm run build` produces a static folder.
 
 **Online.** Supabase project `fiqfbbnmksppbpxmhnbv` — *kram*, Mumbai
-(ap-south-1), Postgres 17.6. All fifty migrations applied, the last on 23 Aug (§9).
+(ap-south-1), Postgres 17.6. All fifty-one migrations applied, the last on 30 Aug (§9).
 
 > **Migrations are append-only from here.** Editing one now means the file and
 > the live database disagree, silently, until something breaks in a way that
@@ -196,6 +196,17 @@ get abandoned.
 ---
 
 ## 5. Gotchas — things that cost time
+
+**Under row-level security, a correlated subquery is paid once per row.**
+`article_master` asked, per article, which departments it is routed through:
+931 ms for seventy-one rows on the live project, because each of the
+seventy-one small scans re-applies every policy. Aggregating the same 994 rows
+once in a CTE and joining the result is the same answer for a fraction of the
+cost. The same idea fixed `attention`: its breach finding read `schedule_gantt`,
+which joins six tables to return twenty columns, where four were wanted.
+**Ask the cheapest source that answers the question**, and prefer one pass to
+many. (30 Aug)
+
 
 **The tests bypass row-level security, so a policy's cost is invisible to all of
 them.** `article_master` matched a *constructed* component code —
@@ -677,6 +688,37 @@ traced back to a single line written once and then quoted forward by everything
 that followed, including three documents I wrote yesterday. The log is the
 project's memory and that is exactly what makes an unverified line in it
 expensive.
+
+### 2026-08-30 — Paying for row-level security once instead of seventy-one times
+
+The alert screen was still being cancelled after two rounds of fixes. Timed on
+the live project:
+
+    ok   article_master    931 ms ·  71 rows
+    ok   capacity_sheet   1011 ms · 994 rows
+    FAIL attention —
+
+931 ms for seventy-one rows is the signature of a **correlated** subquery.
+`article_master` asked, once per article, which departments that article is
+routed through — and each of those seventy-one small scans re-applied the policy
+on `article_bom`, `component_rates`, `departments` and `article_dept_dminus`.
+Seventy-one scans of a few rows cost far more than one pass over all 994.
+
+Rewritten to aggregate the whole bill of materials once in a CTE and join the
+result. Same answer, and the eleven tests written for it in August did not
+change.
+
+The same idea applied to `attention` itself: its breach finding read
+`schedule_gantt`, a view that joins six tables to return twenty columns, where
+the finding wanted four. It now reads `schedule_tasks` and the four tables it
+actually needs. Every column a view returns and does not need is another table
+whose policy gets evaluated per row.
+
+Three rounds on one screen, and each round was the same lesson in a different
+costume: **local timings say nothing about production, because the tests run as
+the table owner and never pay for a policy.** The only instrument that has ever
+shown any of this is `verify:live` timing the views as a signed-in user, which
+did not exist a week ago.
 
 ### 2026-08-23 — Two views the local suite could never have timed
 
