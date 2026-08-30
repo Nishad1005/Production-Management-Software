@@ -327,6 +327,35 @@ Keep adding to this. Each one was a real dead end.
 
 ## 6. Open items and blockers
 
+**Needs an answer from U&M before the demo — one route edge:**
+
+0. **Does Machining feed Ply Cutting?** The live project's route graph holds
+   **fifteen** edges. Fourteen of them match the route reconstructed in
+   `seed_demo.sql` and all run forwards. The fifteenth, `MACHINE → PLYCUT`,
+   runs backwards against `route_position` (20 → 10) and is in neither the seed
+   nor the concept deck.
+
+   It is the sole cause of **all 71 route-order conflicts** now showing as
+   critical on the Attention screen — one per article — because the interim
+   D-minus puts Ply Cutting at D-60 and Machining at D-56, which is consistent
+   with `route_position` and not with that edge. The software is behaving
+   correctly: it is reporting that the route and the offsets disagree.
+
+   Untick one cell on Masters → dependency grid and all 71 go. **It has not been
+   changed**, because whether machining feeds ply cutting is a question about
+   U&M's factory and not one to answer from a screen. It is also the smallest
+   possible version of the KRAM/02 question already outstanding at item 3, so it
+   is worth asking in the same breath.
+
+   Likely provenance, not verified: the linear backfill in
+   `20260812120000_route_graph.sql` derives edges from `route_position` at
+   migration time, and on the live project migrations ran before the fourteen
+   departments were imported. A later `import_masters` moved the positions;
+   `on conflict do nothing` left the old edge behind. Which is §5's
+   "migrations run before `seed.sql`" gotcha, arriving in a new form: the
+   backfill did not get *nothing*, it got a different set and left one row that
+   the confirmed route never had.
+
 **Blocked on the client or on U&M:**
 
 1. ~~**The Rev B specification is not in the repo.**~~ **Closed 17 Aug — it was
