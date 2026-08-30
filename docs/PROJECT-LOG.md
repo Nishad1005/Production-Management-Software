@@ -77,7 +77,7 @@ unmodified in the browser, so the demo runs the real engine with no backend.
 `npm run build` produces a static folder.
 
 **Online.** Supabase project `fiqfbbnmksppbpxmhnbv` — *kram*, Mumbai
-(ap-south-1), Postgres 17.6. All fifty-six migrations applied, the last on 30 Aug (§9).
+(ap-south-1), Postgres 17.6. All fifty-seven migrations applied, the last on 30 Aug (§9).
 
 > **Migrations are append-only from here.** Editing one now means the file and
 > the live database disagree, silently, until something breaks in a way that
@@ -717,6 +717,44 @@ traced back to a single line written once and then quoted forward by everything
 that followed, including three documents I wrote yesterday. The log is the
 project's memory and that is exactly what makes an unverified line in it
 expensive.
+
+### 2026-08-31 — The engine could not write the table it had just been given
+
+    run_schedule: new row violates row-level security policy
+                  for table "schedule_daily_department"
+
+Reported from the **Run the schedule** button on the live project, the morning
+after the table was added. Yesterday's `20260830140000` created it, enabled
+row-level security, and gave it a SELECT policy. The other five schedule tables
+have carried two policies since the day they were written — read for anyone
+signed in, `for all` for a planner — and the new one got half of that.
+`run_schedule` is plain plpgsql, not `security definer`, so it inserts as
+whoever pressed the button.
+
+**The full suite was green through all of it.** 335 tests, every engine test
+among them, run as the table's owner — and a table owner bypasses row-level
+security, so a missing policy is invisible to all of them. That is the §5 lesson
+for the third time, arriving on the *write* path instead of the read path.
+
+`verify:live` calls `run_schedule` as a signed-in user precisely because reading
+a view proves only that the door is open. It was run after that migration and
+its schedule line was not read — the output was filtered down to the view
+timings that were being chased at the time. **The instrument was there, pointed
+at the right thing, and the answer was not looked at.** CLAUDE.md already says
+to run it after any migration touching privileges, policies or functions; what
+it did not say is that running it is not the same as reading it.
+
+`tests/rls.test.ts` now runs the whole engine as a planner rather than as the
+owner, and asserts every table it should have filled — including a second test
+proving a non-planner is refused, so the first is testing the policy and not
+merely that the engine runs. Removing the new migration makes it fail with the
+production error verbatim. Deliberately a test of the engine and not of one
+table's policy: a policy test has to be remembered for each new table, and this
+one fails on its own the next time the engine is given somewhere to write and
+nobody is allowed to write there.
+
+Confirmed afterwards on the exact path the button takes — confirmed + probable,
+made current: **68 s, 168 tasks, 18 breaches, 2,030 department-day rows.**
 
 ### 2026-08-30 — The same sentence again, on the forecast
 

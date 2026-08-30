@@ -7,7 +7,7 @@ import {
   createUser,
   withRollback,
 } from './helpers/db'
-import { applySeed } from './helpers/fixtures'
+import { applySeed, createOrder } from './helpers/fixtures'
 
 // Spec §16: access is enforced at the database, "regardless of how the request
 // is made". These tests run as the `authenticated` API role, because a policy
@@ -235,6 +235,75 @@ describe('a signed-in account with no roles', () => {
 
       const { rows } = await c.query(`select code from departments`)
       expect(rows.length).toBeGreaterThan(0)
+    })
+  })
+})
+
+/**
+ * The engine, run by a person rather than by the owner of the tables.
+ *
+ * Every other test in this repository calls `run_schedule` as the role that
+ * owns the schedule tables, and **a table owner bypasses row-level security**.
+ * So 333 green tests said nothing about whether a planner signed into the
+ * hosted system could actually run a plan — and on 31 Aug one could not:
+ * `schedule_daily_department` had been created with a SELECT policy and no
+ * write policy, and the button returned
+ *
+ *   run_schedule: new row violates row-level security policy
+ *
+ * This is deliberately a test of the whole engine rather than of one table's
+ * policy. A policy test has to be remembered for each new table; this one fails
+ * on its own the next time the engine is given somewhere to write and nobody is
+ * allowed to write there.
+ */
+describe('a planner can actually run the plan', () => {
+  it('writes every table the engine writes, under row-level security', async () => {
+    await withRollback(async (c) => {
+      await applySeed(c)
+      await createOrder(c, { qty: 300, stuffingDate: '2026-12-01' })
+      const planner = await createUser(c, 'planner@rls.test', ['planner'])
+
+      await becomeUser(c, planner)
+      const { rows } = await c.query<{ id: string }>(
+        `select run_schedule(array['confirmed','probable']::order_confidence[],
+                             true, 'as a planner') as id`,
+      )
+      const runId = rows[0].id
+      expect(runId).toBeTruthy()
+
+      // Every table the run should have filled. Reading them back as the same
+      // user, so a missing SELECT policy fails here too.
+      const counts = await c.query<{ tasks: string; load: string; cap: string; dept: string }>(
+        `select (select count(*) from schedule_tasks where run_id = $1)::text as tasks,
+                (select count(*) from schedule_daily_load where run_id = $1)::text as load,
+                (select count(*) from schedule_daily_capacity where run_id = $1)::text as cap,
+                (select count(*) from schedule_daily_department where run_id = $1)::text as dept`,
+        [runId],
+      )
+      const got = counts.rows[0]
+      expect({
+        tasks: Number(got.tasks) > 0,
+        load: Number(got.load) > 0,
+        capacity: Number(got.cap) > 0,
+        departmentDay: Number(got.dept) > 0,
+      }).toEqual({ tasks: true, load: true, capacity: true, departmentDay: true })
+    })
+  })
+
+  it('refuses somebody without the planner role', async () => {
+    await withRollback(async (c) => {
+      await applySeed(c)
+      await createOrder(c, { qty: 300, stuffingDate: '2026-12-01' })
+      const storeman = await createUser(c, 'store@rls.test', ['store'])
+
+      await becomeUser(c, storeman)
+      const failure = await attempt(
+        c,
+        `select run_schedule(array['confirmed']::order_confidence[], true, 'not a planner')`,
+      )
+      // Proves the test above is testing the policy and not merely that the
+      // engine runs: if planning were open to anyone, this would return null.
+      expect(failure).toBeTruthy()
     })
   })
 })
