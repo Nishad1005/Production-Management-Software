@@ -77,7 +77,7 @@ unmodified in the browser, so the demo runs the real engine with no backend.
 `npm run build` produces a static folder.
 
 **Online.** Supabase project `fiqfbbnmksppbpxmhnbv` — *kram*, Mumbai
-(ap-south-1), Postgres 17.6. All fifty-two migrations applied, the last on 30 Aug (§9).
+(ap-south-1), Postgres 17.6. All fifty-three migrations applied, the last on 30 Aug (§9).
 
 > **Migrations are append-only from here.** Editing one now means the file and
 > the live database disagree, silently, until something breaks in a way that
@@ -688,6 +688,59 @@ traced back to a single line written once and then quoted forward by everything
 that followed, including three documents I wrote yesterday. The log is the
 project's memory and that is exactly what makes an unverified line in it
 expensive.
+
+### 2026-08-30 — Aggregating every plan ever made, then throwing away all but one
+
+Splitting `attention` into eight views left seven green and
+`attention_overloaded` still cancelled at eight seconds. `explain (analyze)` on
+a local database holding five runs said why in two lines:
+
+    Seq Scan on schedule_daily_capacity  (actual rows=960)
+    Seq Scan on schedule_daily_load      (actual rows=215)
+
+960 is every capacity row of all five runs; 192 of them belong to the current
+one. `schedule_department_day` groups by `run_id`, and the filter that picks the
+live plan was a **join** to `schedule_runs` sitting above that group — and a
+join cannot be pushed through a `GROUP BY`. So the aggregate ran over the
+factory's entire planning history and the join discarded four fifths of the work
+afterwards. On U&M's project the grid is 994 rates wide and every row pays its
+policy on the way past.
+
+**The fix is a `stable` function, not a rewrite.** `current_run_id()` folds to a
+constant, and a constant qual *does* push down — onto the leading column of
+`schedule_daily_capacity_grid_idx`, which has existed since the schedule tables
+were created:
+
+    Index Scan using schedule_daily_capacity_grid_idx  (actual rows=192)
+      Index Cond: (run_id = current_run_id())
+
+`schedule_runs_one_current_idx` is a unique partial index on `is_current`, so a
+scalar is exactly equivalent to the join it replaces. `attention_breach` carried
+the same join; it measured 61 ms only because `schedule_tasks` is small, and it
+was given the same treatment rather than being left to become the next thing
+that fails in production.
+
+**And the reason the history was long enough to matter.**
+`prune_schedule_runs` was written on 10 Aug, keeps the current run plus twenty,
+and **nothing had ever called it**. Runs accumulated with no upper bound, each
+carrying a full department × component × date grid. It is now on an `after
+insert` statement trigger — a trigger rather than an edit to `run_schedule`,
+because the engine is four hundred lines and rebuilding it by hand has twice
+reverted something quietly.
+
+That is the **sixth** built-and-tested thing found wired to nothing, after
+`capacity_overrides`, `wip_by_order`, `production_vs_plan`, `employees` and the
+`kiosk` role. Five were invisible on screen. This one was invisible and getting
+slower, which is worse, and nothing in the repository would ever have said so.
+
+**On the tests.** These are plan assertions, which are normally a bad idea —
+they pin how Postgres chose to do something rather than what came back. Here
+they are the only instrument that exists. Output was correct, local timing was
+single-digit milliseconds because tests bypass RLS, and the cost appeared only
+on Supabase. What was wrong was the *shape* of the read, so the shape is what
+`tests/one-plan-not-every-plan.test.ts` asserts — and one of its five tests
+rebuilds the old join and proves the plan really does read everything, so the
+other four are known to be capable of failing.
 
 ### 2026-08-30 — The shape was the problem, and three rounds of tuning had not said so
 
