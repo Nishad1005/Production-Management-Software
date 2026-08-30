@@ -41,6 +41,7 @@ const BRANCHES = [
   'attention_machine_down',
   'attention_article_unplannable',
   'attention_handover',
+  'attention_department_unstaffed',
 ] as const
 
 const SEVERITY_ORDER: Record<Finding['severity'], number> = {
@@ -87,6 +88,7 @@ const CRITICAL_BRANCHES = [
   'attention_overloaded',
   'attention_material_late',
   'attention_route_conflict',
+  'attention_department_unstaffed',
 ] as const
 
 export function useAttentionCount() {

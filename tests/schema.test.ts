@@ -46,6 +46,9 @@ describe('migrations', () => {
       'provisional_load',
       // Phase 2 — schedule output
       'schedule_daily_capacity',
+      // Phase 2 — the department-day figure, written by the engine rather than
+      // aggregated on every read of the heatmap.
+      'schedule_daily_department',
       'schedule_daily_load',
       'schedule_pins',
       'schedule_runs',

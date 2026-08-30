@@ -77,7 +77,7 @@ unmodified in the browser, so the demo runs the real engine with no backend.
 `npm run build` produces a static folder.
 
 **Online.** Supabase project `fiqfbbnmksppbpxmhnbv` — *kram*, Mumbai
-(ap-south-1), Postgres 17.6. All fifty-three migrations applied, the last on 30 Aug (§9).
+(ap-south-1), Postgres 17.6. All fifty-six migrations applied, the last on 30 Aug (§9).
 
 > **Migrations are append-only from here.** Editing one now means the file and
 > the live database disagree, silently, until something breaks in a way that
@@ -717,6 +717,63 @@ traced back to a single line written once and then quoted forward by everything
 that followed, including three documents I wrote yesterday. The log is the
 project's memory and that is exactly what makes an unverified line in it
 expensive.
+
+### 2026-08-30 — Two departments out of fourteen, and everything downstream of that
+
+Checking the demonstration would hold up, before writing the runbook. The
+command centre reported twelve shipment lines and a completed run of **24
+tasks**. Twelve lines through fourteen departments is 168. Every task was in
+ASSY or STITCH.
+
+**The engine builds its route from `_pair`, which inner-joins
+`department_shifts`.** Twelve departments had no row there, so they produced no
+task, no capacity, no load, no breach and no flagged day. Nothing said so. The
+run reported success, the Gantt drew bars, and `article_master.can_schedule` was
+true for all seventy-one articles because it checks the D-minus matrix and the
+D-minus matrix was complete. A plan covering two departments out of fourteen
+looked exactly like a plan.
+
+**Why the shifts were missing.** `set_headcount` was an UPDATE with no INSERT.
+Against a department with no `department_shifts` row it matched nothing, changed
+nothing and returned successfully. The interim loader called it fourteen times,
+was told fourteen times that it had worked, and created two rows — ASSY and
+STITCH, which already had shifts because they share a code with the
+four-department parity seed. It now upserts, and the condition it used to create
+silently is `attention_department_unstaffed`, critical, on the Attention screen.
+
+**Then the engine could not finish.** With all fourteen staffed, `run_schedule`
+hit exactly 120.1 s — the per-function ceiling, so that setting works and the
+engine simply wanted more. The completed 24-task runs had taken **45 seconds**.
+`_cap_shift` is department × component × shift × working day and every cell is a
+call to `resolve_capacity`, which is five policy-checked lookups. It built that
+grid from `_pair` — **every** pairing in the masters, 994 at U&M, against the
+168 the twelve orders touch. Six times the grid for capacity no query reads. It
+now builds from `_task`. 56 s, 168 tasks, complete.
+
+**Then reading it was too slow.** With a real plan, `schedule_daily_capacity`
+holds 24,360 rows for the current run, and `schedule_department_day` summed them
+on every read: `heatmap_cell` 3,130 ms, `attention_overloaded` cancelled at
+8,041. The heatmap, the bottleneck table, the flag triage and the attention
+screen all sit on that view and each paid the aggregate again. It is now a
+table, `schedule_daily_department`, written once by the engine where no policy
+applies — 24,360 rows down to about 1,300. `attention_overloaded`: **61 ms**.
+
+**Four defects in one chain, and the order matters.** Each was hidden by the one
+before it: the engine could not be too slow while it was only scheduling two
+departments, and the reads could not be too slow while there was no plan to
+read. Nothing here was visible until the previous thing was fixed, which is the
+argument for loading interim data at all — an empty database cannot be wrong in
+any interesting way.
+
+**What the checks missed, and now do not.** `verify:hosted-ui` drove fourteen
+screens; the six from Phases 5–10, including Attention, were not among them, so
+the screen that was failing in production was the one nothing drove against
+production. All twenty are in the list now. Its `sign in` step had also been
+dead for weeks — the step above it signed in for itself, leaving no login form
+to fill — which only surfaced once the command centre loaded at all.
+`tests/engine-scale.test.ts` builds a factory where every article is ordered, so
+the shape that broke this (seventy-one articles, twelve orders) could not
+appear; that shape is now a second fixture in it.
 
 ### 2026-08-30 — Aggregating every plan ever made, then throwing away all but one
 

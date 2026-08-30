@@ -33,28 +33,19 @@ const planFor = async (c: pg.Client, view: string) =>
     .map((r) => r['QUERY PLAN'])
     .join('\n')
 
-/** Rows the plan actually read from a table, whatever the access method. */
-function rowsRead(plan: string, table: string): number {
-  const line = plan
-    .split('\n')
-    .find((l) => l.includes(` on ${table} `) || l.endsWith(` on ${table}`))
-  expect(line, `no scan of ${table} in plan:\n${plan}`).toBeDefined()
-  return Number(/actual .*rows=([\d.]+)/.exec(line!)?.[1] ?? NaN)
-}
-
 describe('the overload alert reads one plan', () => {
-  it('touches only the current run’s rows, not the whole history', async () => {
+  it('filters to the current run, not the whole history', async () => {
     await withRollback(async (c) => {
       await fiveRuns(c)
 
       const all = Number(
-        (await c.query<{ n: string }>(`select count(*) n from schedule_daily_capacity`))
+        (await c.query<{ n: string }>(`select count(*) n from schedule_daily_department`))
           .rows[0].n,
       )
       const current = Number(
         (
           await c.query<{ n: string }>(
-            `select count(*) n from schedule_daily_capacity
+            `select count(*) n from schedule_daily_department
               where run_id = current_run_id()`,
           )
         ).rows[0].n,
@@ -62,16 +53,24 @@ describe('the overload alert reads one plan', () => {
       // The fixture has to be able to tell the two apart, or this proves nothing.
       expect(all).toBeGreaterThan(current)
 
+      // The filter, not the access method. Whether Postgres reaches the run by
+      // index or scans a few hundred rows is a costing decision that changes
+      // with how much data happens to be around — asserting it passed this
+      // file alone and failed in the full suite. Whether the filter is there at
+      // all is a property of the code, and it is the thing that regressed.
       const plan = await planFor(c, 'attention_overloaded')
       expect(plan).toContain('run_id = current_run_id()')
-      expect(rowsRead(plan, 'schedule_daily_capacity')).toBeLessThanOrEqual(current)
     })
   })
 
-  it('read the whole history when it joined schedule_runs instead', async () => {
-    // The defect, reproduced, so the assertion above is known to be capable of
-    // failing. A join cannot be pushed through a GROUP BY: the aggregate runs
-    // over every run in the table and the join discards the rest afterwards.
+  it('would read the whole table if the run filter went missing', async () => {
+    // Proves the assertion above can fail. The alert once applied its run
+    // filter as a *join* above a GROUP BY, which cannot be pushed through, so
+    // the aggregate ran over every run ever made. Materialising
+    // schedule_daily_department removed that aggregate, and a join to
+    // schedule_runs now pushes down as happily as a constant — so the original
+    // defect cannot be reproduced any more. What can still go wrong is the
+    // filter disappearing altogether, and this is what that looks like.
     await withRollback(async (c) => {
       await fiveRuns(c)
       await c.query(`
@@ -82,16 +81,10 @@ describe('the overload alert reads one plan', () => {
                  '/heatmap' as route, t.department_code as key,
                  t.days_out as days_out
             from public.schedule_flag_triage t
-            join public.schedule_runs r on r.id = t.run_id and r.is_current
            where t.days_out >= 0`)
 
-      const all = Number(
-        (await c.query<{ n: string }>(`select count(*) n from schedule_daily_capacity`))
-          .rows[0].n,
-      )
       const plan = await planFor(c, 'attention_overloaded')
       expect(plan).not.toContain('run_id = current_run_id()')
-      expect(rowsRead(plan, 'schedule_daily_capacity')).toBe(all)
     })
   })
 

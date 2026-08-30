@@ -210,7 +210,7 @@ async function timeViews(db) {
     'attention_breach', 'attention_overloaded', 'attention_material_late',
     'attention_material_short', 'attention_route_conflict',
     'attention_machine_down', 'attention_article_unplannable',
-    'attention_handover',
+    'attention_handover', 'attention_department_unstaffed',
   ]
   const slow = []
   for (const view of views) {

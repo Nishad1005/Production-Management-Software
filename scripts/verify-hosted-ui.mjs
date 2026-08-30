@@ -179,22 +179,6 @@ if (!email || !password) {
 
 // --- signed in, every screen renders against Supabase -----------------------
 
-await step('no offline-only controls', async () => {
-  await page.fill('input[type=email]', email)
-  await page.fill('input[type=password]', password)
-  await page.click('button:has-text("Sign in")')
-  await page.waitForSelector('text=Bottleneck utilisation', { timeout: 60_000 })
-
-  // `reset()` throws away a browser database and reapplies the seed. The hosted
-  // backend has no such method, so this button reported success and changed
-  // nothing — and on a shared database it is mislabelled as well, because there
-  // is no demo data to reset.
-  if (await page.locator('[data-testid="reset-demo"]').count()) {
-    throw new Error('the offline-only reset button is on the hosted build')
-  }
-  return 'the reset button is not offered where it would do nothing'
-}, { allow: /status of 400|auth\/v1\/token/ })
-
 await step('sign in', async () => {
   await page.fill('input[type=email]', email)
   await page.fill('input[type=password]', password)
@@ -220,6 +204,22 @@ await step('sign in', async () => {
   }
   return 'session established, command centre rendered'
 }, { allow: /status of 400|auth\/v1\/token/ })
+
+await step('no offline-only controls', async () => {
+  // `reset()` throws away a browser database and reapplies the seed. The hosted
+  // backend has no such method, so this button reported success and changed
+  // nothing — and on a shared database it is mislabelled as well, because there
+  // is no demo data to reset.
+  //
+  // This used to sign in for itself and sit *above* the step named `sign in`,
+  // which therefore had no login form left to fill. It went unnoticed for as
+  // long as the command centre never loaded at all, and failed the first time
+  // it did.
+  if (await page.locator('[data-testid="reset-demo"]').count()) {
+    throw new Error('the offline-only reset button is on the hosted build')
+  }
+  return 'the reset button is not offered where it would do nothing'
+})
 
 // Nothing below can pass without a session, and fourteen more failures would
 // bury the one line that matters.
@@ -248,6 +248,18 @@ const SCREENS = [
   ['#/capacity', 'capacity-sheet', 'Capacity sheet'],
   ['#/masters', 'masters', 'Production route'],
   ['#/users', 'users', 'Roles'],
+  // Phases 5–10. These were absent from this list until 30 Aug, which is how
+  // the Attention screen came to be failing on the hosted project for two days
+  // with every check green: the offline run drove it against PGlite, where
+  // row-level security is not applied and the query that timed out costs eight
+  // milliseconds. The screens the client is shown must be the screens that are
+  // driven against the backend the client will use.
+  ['#/material', 'material', 'Against the store'],
+  ['#/quality', 'quality', 'Where the losses come from'],
+  ['#/money', 'money', 'Money out, week by week'],
+  ['#/attention', 'attention', 'Needs an answer today'],
+  ['#/map', 'factory-map', 'The factory, as it flows'],
+  ['#/forecast', 'forecast', 'How much of this is worth believing'],
 ]
 
 for (const [hash, name, waitFor] of SCREENS) {
