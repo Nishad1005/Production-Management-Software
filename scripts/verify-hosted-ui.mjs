@@ -271,6 +271,44 @@ for (const [hash, name, waitFor] of SCREENS) {
   })
 }
 
+/*
+ * The whole factory, not the first thousand cells of it.
+ *
+ * PostgREST returns at most a thousand rows and reports no error when it stops.
+ * Fourteen departments across a 174-day horizon is 2,436 cells, so the heatmap
+ * rendered about six departments and a legend claiming one over-capacity day
+ * against the command centre's six — with nothing on screen or in the console
+ * to say anything was missing.
+ *
+ * This cannot be checked offline: PGlite has no such ceiling and the same code
+ * returns everything there. It is checked here, through the rendered grid,
+ * because what matters is what reached the screen.
+ */
+await step('the whole factory, not the first thousand cells', async () => {
+  await page.goto(`${baseUrl}/#/heatmap`, { waitUntil: 'domcontentloaded' })
+  await page.waitForSelector('[data-testid="heatmap-grid"]', { timeout: 60_000 })
+  const grid = page.locator('[data-testid="heatmap-grid"]')
+  const departments = Number(await grid.getAttribute('data-departments'))
+  const days = Number(await grid.getAttribute('data-days'))
+  const over = Number(await grid.getAttribute('data-over'))
+
+  // The assertion has to be able to fail: a horizon short enough to fit inside
+  // one page would pass whatever the client did.
+  if (departments * days <= 1000) {
+    throw new Error(
+      `only ${departments * days} cells — too few to prove anything, since a ` +
+        'single PostgREST response holds a thousand',
+    )
+  }
+  if (departments < 14) {
+    throw new Error(
+      `${departments} departments on the heatmap, expected 14 — the response ` +
+        'was truncated and nothing said so',
+    )
+  }
+  return `${departments} departments × ${days} days = ${departments * days} cells, ${over} over capacity`
+})
+
 // --- the live project's own shape, which no offline run has ever shown ------
 
 await step('the real route is there', async () => {

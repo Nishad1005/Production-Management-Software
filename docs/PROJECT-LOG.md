@@ -718,6 +718,30 @@ that followed, including three documents I wrote yesterday. The log is the
 project's memory and that is exactly what makes an unverified line in it
 expensive.
 
+### 2026-08-30 — A thousand rows, and no word about the rest
+
+The heatmap's legend read **"Over capacity · 1"** while the command centre, on
+the same run, reported six flagged days. Fourteen departments across a 174-day
+horizon is 2,436 cells. PostgREST returns at most a thousand and reports nothing
+when it stops.
+
+So the screen showed roughly six of the fourteen departments, in the right
+colours, with a correct-looking legend and an empty console. Of everything found
+today this is the one that could have been demonstrated to U&M without anybody
+in the room noticing.
+
+`select` in `src/lib/backend.ts` now pages until a short page comes back.
+Callers expecting more than a page should pass an `order`: each page is a
+separate request and therefore a separate snapshot, and without one a row can be
+missed or repeated at the seam.
+
+**This is the second thing PGlite cannot see**, after row-level security. The
+browser database has no row ceiling, so the identical code returns everything
+offline — 48 checks green against a backend that does not behave like the one
+U&M uses. `verify:hosted-ui` now reads the rendered grid's own count of
+departments and days and fails under fourteen, and refuses to pass at all if the
+horizon is short enough to fit in one page, since that would prove nothing.
+
 ### 2026-08-30 — Two departments out of fourteen, and everything downstream of that
 
 Checking the demonstration would hold up, before writing the runbook. The

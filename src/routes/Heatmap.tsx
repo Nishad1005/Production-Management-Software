@@ -128,6 +128,14 @@ export function Heatmap() {
                 selector. */}
             <div
               data-dense-grid="a heatmap is an overview; 44px cells would show a week"
+              data-testid="heatmap-grid"
+              // What arrived, so a check against the hosted backend can tell a
+              // whole factory from the first thousand cells of one. PostgREST
+              // caps a response and does not say it has: the grid rendered six
+              // of fourteen departments and looked perfectly normal.
+              data-departments={model.departments.length}
+              data-days={model.days.length}
+              data-over={totals.over}
               className="border-rule overflow-x-auto border"
             >
               <div className="min-w-max">

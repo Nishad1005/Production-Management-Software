@@ -131,30 +131,79 @@ class HostedBackend implements Backend {
     // PostgREST is there or it is not; nothing to warm up.
   }
 
+  /**
+   * PostgREST will not return more than a thousand rows, and says nothing when
+   * it stops.
+   *
+   * The load heatmap asks for fourteen departments across a 174-day horizon —
+   * 2,436 cells — and was handed the first thousand with no error, no header
+   * anybody read, and a legend confidently reporting one over-capacity day
+   * against the command centre's six. Roughly six departments of the fourteen
+   * simply were not on the screen, and the screen looked entirely normal.
+   *
+   * No offline run could have caught it: PGlite has no such ceiling, so the
+   * same code returns everything in the browser build. That is the second
+   * structural blindness of this kind after row-level security, and the same
+   * lesson — the hosted backend has to be exercised as itself.
+   *
+   * So: pages until a short page arrives. Callers that expect more than a
+   * page should pass an `order`, because each page is a separate request and
+   * therefore a separate snapshot; without one, Postgres is free to return
+   * rows in a different sequence for page two and a row can be missed or
+   * repeated at the seam.
+   */
   async select<T>(view: string, options: SelectOptions = {}): Promise<T[]> {
-    let builder = this.client.from(view).select('*')
+    const PAGE = 1000
+    // A page count nothing legitimate reaches, so a runaway pages loudly
+    // rather than hanging the tab.
+    const MAX_PAGES = 100
 
-    for (const [column, value] of Object.entries(options.eq ?? {})) {
-      if (value === undefined) continue
-      builder = value === null ? builder.is(column, null) : builder.eq(column, value)
-    }
-    for (const [column, value] of Object.entries(options.gte ?? {})) {
-      if (value === undefined || value === null) continue
-      builder = builder.gte(column, value)
-    }
-    for (const [column, value] of Object.entries(options.lte ?? {})) {
-      if (value === undefined || value === null) continue
-      builder = builder.lte(column, value)
-    }
-    for (const term of options.order ?? []) {
-      const [column, direction] = term.split(/\s+/)
-      builder = builder.order(column, { ascending: direction !== 'desc' })
-    }
-    if (options.limit) builder = builder.limit(options.limit)
+    const query = () => {
+      let builder = this.client.from(view).select('*')
 
-    const { data, error } = await builder
-    if (error) throw new Error(`${view}: ${error.message}`)
-    return (data ?? []) as T[]
+      for (const [column, value] of Object.entries(options.eq ?? {})) {
+        if (value === undefined) continue
+        builder = value === null ? builder.is(column, null) : builder.eq(column, value)
+      }
+      for (const [column, value] of Object.entries(options.gte ?? {})) {
+        if (value === undefined || value === null) continue
+        builder = builder.gte(column, value)
+      }
+      for (const [column, value] of Object.entries(options.lte ?? {})) {
+        if (value === undefined || value === null) continue
+        builder = builder.lte(column, value)
+      }
+      for (const term of options.order ?? []) {
+        const [column, direction] = term.split(/\s+/)
+        builder = builder.order(column, { ascending: direction !== 'desc' })
+      }
+      return builder
+    }
+
+    // A caller asking for a page or less gets one request, as before.
+    if (options.limit && options.limit <= PAGE) {
+      const { data, error } = await query().limit(options.limit)
+      if (error) throw new Error(`${view}: ${error.message}`)
+      return (data ?? []) as T[]
+    }
+
+    const rows: T[] = []
+    for (let page = 0; page < MAX_PAGES; page++) {
+      const from = page * PAGE
+      const { data, error } = await query().range(from, from + PAGE - 1)
+      if (error) throw new Error(`${view}: ${error.message}`)
+      rows.push(...((data ?? []) as T[]))
+
+      if (!data || data.length < PAGE) return rows
+      if (options.limit && rows.length >= options.limit) {
+        return rows.slice(0, options.limit)
+      }
+    }
+
+    throw new Error(
+      `${view}: still returning rows after ${MAX_PAGES * PAGE} of them — ` +
+        'refusing to keep paging. Narrow the query.',
+    )
   }
 
   async rpc<T>(fn: string, args: Record<string, unknown> = {}): Promise<T> {
