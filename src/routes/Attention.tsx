@@ -19,6 +19,25 @@ export function Attention() {
   const attention = useAttention()
   const rows = attention.data ?? []
 
+  /*
+   * Loading, failed and empty are three different things.
+   *
+   * This screen read `attention.data ?? []` and rendered, on a factory with a
+   * hundred and seven findings in it, "Nothing the software can see needs
+   * deciding today — every check below has run." It had not run; it was still
+   * in flight. The header badge, which is a separate and faster query, said 72
+   * at the same moment on the same page.
+   *
+   * A sentence that asserts the checks have run must only appear once they
+   * have. The panels below therefore never claim quiet until the query has
+   * actually come back.
+   */
+  const state: 'loading' | 'failed' | 'ready' = attention.isPending
+    ? 'loading'
+    : attention.isError
+      ? 'failed'
+      : 'ready'
+
   const critical = rows.filter((r) => r.severity === 'critical')
   const warning = rows.filter((r) => r.severity === 'warning')
   const info = rows.filter((r) => r.severity === 'info')
@@ -27,10 +46,22 @@ export function Attention() {
     <div className="space-y-6">
       <Panel
         title="Needs an answer today"
-        meta={critical.length ? `${critical.length} critical` : 'nothing critical'}
+        meta={
+          state !== 'ready'
+            ? undefined
+            : critical.length
+              ? `${critical.length} critical`
+              : 'nothing critical'
+        }
       >
-        <div data-testid="attention-critical" data-count={critical.length}>
-          {critical.length === 0 ? (
+        <div
+          data-testid="attention-critical"
+          data-count={critical.length}
+          data-state={state}
+        >
+          {state !== 'ready' ? (
+            <Waiting state={state} error={attention.error} />
+          ) : critical.length === 0 ? (
             <Empty>
               Nothing the software can see needs deciding today. That is a real
               finding rather than an empty screen — every check below has run.
@@ -47,10 +78,22 @@ export function Attention() {
 
       <Panel
         title="Worth knowing"
-        meta={warning.length ? `${warning.length} warnings` : 'nothing'}
+        meta={
+          state !== 'ready'
+            ? undefined
+            : warning.length
+              ? `${warning.length} warnings`
+              : 'nothing'
+        }
       >
-        <div data-testid="attention-warning" data-count={warning.length}>
-          {warning.length === 0 ? (
+        <div
+          data-testid="attention-warning"
+          data-count={warning.length}
+          data-state={state}
+        >
+          {state !== 'ready' ? (
+            <Waiting state={state} error={attention.error} />
+          ) : warning.length === 0 ? (
             <Empty>Nothing outstanding.</Empty>
           ) : (
             <div className="space-y-2.5">
@@ -115,6 +158,28 @@ function FindingCard({ row }: { row: Finding }) {
       >
         Go to the screen that fixes this →
       </Link>
+    </div>
+  )
+}
+
+/**
+ * What to say before the answer is known.
+ *
+ * Deliberately not a spinner that fades into an empty list: on this screen the
+ * difference between "checked, nothing wrong" and "not checked yet" is the
+ * whole point, so both are stated in words.
+ */
+function Waiting({ state, error }: { state: 'loading' | 'failed'; error: unknown }) {
+  if (state === 'loading') {
+    return <Empty>Running every check…</Empty>
+  }
+  return (
+    <div className="border-flag bg-sheet border-l-2 p-3.5 text-[12.5px]">
+      <div className="text-flag font-semibold">The checks did not run.</div>
+      <div className="text-mid mt-1">
+        Nothing here is a statement about the factory — it is a statement about
+        this screen. {String(error)}
+      </div>
     </div>
   )
 }

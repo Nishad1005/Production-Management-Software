@@ -272,6 +272,46 @@ for (const [hash, name, waitFor] of SCREENS) {
 }
 
 /*
+ * The badge and the list have to agree.
+ *
+ * They are two queries against the same findings — the badge counts the four
+ * branches that can be critical, the list fetches all nine — and the screen
+ * rendered `data ?? []` for the list. So on a factory with 107 findings the
+ * page showed "72 things need an answer today" in the header and "Nothing the
+ * software can see needs deciding today — every check below has run" in the
+ * panel below it, at the same moment. The sentence was not merely empty, it
+ * asserted that checks had run which were still in flight.
+ *
+ * Waiting on `data-state="ready"` is the point: it is the attribute that did
+ * not exist, and without it this check would pass on a screen that is lying.
+ */
+await step('the badge and the list agree', async () => {
+  await page.goto(`${baseUrl}/#/attention`, { waitUntil: 'domcontentloaded' })
+  await page.waitForSelector('[data-testid="attention-critical"][data-state="ready"]', {
+    timeout: 60_000,
+  })
+
+  const listed = Number(
+    await page.locator('[data-testid="attention-critical"]').getAttribute('data-count'),
+  )
+  const badge = await page.locator('[data-testid="attention-badge"]').count()
+  const onBadge = badge
+    ? Number(await page.locator('[data-testid="attention-badge"]').getAttribute('data-critical'))
+    : 0
+
+  if (onBadge !== listed) {
+    throw new Error(
+      `header says ${onBadge} critical, the list shows ${listed}`,
+    )
+  }
+  const body = await page.locator('[data-testid="attention-critical"]').innerText()
+  if (listed > 0 && /needs deciding today/i.test(body)) {
+    throw new Error('the panel claims nothing is wrong while listing findings')
+  }
+  return `${listed} critical, and the header says the same`
+})
+
+/*
  * The whole factory, not the first thousand cells of it.
  *
  * PostgREST returns at most a thousand rows and reports no error when it stops.

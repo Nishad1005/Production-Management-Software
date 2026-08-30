@@ -718,6 +718,36 @@ that followed, including three documents I wrote yesterday. The log is the
 project's memory and that is exactly what makes an unverified line in it
 expensive.
 
+### 2026-08-30 — The screen said nothing was wrong while its own badge said 72
+
+On the same page, at the same moment: the header read **"72 things need an
+answer today"** and the panel beneath it read **"Nothing the software can see
+needs deciding today. That is a real finding rather than an empty screen — every
+check below has run."**
+
+`const rows = attention.data ?? []`. While the nine branch queries were in
+flight, `data` was undefined, the list was empty, and the screen printed a
+sentence asserting that checks had run which had not. The badge is a separate
+and much faster query — four branches instead of nine — so it arrived first and
+contradicted it.
+
+The empty state was written to be a *claim*, deliberately: "that is a real
+finding rather than an empty screen" exists so a quiet factory does not look
+like a broken screen. Which makes rendering it before the answer is known
+exactly the failure the sentence was written to prevent. Loading, failed and
+empty are three different things and the screen now says which: *Running every
+check…*, *The checks did not run* with the error, or the claim — the claim only
+once the query has come back.
+
+Two checks now watch it. `verify:hosted-ui` waits on `data-state="ready"` and
+fails if the header's critical count and the list's disagree, or if the panel
+claims quiet while listing findings.
+
+**Three of today's five defects were a screen looking normal while wrong**: six
+departments of fourteen on the heatmap, twelve departments missing from every
+plan, and this. None of them errored, and a green build was happy with all
+three.
+
 ### 2026-08-30 — A thousand rows, and no word about the rest
 
 The heatmap's legend read **"Over capacity · 1"** while the command centre, on
