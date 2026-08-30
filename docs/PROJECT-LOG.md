@@ -466,45 +466,102 @@ could call every function on it while all tests were green.
 
 ## 8. What is next
 
-Rewritten 20 Aug, with phases 0–10 complete. Nothing on this list is a phase:
-the software is built, and what remains is data, decisions and one deployment
-setting.
+Rewritten 31 Aug, after the demonstration data went in and five defects came
+out of it. **Nothing on this list is a phase.** Phases 0–10 are built, all
+twenty screens run against Supabase, and the hosted client is driven end to end
+by `verify:hosted-ui`. What remains is one substantial piece of engineering,
+some housekeeping, and a great deal of data that is not ours to produce.
 
-**Interim figures can now go into the hosted project** so U&M's people can be
-given accounts and something to argue with —
-`node scripts/seed-live-interim.mjs <email> <password>`, and `--purge` to take
-it out again. It writes through `import_masters`, the same path PPC's completed
-workbook takes, so their sheet overwrites the rates cell by cell. A banner shows
-on every screen for as long as it is loaded.
+### 8.1 The one thing that will stop this working at U&M's real scale
 
-**Blocked on U&M** — two request notes are written and ready to forward:
+**The engine takes 68 seconds to plan twelve orders**, and it does not scale the
+way it needs to. `_cap_shift` is department × component × shift × working day,
+and every cell is a call to `resolve_capacity` — five policy-checked lookups
+(two on `capacity_overrides`, one on `component_rates`, a correlated attendance
+subquery, and `machine_availability`, itself a function). Roughly 2.6 ms a cell.
 
-1. **PPC's figures.** The single blocker. The live project holds the real route
-   — fourteen departments, seventy-one SKUs — and not one rate against any of
-   the 994 cells. Every date Kram produces is arithmetic on invented numbers
-   until they arrive. `DBBS/UM/KRAM/04`, with the workbook from
-   `scripts/make-capacity-workbook.mjs`. The what-feeds-what table from
-   `DBBS/UM/KRAM/02` is still owed on top, and everything is read through it.
-2. **The Panipuri export sample** (`DBBS/UM/KRAM/05`). Does not block going
-   live — orders can be entered by hand — but it is the longest-lead item.
-3. **A floor plan**, new: the factory map draws the route graph because nobody
-   has given us a layout of the building. A real plan can be laid under it.
-4. **Bills of materials and article costs**, both of which now have screens
-   waiting for them and neither of which anyone has entered.
+30 Aug narrowed the grid to the components the plan actually touches, which took
+it from cancelled-at-120s to 56–68s. That was the cheap half. The expensive half
+is untouched: **spec §11 sizes the real workload at 324 orders and ~40,000
+tasks**, where every one of the 994 pairings is in the plan and the grid is six
+times today's. Extrapolating the measured per-cell cost puts a real run at
+several minutes, against a 120-second ceiling that exists for a reason.
 
-**Ours, before U&M's own people have accounts:**
+The grid wants to be built **set-based** — hash joins against
+`capacity_overrides`, `component_rates` and `department_attendance` instead of
+five correlated lookups per cell, with `machine_availability` inlined. That is a
+rewrite of the engine's hottest section. `tests/engine-scale.test.ts` already
+holds both shapes to measure it against: the dense fixture (324 orders, every
+article ordered) and the sparse one (71 articles, 12 ordered) that this month's
+defect hid behind.
 
-5. **Point the deployed site at Supabase.** Netlify reads `VITE_SUPABASE_URL`
-   and `VITE_SUPABASE_ANON_KEY` from its own environment; unset, the build is
-   the offline demo.
-6. **The signed-in half of `verify:hosted-ui`.** The anonymous half passes; the
-   fourteen screens behind the login have been driven once, by hand.
-7. **The roles decision.** Today every role reads everything. `kiosk` is now the
-   one role with a genuinely narrow answer — the floor display and nothing else.
+**This is the largest remaining piece of work in the project.** It is not
+urgent for a demonstration and it is a hard blocker on U&M's real order book.
 
-**Not built, and deliberately:** email and WhatsApp alerts (in-app first, and it
-is the half that has to exist before a channel is worth wiring up), barcode and
-QR, which the deck marks *Ideal*.
+### 8.2 Ours, and small
+
+1. **The Panipuri import module.** Unbuilt, and the only unbuilt *feature* left.
+   Blocked on a sample file (§6 item 2) because writing it against a guessed
+   column layout would mean writing it twice.
+2. **`capacity_sheet` at ~1,020 ms.** The slowest view on the live project. It
+   joins on a constructed string — `c.code = a.code || '::' || d.code` — which
+   is the same pattern that made `article_master` unusable and was fixed there
+   on 30 Aug. Left deliberately: it is under the ceiling and the fix is the same
+   rewrite through `article_bom`.
+3. **The loading-versus-empty sweep.** `data ?? []` and `!data ||` render "still
+   loading" and "nothing to show" identically. Harmless where the empty state is
+   a shrug, dangerous where it is a claim — and **about a dozen of them are
+   claims**: *Nothing is late into Assembly*, *Nothing has been rejected on any
+   declaration yet*, *No department has declared any production yet*, *Nothing
+   has been started and left unfinished*. The two worst (Attention, Forecast)
+   were fixed on 30 Aug. `DepartmentBoard` is the next one worth doing, because
+   a HOD reads it daily and it currently says nothing is late before it knows.
+4. **Confirm what Supabase's own backups cover** on the project's plan. *Save
+   everything to a file* is a copy U&M control, not a replacement for the
+   platform's.
+
+### 8.3 Ours, before U&M's own people have accounts
+
+5. **The roles decision** (§6 item 6). Reads require *a* role; beyond that every
+   role reads everything. Whether maintenance should see the customer order book,
+   or store the commercial quantities, is the client's call and needs asking.
+   `kiosk` is the one role with a settled answer — the floor display, nothing
+   else.
+6. **Accounts.** Created in the Supabase dashboard, because creating one needs
+   the service role key; roles are then assigned in-app on the Users screen.
+7. **Rotate the demonstration password.** `userkram@test.com` holds admin and its
+   password has been typed into a transcript.
+
+### 8.4 Blocked on U&M
+
+Unchanged in substance since 17 Aug, which is itself the point worth making: the
+software has moved through six phases in that time and the data has not moved at
+all.
+
+8. **PPC's figures.** The single blocker. 994 cells, a rate and a D-minus each.
+   `DBBS/UM/KRAM/04` and the workbook from `scripts/make-capacity-workbook.mjs`.
+9. **The what-feeds-what table**, `DBBS/UM/KRAM/02` — and inside it the one
+   concrete question now sitting on the Attention screen as 71 critical
+   findings: **does Machining feed Ply Cutting?** (§6 item 0.)
+10. **A real Panipuri export sample** (`DBBS/UM/KRAM/05`), with the question that
+    decides the workflow: does Panipuri hold a stuffing date, or only a customer
+    delivery date?
+11. **Bills of materials and article costs.** The Material and Money screens are
+    built and empty until one article has either.
+12. **A floor plan.** The factory map draws the route graph and says so; a real
+    layout can be laid under it.
+13. **The overtime ceiling** (§6 item 5), for their compliance adviser. *We flag,
+    we do not advise.*
+
+### 8.5 Not built, deliberately
+
+**Email and WhatsApp alerts.** In-app first: the delivery channel is worth
+wiring up only once there is a body of findings worth delivering, and there now
+is. This is the obvious next feature after §8.1.
+
+**Barcode and QR**, which the concept deck marks *Ideal* rather than required.
+
+---
 
 ### Why the MD dashboard came last
 
@@ -512,8 +569,6 @@ QR, which the deck marks *Ideal*.
 3. Eight of the nine compute. WIP value reports itself unavailable and names
 what it needs, rather than estimating a rupee figure from nothing — it is the
 number an MD would quote first and the only one that would have been invented.)*
-
-### The original note
 
 Slides 5–6 are the client's headline ask, and it is the wrong thing to build
 now. Of its nine KPIs only three — orders running, delayed orders, containers by
@@ -524,83 +579,19 @@ actuals that arrive with Phases 3–6.
 Shipping it with six invented figures would undermine every real number beside
 them. It follows Phase 3.
 
-### Deployment and Supabase timing
+### Deployment, as verified
 
-**Netlify, verified.** PGlite never touches `SharedArrayBuffer` or
-`crossOriginIsolated`, so no COOP/COEP headers are needed — the usual blocker for
-WASM databases does not apply. Largest asset is 10.1 MB against a 100 MB limit,
-and `HashRouter` means no redirect rules. `netlify.toml` pins Node, sets the WASM
-MIME type explicitly and caches fingerprinted assets forever.
+**Netlify.** PGlite never touches `SharedArrayBuffer` or `crossOriginIsolated`,
+so no COOP/COEP headers are needed — the usual blocker for WASM databases does
+not apply. Largest asset is 10.1 MB against a 100 MB limit, and `HashRouter`
+means no redirect rules. `netlify.toml` pins Node, sets the WASM MIME type
+explicitly and caches fingerprinted assets forever.
 
-Each first-time visitor downloads ~5 MB, because the database ships to the
-browser. Acceptable for a demo; it disappears when Supabase takes over.
-
-**Supabase: after the demo, before Phase 3.** The hard boundary is the WIP
-ledger — one department declares output and the next accepts it, which cannot
-work in a database living in one browser tab. Until then, offline is an
-advantage: no accounts, no cost, and a build that runs from a folder.
-
-### What going live actually needs
-
-Rewritten 17 Aug. The version this replaces listed creating the Supabase
-project, writing a second backend, and building auth — all three done weeks ago,
-and it still said fifteen migrations when there are thirty-two. It had become a
-list of finished work, which is the most misleading kind of plan.
-
-**Done, and needing nothing further:** the project and every migration, the two
-backends behind one interface, auth with roles and a Users screen, Netlify
-building from `main`, and the whole planning half of the software.
-
-**Blocked on U&M** — all three now have a request note in `docs/` written to be
-forwarded as it stands:
-
-1. **PPC's figures.** The single blocker. The live project holds the real route
-   — fourteen departments, seventy-one SKUs — and not one rate against any of
-   the 994 cells. Until they arrive, every date Kram produces is arithmetic on
-   invented numbers. `DBBS/UM/KRAM/04`, with the workbook from
-   `scripts/make-capacity-workbook.mjs`.
-2. **The route confirmation** still owed against `DBBS/UM/KRAM/02` — what waits
-   for what. Everything else is read through it.
-3. **The Panipuri sample** (`DBBS/UM/KRAM/05`). Does not block going live —
-   orders can be entered by hand — but it is the longest-lead item on the list.
-   (The specification came off this list on 17 Aug: there is no document to ask
-   for. See `docs/note-the-missing-specification.html`.)
-
-**Ours, before U&M's own people have accounts:**
-
-4. **Point the deployed site at Supabase.** Netlify reads `VITE_SUPABASE_URL`
-   and `VITE_SUPABASE_ANON_KEY` from its own environment; unset, the build is
-   the offline demo and every visitor gets a private copy of invented data. That
-   is the right thing for a demonstration and the wrong thing for a factory.
-5. **Drive the hosted client in a browser.** `npm run screenshot` has only ever
-   run against PGlite — it resets demo data and checks a returning browser
-   rebuilds its local database, both offline-only behaviours. `verify:live`
-   proves the API answers correctly to real requests, and the client uses the
-   same views and functions, but *the application itself has never been operated
-   against Supabase by anything but a person clicking*. This project has twice
-   found production broken while everything local was green; this is the same
-   shape of gap and it is ours to close.
-6. **Accounts, and the roles decision.** Accounts are created in the Supabase
-   dashboard because creating one needs the service role key. Assigning roles is
-   in-app. Before that happens, §6 item 6 needs an answer: today every role
-   reads everything.
-7. **The guide is missing two screens.** *My department* and *WIP* have no
-   section in `docs/GUIDE.md` — the two screens a HOD and a merchandiser open
-   daily. Fine for a demonstration, not for handover.
-8. ~~**A backup answer.**~~ **Done 17 Aug.** *Save everything to a file* on
-   Masters takes the order book and the production ledger as well as the
-   masters. Still worth confirming what Supabase's own backups cover on the
-   project's current plan — this is a copy U&M control, not a replacement for
-   the platform's.
-
-**Not needed to go live:** Phases 5–10 — material, quality, machines, money,
-predictive — and article costs, which improve one dashboard KPI in proportion to
-how much is filled in.
-
-**Planning is usable by PPC and merchandising the day items 1, 2 and 4–6 are
-done.** Order acceptance, the schedule and the heatmap stand on their own; the
-WIP ledger makes capacity self-correcting but is not a precondition for the
-planning half being used in anger.
+The deployed site reads `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` from
+Netlify's environment and is therefore the hosted build. Unset, the same source
+builds the offline demo, where each first-time visitor downloads ~5 MB because
+the database ships to the browser — right for a demonstration, wrong for a
+factory.
 
 ---
 
