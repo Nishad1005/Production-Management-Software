@@ -718,6 +718,27 @@ that followed, including three documents I wrote yesterday. The log is the
 project's memory and that is exactly what makes an unverified line in it
 expensive.
 
+### 2026-08-30 — The same sentence again, on the forecast
+
+`!r || r.declarations === 0` on the readiness panel, which told a project
+carrying twelve declarations across six days that **nothing has been declared on
+the floor yet** — on the one panel whose entire job is stating how much history
+exists before anybody reads the predictions below it.
+
+Identical to the Attention screen an hour earlier and worth naming as a pattern
+rather than a second incident: `data ?? []` and `!data ||` are the idiom this
+codebase reaches for, and both render "loading" and "nothing" the same way. It
+is harmless on a screen whose empty state is a shrug and dangerous on one whose
+empty state is a claim. Those are the ones to go through.
+
+Also found while looking: **PLYCUT is in twelve of the eighteen breaches**, one
+per order, all with reason `runway`. That is the `MACHINE → PLYCUT` edge from
+§6 item 0 — Ply Cutting is due at D-60 but the graph makes it wait for
+Machining at D-56, so it has no runway. The same single undeclared edge is
+producing all 71 route conflicts, two thirds of the breaches, and most of the
+twelve *likely late* readings on the forecast. It is one cell on the Masters
+grid and it is still not ours to change.
+
 ### 2026-08-30 — The screen said nothing was wrong while its own badge said 72
 
 On the same page, at the same moment: the header read **"72 things need an

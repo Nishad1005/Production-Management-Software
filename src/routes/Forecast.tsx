@@ -37,8 +37,31 @@ export function Forecast() {
         title="How much of this is worth believing"
         meta={r ? `${r.declarations} declarations · ${r.days_recorded} days` : ''}
       >
-        <div data-testid="forecast-readiness" data-declarations={r?.declarations ?? 0}>
-          {!r || r.declarations === 0 ? (
+        <div
+          data-testid="forecast-readiness"
+          data-declarations={r?.declarations ?? 0}
+          data-state={readiness.isPending ? 'loading' : readiness.isError ? 'failed' : 'ready'}
+        >
+          {/*
+            `!r ||` used to fold "still loading" into "nothing declared", and
+            the screen told a factory with twelve declarations against it that
+            nothing had been declared — the same defect as the Attention screen,
+            in the same shape, on the panel whose whole job is saying how much
+            history exists.
+          */}
+          {readiness.isPending ? (
+            <Empty>Counting the history…</Empty>
+          ) : readiness.isError ? (
+            <div className="border-flag bg-sheet border-l-2 p-3.5 text-[12.5px]">
+              <div className="text-flag font-semibold">
+                The history could not be counted.
+              </div>
+              <div className="text-mid mt-1">
+                Nothing below is a statement about the factory.{' '}
+                {String(readiness.error)}
+              </div>
+            </div>
+          ) : !r || r.declarations === 0 ? (
             <Empty>
               Nothing has been declared on the floor yet, so there is no history
               to learn from and every figure below says so. This is not a fault:

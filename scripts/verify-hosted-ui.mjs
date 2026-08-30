@@ -312,6 +312,33 @@ await step('the badge and the list agree', async () => {
 })
 
 /*
+ * And the same shape on the forecast's readiness panel.
+ *
+ * `!r || r.declarations === 0` told a project with twelve declarations against
+ * it that nothing had been declared, because `r` is undefined until the query
+ * lands. Checked here rather than offline for the same reason as the rest: it
+ * only appears when the query is slow enough to see, and PGlite never is.
+ */
+await step('the forecast counts the history it has', async () => {
+  await page.goto(`${baseUrl}/#/forecast`, { waitUntil: 'domcontentloaded' })
+  await page.waitForSelector('[data-testid="forecast-readiness"][data-state="ready"]', {
+    timeout: 60_000,
+  })
+  const panel = page.locator('[data-testid="forecast-readiness"]')
+  const declared = Number(await panel.getAttribute('data-declarations'))
+  const body = await panel.innerText()
+
+  if (declared > 0 && /nothing has been declared/i.test(body)) {
+    throw new Error(
+      `${declared} declarations, and the panel says nothing has been declared`,
+    )
+  }
+  return declared
+    ? `${declared} declarations, and it says so`
+    : 'nothing declared, and it says so — which is also correct'
+})
+
+/*
  * The whole factory, not the first thousand cells of it.
  *
  * PostgREST returns at most a thousand rows and reports no error when it stops.
