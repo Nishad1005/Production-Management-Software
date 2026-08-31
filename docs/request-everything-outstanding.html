@@ -1,0 +1,790 @@
+<title>What Kram Needs From U&M</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+  rel="stylesheet"
+/>
+<style>
+  /* Kram's own palette and register, carried over from DBBS/UM/KRAM/04 and /05
+     so this reads as the next note in the same series rather than a new
+     document. Light is the natural ground; dark is defined token-for-token so
+     the page holds up wherever it is opened. */
+  :root {
+    --paper: #e9edf1;
+    --sheet: #ffffff;
+    --ink: #16202e;
+    --mid: #5c6b7a;
+    --faint: #8996a4;
+    --rule: #c9d3dc;
+    --rule-soft: #dfe6ec;
+    --blue: #2c4a6e;
+    --amber: #b07d1a;
+    --flag: #c4462e;
+    --go: #1a6547;
+    --bar-text: #ffffff;
+    --bar-meta: #93a6b8;
+    --bar-bg: #16202e;
+
+    --sans: 'Archivo', ui-sans-serif, -apple-system, BlinkMacSystemFont,
+      'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    --mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, Consolas,
+      'Liberation Mono', monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) {
+      --paper: #0f151d;
+      --sheet: #16202e;
+      --ink: #e6ecf2;
+      --mid: #a3b1c0;
+      --faint: #7e8d9d;
+      --rule: #2c3a4b;
+      --rule-soft: #222e3d;
+      --blue: #8fb4dc;
+      --amber: #d5a13f;
+      --flag: #e8705c;
+      --go: #4fb98c;
+      --bar-text: #e6ecf2;
+      --bar-meta: #7e8d9d;
+      --bar-bg: #0a1119;
+    }
+  }
+
+  :root[data-theme='dark'] {
+    --paper: #0f151d;
+    --sheet: #16202e;
+    --ink: #e6ecf2;
+    --mid: #a3b1c0;
+    --faint: #7e8d9d;
+    --rule: #2c3a4b;
+    --rule-soft: #222e3d;
+    --blue: #8fb4dc;
+    --amber: #d5a13f;
+    --flag: #e8705c;
+    --go: #4fb98c;
+    --bar-text: #e6ecf2;
+    --bar-meta: #7e8d9d;
+    --bar-bg: #0a1119;
+  }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .doc {
+    max-width: 60rem;
+    margin: 0 auto;
+    padding: 2.5rem 1.25rem 5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem;
+  }
+
+  /* --- title block --- */
+  .head {
+    background: var(--sheet);
+    border: 1px solid var(--rule);
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+  @media (min-width: 50rem) {
+    .head { grid-template-columns: 1fr auto; }
+  }
+  .head__main { padding: 1.9rem 1.6rem; }
+  .firm {
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--faint);
+  }
+  h1 {
+    font-size: clamp(1.9rem, 4.6vw, 2.7rem);
+    line-height: 1.06;
+    letter-spacing: -0.026em;
+    font-weight: 700;
+    margin: 0.5rem 0 0.55rem;
+    text-wrap: balance;
+  }
+  .sub { color: var(--mid); margin: 0; max-width: 52ch; font-size: 1.05rem; }
+
+  dl.stamp {
+    margin: 0;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    align-content: start;
+    border-top: 1px solid var(--rule);
+  }
+  @media (min-width: 50rem) {
+    dl.stamp { border-top: 0; border-left: 1px solid var(--rule); min-width: 20rem; }
+  }
+  dl.stamp dt {
+    padding: 0.52rem 0.95rem;
+    color: var(--faint);
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    font-size: 0.6875rem;
+    border-bottom: 1px solid var(--rule-soft);
+    border-right: 1px solid var(--rule-soft);
+    white-space: nowrap;
+  }
+  dl.stamp dd {
+    margin: 0;
+    padding: 0.52rem 0.95rem;
+    border-bottom: 1px solid var(--rule-soft);
+  }
+
+  /* --- structure --- */
+  section { display: flex; flex-direction: column; gap: 0.95rem; }
+  p { margin: 0; max-width: 70ch; }
+  .lede { color: var(--mid); }
+  strong { font-weight: 650; }
+
+  h2 {
+    font-size: 1.35rem;
+    font-weight: 700;
+    letter-spacing: -0.016em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  h3 { font-size: 1rem; font-weight: 650; margin: 0.35rem 0 0; }
+
+  .rule { border: 0; border-top: 1px solid var(--rule); margin: 0; }
+
+  /* --- the numbered asks --- */
+  .ask {
+    background: var(--sheet);
+    border: 1px solid var(--rule);
+    border-top: 3px solid var(--blue);
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+  .ask.blocking { border-top-color: var(--flag); }
+  .ask.soon { border-top-color: var(--amber); }
+  .ask__bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
+    align-items: baseline;
+    padding: 0.85rem 1.2rem;
+    border-bottom: 1px solid var(--rule-soft);
+  }
+  .ask__n {
+    font-family: var(--mono);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--faint);
+    letter-spacing: 0.05em;
+  }
+  .ask__title { font-weight: 700; font-size: 1.08rem; letter-spacing: -0.012em; }
+  .ask__body { padding: 1.15rem 1.2rem; display: flex; flex-direction: column; gap: 0.8rem; }
+
+  .who {
+    display: grid;
+    gap: 0.1rem 1.4rem;
+    grid-template-columns: auto 1fr;
+    font-size: 0.875rem;
+    align-items: baseline;
+  }
+  .who dt {
+    font-family: var(--mono);
+    font-size: 0.625rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--faint);
+    padding-top: 0.28rem;
+  }
+  .who dd { margin: 0; }
+
+  .tag {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 0.625rem;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    padding: 0.16rem 0.45rem;
+    border: 1px solid currentColor;
+    white-space: nowrap;
+  }
+  .tag.flag { color: var(--flag); }
+  .tag.amber { color: var(--amber); }
+  .tag.blue { color: var(--blue); }
+  .tag.go { color: var(--go); }
+
+  /* --- tables --- */
+  .tablewrap { overflow-x: auto; border: 1px solid var(--rule); background: var(--sheet); }
+  table { border-collapse: collapse; width: 100%; font-size: 0.875rem; }
+  th, td { text-align: left; padding: 0.6rem 0.85rem; border-bottom: 1px solid var(--rule-soft); vertical-align: top; }
+  thead th {
+    background: var(--bar-bg);
+    color: var(--bar-text);
+    font-family: var(--mono);
+    font-size: 0.625rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  tbody tr:last-child td { border-bottom: 0; }
+  td.num, .tnum { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  /* --- callouts --- */
+  .note {
+    background: var(--sheet);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--amber);
+    padding: 1rem 1.15rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .note.stop { border-left-color: var(--flag); }
+  .note.good { border-left-color: var(--go); }
+  .note__t { font-weight: 650; }
+
+  ul, ol.plain { margin: 0; padding-left: 1.2rem; display: flex; flex-direction: column; gap: 0.4rem; max-width: 70ch; }
+
+  code, .m {
+    font-family: var(--mono);
+    font-size: 0.875em;
+    background: color-mix(in srgb, var(--blue) 11%, transparent);
+    padding: 0.08em 0.35em;
+  }
+
+  .checklist { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.55rem; }
+  .checklist li {
+    display: grid;
+    grid-template-columns: 1.4rem 1fr;
+    gap: 0.6rem;
+    background: var(--sheet);
+    border: 1px solid var(--rule);
+    padding: 0.7rem 0.9rem;
+    font-size: 0.9375rem;
+  }
+  .checklist .box {
+    width: 0.95rem; height: 0.95rem;
+    border: 1px solid var(--mid);
+    margin-top: 0.3rem;
+  }
+
+  footer {
+    border-top: 1px solid var(--rule);
+    padding-top: 1.2rem;
+    color: var(--faint);
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+</style>
+
+<div class="doc">
+
+  <header class="head">
+    <div class="head__main">
+      <div class="firm">Data Brilliance Business Solutions LLP</div>
+      <h1>What Kram needs from you</h1>
+      <p class="sub">
+        The software is built and running on your route. Six things are
+        outstanding, and every one of them is information only U&amp;M holds.
+      </p>
+    </div>
+    <dl class="stamp">
+      <dt>Ref</dt><dd>DBBS/UM/KRAM/06</dd>
+      <dt>Revision</dt><dd>A</dd>
+      <dt>Client</dt><dd>U&amp;M Designs</dd>
+      <dt>Supersedes</dt><dd>KRAM/02, /04, /05</dd>
+      <dt>Status</dt><dd>Awaiting your input</dd>
+    </dl>
+  </header>
+
+  <section>
+    <p>
+      Kram is finished as software. Every screen in the specification is built,
+      tested and running against your live system — your fourteen departments,
+      your seventy-one articles, order acceptance, the backward schedule, the
+      load heatmap, the WIP ledger, material, quality, machines, costing and the
+      alerts.
+    </p>
+    <p>
+      <strong>What it does not have is a single real number from your
+      factory.</strong> Every rate, every deadline, every crew size and every
+      order currently in the system was invented by us so that the screens had
+      something to say. The system labels them as placeholders on every page,
+      and they will be replaced the moment yours arrive.
+    </p>
+    <p class="lede">
+      This note replaces three earlier ones — <span class="m">KRAM/02</span>
+      (the route), <span class="m">KRAM/04</span> (the figures) and
+      <span class="m">KRAM/05</span> (the Panipuri export) — and adds three
+      items that have come up since. It is one list so that nothing is waiting
+      on a note somebody has lost.
+    </p>
+  </section>
+
+  <hr class="rule" />
+
+  <section>
+    <h2>The six, in the order they unblock things</h2>
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th><th>What we need</th><th>From</th><th>Effort</th><th>Until it arrives</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="num">1</td>
+            <td><strong>The capacity workbook</strong><br />994 cells, three numbers each</td>
+            <td>PPC</td>
+            <td>A working session, plus follow-up</td>
+            <td><span class="tag flag">Blocks everything</span> Every date the system produces is arithmetic on our invented figures.</td>
+          </tr>
+          <tr>
+            <td class="num">2</td>
+            <td><strong>What feeds what</strong><br />the department dependency table</td>
+            <td>PPC / production heads</td>
+            <td>Under an hour</td>
+            <td><span class="tag flag">Blocks everything</span> The workbook is read through this. One wrong link and every deadline moves.</td>
+          </tr>
+          <tr>
+            <td class="num">3</td>
+            <td><strong>One real export file out of Panipuri</strong></td>
+            <td>Whoever runs Panipuri</td>
+            <td>Ten minutes</td>
+            <td><span class="tag amber">Longest lead</span> Orders must be typed in by hand. The import cannot be written against a guess.</td>
+          </tr>
+          <tr>
+            <td class="num">4</td>
+            <td><strong>Bills of materials, and a cost per article</strong></td>
+            <td>Purchase / costing</td>
+            <td>Start with one article</td>
+            <td><span class="tag blue">Two screens idle</span> Material and Money are built and empty.</td>
+          </tr>
+          <tr>
+            <td class="num">5</td>
+            <td><strong>Who should see what</strong>, and account details</td>
+            <td>Management</td>
+            <td>One decision</td>
+            <td><span class="tag blue">Nobody has logins</span> Everyone who can sign in currently sees everything.</td>
+          </tr>
+          <tr>
+            <td class="num">6</td>
+            <td><strong>A floor plan of the building</strong></td>
+            <td>Anyone with the drawing</td>
+            <td>Send the file</td>
+            <td><span class="tag blue">Cosmetic</span> The factory map draws the route, not the building.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <hr class="rule" />
+
+  <!-- ============================ 1 ============================ -->
+  <section>
+    <article class="ask blocking">
+      <div class="ask__bar">
+        <span class="ask__n">01</span>
+        <span class="ask__title">The capacity workbook</span>
+        <span class="tag flag">The single blocker</span>
+      </div>
+      <div class="ask__body">
+        <dl class="who">
+          <dt>From</dt><dd>PPC</dd>
+          <dt>Format</dt><dd>The Excel workbook attached — same layout it is read back in, nothing retyped</dd>
+        </dl>
+
+        <p>
+          <strong>Seventy-one articles across fourteen departments is 994
+          cells.</strong> Each one wants three numbers:
+        </p>
+
+        <div class="tablewrap">
+          <table>
+            <thead>
+              <tr><th>Number</th><th>What it means</th><th>What it decides in Kram</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Units per day</strong></td>
+                <td>How many of <em>that article</em> that department finishes in a day</td>
+                <td>The whole capacity model. Every heatmap cell, every over-capacity flag, every “can we take this order” answer.</td>
+              </tr>
+              <tr>
+                <td><strong>Manpower</strong></td>
+                <td>The crew size that figure was measured with</td>
+                <td>Whether marking someone absent changes the day’s capacity at all.</td>
+              </tr>
+              <tr>
+                <td><strong>D-minus</strong></td>
+                <td>How many days before the container stuffing date that department must be finished</td>
+                <td>Every deadline. The schedule is built backwards from the container through these.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="note stop">
+          <div class="note__t">The one rule that decides whether the numbers work</div>
+          <p>
+            <strong>“Units per day” must mean that article and nothing
+            else</strong> — what the department would do in a full day if it
+            made only that item. Not its share of a normal mixed day.
+          </p>
+          <p>
+            Kram adds up the <em>fractions of a day</em> each item consumes, not
+            the items themselves — you cannot add legs to covers, but you can
+            add the hours they take. A department that enters its blended
+            everyday figure will appear to be asked for three days of work every
+            day, and will show up as your bottleneck when it is not.
+          </p>
+        </div>
+
+        <div class="note">
+          <div class="note__t">A partly-filled sheet is genuinely useful</div>
+          <p>
+            Fill in what you know and leave the rest. It can come back more than
+            once as figures firm up, and each time it comes back it arrives
+            carrying the previous round’s answers already in place.
+          </p>
+          <p>
+            <strong>If you do only one thing:</strong> fill in a single article
+            completely, across all fourteen departments. That alone proves the
+            whole chain end to end and tells us within a day whether the
+            conventions above have been understood the same way on both sides.
+          </p>
+        </div>
+
+        <h3>Three other things we assumed, which you may want to correct</h3>
+        <ul>
+          <li><strong>Yield: 98%</strong> at every one of the fourteen departments. This decides how much extra each must make to cover losses.</li>
+          <li><strong>Working days: Sundays off</strong>, and no other holidays. Your holiday list would replace this.</li>
+          <li><strong>Departmental headcount</strong>, which is what overtime and extra-people figures are calculated against.</li>
+        </ul>
+      </div>
+    </article>
+  </section>
+
+  <!-- ============================ 2 ============================ -->
+  <section>
+    <article class="ask blocking">
+      <div class="ask__bar">
+        <span class="ask__n">02</span>
+        <span class="ask__title">What feeds what</span>
+        <span class="tag flag">Everything is read through this</span>
+      </div>
+      <div class="ask__body">
+        <dl class="who">
+          <dt>From</dt><dd>PPC, or whoever runs the floor</dd>
+          <dt>Format</dt><dd>A list of pairs, or fifteen minutes on a call</dd>
+        </dl>
+
+        <p>
+          Kram does not assume departments run in a straight line. Where two
+          departments do not depend on each other they run <em>in parallel</em>,
+          which is what makes the plan realistic — and to do that it needs to
+          know which department genuinely waits for which.
+        </p>
+        <p>
+          We reconstructed this from your concept deck and it is almost
+          certainly right. It has never been confirmed by anyone at U&amp;M, and
+          <strong>every deadline in the system hangs off it.</strong>
+        </p>
+
+        <div class="note stop">
+          <div class="note__t">One question we can settle today: does Machining feed Ply Cutting?</div>
+          <p>
+            Our current graph says <strong>Machining must finish before Ply
+            Cutting starts</strong>. Everything else about the route says the
+            opposite — Ply Cutting is first in the sequence and is scheduled to
+            finish four days before Machining.
+          </p>
+          <p>
+            Those two statements contradict each other, and Kram is currently
+            reporting that contradiction as <strong>71 critical warnings, one
+            for every article</strong>, plus twelve of its eighteen “cannot be
+            made as planned” findings. It is one line in a table. It is also the
+            smallest possible version of this whole question — if you can answer
+            it in a sentence, you can fill in the rest.
+          </p>
+        </div>
+
+        <h3>The two we were least sure of</h3>
+        <ul>
+          <li>Does <strong>Foam Pasting</strong> really wait for the wood finish to dry?</li>
+          <li>Do <strong>Cutting</strong> and <strong>Fibre Processing</strong> genuinely wait for nothing at all?</li>
+        </ul>
+
+        <div class="note good">
+          <div class="note__t">It is not set in stone</div>
+          <p>
+            This is a grid on the Masters screen, editable by a planner at any
+            time. Change one cell, re-run the plan, and every date moves with it.
+            We are asking for your best current answer, not a permanent one.
+          </p>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  <!-- ============================ 3 ============================ -->
+  <section>
+    <article class="ask soon">
+      <div class="ask__bar">
+        <span class="ask__n">03</span>
+        <span class="ask__title">One real export file out of Panipuri</span>
+        <span class="tag amber">Longest lead time</span>
+      </div>
+      <div class="ask__body">
+        <dl class="who">
+          <dt>From</dt><dd>Whoever runs Panipuri</dd>
+          <dt>Format</dt><dd>Whatever it exports — Excel or CSV, exactly as it comes out, unedited</dd>
+        </dl>
+
+        <p>
+          Orders should arrive in Kram from Panipuri rather than being typed in
+          twice. The import is ready to build and takes a few days — but written
+          against a guessed column layout it will simply be written twice.
+          <strong>One real file, even an old one with a handful of orders on it,
+          removes that risk entirely.</strong> Please do not clean it up: the
+          messy version is the useful one.
+        </p>
+
+        <div class="note stop">
+          <div class="note__t">The question that decides the whole workflow</div>
+          <p>
+            <strong>Does Panipuri hold a container stuffing date at all, or only
+            a customer delivery date?</strong>
+          </p>
+          <p>
+            Kram schedules backwards from the <em>stuffing</em> date. If
+            Panipuri holds only a delivery date, then somebody at U&amp;M is
+            working out the stuffing date today — and we need to know who, and
+            how, because that calculation has to live somewhere in the system.
+          </p>
+        </div>
+
+        <p class="lede">
+          This does not block go-live. Orders can be entered by hand from day
+          one. It is on this list because it is the item with the longest lead
+          time and the least effort on your side.
+        </p>
+      </div>
+    </article>
+  </section>
+
+  <!-- ============================ 4 ============================ -->
+  <section>
+    <article class="ask">
+      <div class="ask__bar">
+        <span class="ask__n">04</span>
+        <span class="ask__title">Bills of materials, and a cost per article</span>
+        <span class="tag blue">Two finished screens are idle</span>
+      </div>
+      <div class="ask__body">
+        <dl class="who">
+          <dt>From</dt><dd>Purchase, and whoever holds costing</dd>
+          <dt>Format</dt><dd>A spreadsheet is fine. Start with one article.</dd>
+        </dl>
+        <p>
+          Two screens are built, tested and completely empty because nothing has
+          been entered against them:
+        </p>
+        <ul>
+          <li>
+            <strong>Material</strong> — what the plan commits you to buying, week
+            by week, and which items are already past the date they should have
+            been ordered. It needs a bill of materials: what each article
+            consumes, and how much.
+          </li>
+          <li>
+            <strong>Money</strong> — cash out against the plan over time. It needs
+            a cost per article, and it will refuse to estimate one rather than
+            print a figure nobody can stand behind.
+          </li>
+        </ul>
+        <p class="lede">
+          One article’s worth of either is enough to switch the screen on and let
+          you judge whether it is telling you something worth having.
+        </p>
+      </div>
+    </article>
+  </section>
+
+  <!-- ============================ 5 ============================ -->
+  <section>
+    <article class="ask">
+      <div class="ask__bar">
+        <span class="ask__n">05</span>
+        <span class="ask__title">Who should see what</span>
+        <span class="tag blue">Needed before anyone gets a login</span>
+      </div>
+      <div class="ask__body">
+        <dl class="who">
+          <dt>From</dt><dd>Management</dd>
+          <dt>Format</dt><dd>Names and email addresses, plus one decision</dd>
+        </dl>
+        <p>
+          Kram has twelve roles — MD, planner, merchandiser, department head, HR,
+          purchase, store, quality, maintenance, accounts, admin, and a read-only
+          floor display. Access is enforced in the database itself, so it holds
+          however the system is reached.
+        </p>
+        <p>
+          <strong>Today every role that can sign in can read everything.</strong>
+          That is deliberate for a demonstration and wrong for a factory, and the
+          answer is yours rather than ours:
+        </p>
+        <ul>
+          <li>Should <strong>maintenance</strong> see the customer order book?</li>
+          <li>Should <strong>store</strong> see commercial quantities and values?</li>
+          <li>Should a <strong>department head</strong> see other departments’ figures, or only their own?</li>
+        </ul>
+        <p>
+          Alongside that: the <strong>names and email addresses</strong> of the
+          people who should have accounts, and which role each should hold. We
+          create the accounts; roles are then assigned on screen and can be
+          changed at any time.
+        </p>
+      </div>
+    </article>
+  </section>
+
+  <!-- ============================ 6 ============================ -->
+  <section>
+    <article class="ask">
+      <div class="ask__bar">
+        <span class="ask__n">06</span>
+        <span class="ask__title">A floor plan of the building</span>
+        <span class="tag blue">Improves one screen</span>
+      </div>
+      <div class="ask__body">
+        <dl class="who">
+          <dt>From</dt><dd>Anyone holding the drawing</dd>
+          <dt>Format</dt><dd>PDF, CAD, or a photograph of the printed plan</dd>
+        </dl>
+        <p>
+          The Factory map today draws the <em>route</em> — departments arranged
+          by what feeds what, coloured live by how loaded each one is. It says so
+          on the screen, because inventing a building layout would produce a
+          picture that is wrong in a way that looks authoritative.
+        </p>
+        <p>
+          With a real plan, the same live colouring can be laid over the actual
+          shop floor, which is what makes it useful on a wall.
+        </p>
+      </div>
+    </article>
+  </section>
+
+  <hr class="rule" />
+
+  <!-- ============================ compliance ============================ -->
+  <section>
+    <h2>One thing for your compliance adviser, not for us</h2>
+    <div class="note">
+      <p>
+        The overtime ceiling in the system is configurable and currently set to
+        <strong>five hours on top of an eight-hour net shift</strong>, which is
+        the figure the specification carries.
+      </p>
+      <p>
+        That is long against the Factories Act’s daily and quarterly limits, and
+        multi-shift working carries its own provisions. Your compliance adviser
+        should confirm the number before go-live. <strong>We flag it; we do not
+        advise on it.</strong>
+      </p>
+    </div>
+  </section>
+
+  <hr class="rule" />
+
+  <!-- ============================ what happens ============================ -->
+  <section>
+    <h2>What each one switches on</h2>
+    <p class="lede">
+      So it is clear these are not questions for their own sake.
+    </p>
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr><th>When this arrives</th><th>This becomes real, that day</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>1 + 2</strong> — figures and the route</td>
+            <td>Every date in the system. The schedule, the heatmap, order acceptance, the breach warnings and the bottleneck all stop being illustrations. <strong>PPC and merchandising can use Kram in earnest from this point.</strong></td>
+          </tr>
+          <tr>
+            <td><strong>3</strong> — the Panipuri file</td>
+            <td>Orders stop being typed twice.</td>
+          </tr>
+          <tr>
+            <td><strong>4</strong> — BOMs and costs</td>
+            <td>The Material and Money screens switch on, and material shortages start appearing in the alerts.</td>
+          </tr>
+          <tr>
+            <td><strong>5</strong> — roles and accounts</td>
+            <td>Your own people can sign in, on the floor and on phones.</td>
+          </tr>
+          <tr>
+            <td><strong>6</strong> — the floor plan</td>
+            <td>The factory map becomes a map of your factory.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <hr class="rule" />
+
+  <!-- ============================ what we need back ============================ -->
+  <section>
+    <h2>What we need back</h2>
+    <p class="lede">
+      In rough order of value. Nothing here needs to be complete to be worth
+      sending — a partial answer to any of these moves the project further than a
+      complete answer to none of them.
+    </p>
+    <ul class="checklist">
+      <li><span class="box"></span><span><strong>A name and a date for the capacity workbook.</strong> Who at PPC is filling it in, and roughly when. This matters more than the sheet itself.</span></li>
+      <li><span class="box"></span><span><strong>One article filled in completely</strong>, across all fourteen departments — the fastest way to confirm the conventions are understood the same way on both sides.</span></li>
+      <li><span class="box"></span><span><strong>Does Machining feed Ply Cutting?</strong> One sentence.</span></li>
+      <li><span class="box"></span><span><strong>The rest of the what-feeds-what list</strong>, including the Foam Pasting and Cutting questions above.</span></li>
+      <li><span class="box"></span><span><strong>One Panipuri export file</strong>, unedited — and whether it holds a stuffing date or a delivery date.</span></li>
+      <li><span class="box"></span><span><strong>One article’s bill of materials</strong>, and its cost.</span></li>
+      <li><span class="box"></span><span><strong>Names, email addresses and roles</strong> for the people who should have accounts, and your answer on who sees what.</span></li>
+      <li><span class="box"></span><span><strong>The floor plan</strong>, in whatever form it exists.</span></li>
+      <li><span class="box"></span><span><strong>Your holiday list</strong> for the year, if it is anything other than Sundays.</span></li>
+    </ul>
+
+    <div class="note good">
+      <div class="note__t">Where a working session would be quicker than email</div>
+      <p>
+        Items 1 and 2 are worth an hour in a room with PPC rather than a thread.
+        The conventions behind “units per day” and the dependency grid are the
+        two things most likely to come back subtly wrong in writing, and both are
+        settled in minutes face to face. We are happy to come to you.
+      </p>
+    </div>
+  </section>
+
+  <footer>
+    <span>Kram · DBBS/UM/KRAM/06 Rev A</span>
+    <span>Data Brilliance Business Solutions LLP</span>
+  </footer>
+
+</div>
