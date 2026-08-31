@@ -50,3 +50,7 @@ screenshots/
 *.njsproj
 *.sln
 *.sw?
+
+# Rendered from the notes in docs/ by scripts/make-pdf.mjs, so the HTML is the
+# source and the PDF is a build. Regenerate rather than edit.
+docs/*.pdf

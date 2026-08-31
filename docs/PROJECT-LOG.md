@@ -595,6 +595,33 @@ factory.
 
 ---
 
+### 2026-08-31 — The notes render to PDF, and my own print CSS was wrong
+
+`scripts/make-pdf.mjs` turns any note in `docs/` into an A4 PDF that can be
+attached to an email. The notes are written as *fragments* — a `<title>`, a
+`<style>` and the content — because that is the shape the Artifact host wraps
+and publishes; opened straight from the filesystem they render as a quirks-mode
+page that does not match what the client sees at the link. The script supplies
+the same skeleton the host does, forces `data-theme="light"` because a PDF has
+paper rather than a reader preference, and waits on `document.fonts.ready` so
+the file gets the typeface that actually arrived rather than whatever had loaded
+when the renderer fired. It reports which one it got.
+
+**And the first version had the print stylesheet above the fragment**, so
+`body { background: var(--paper) }` won on source order — equal specificity, and
+`@media print` adds none — and the screen's grey ground survived into eight
+pages of full-bleed tint on a document meant to be printed. Print rules now come
+last, and print sets a white ground; every panel carries a border already, so
+the structure the tint was providing survives without it.
+
+Page breaks are held off `.ask`, `.note`, `.tablewrap`, table rows and checklist
+items. A "what we need back" list split across a page boundary loses half its
+items to anybody who reads only the first.
+
+All six notes render: KRAM/02, /04, /05, /06, the specification note and the
+demo script. `docs/*.pdf` is gitignored — the HTML is the source and the PDF is
+a build.
+
 ## 9. Log
 
 Newest first. One entry per working session — what changed, and anything a
