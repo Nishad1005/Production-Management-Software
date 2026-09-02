@@ -205,54 +205,105 @@ describe('a book that touches a fraction of the masters', () => {
   })
 
   it('leaves the department-level figures identical either way', async () => {
-    // The narrowing must not move a single number on the heatmap. Components
-    // with capacity and no load contributed zero to a department's utilisation,
-    // so dropping them changes what `schedule_component_load` lists and nothing
-    // that `schedule_department_day` reports.
+    /*
+     * The narrowing must not move a single number on the heatmap: a component
+     * with capacity and no load contributes zero to its department's
+     * utilisation, so dropping it changes what `schedule_component_load` lists
+     * and nothing that a department-day figure reports.
+     *
+     * This compares the **aggregate over `schedule_component_load`**, not
+     * `schedule_department_day`. Since 30 Aug that view reads the stored
+     * `schedule_daily_department` table, so adding capacity rows would not move
+     * it — the first version of this test compared two identical reads of a
+     * table nothing had touched and passed for a week without testing anything.
+     * The claim lives in the aggregate, so the aggregate is what is compared.
+     */
     await withRollback(async (c) => {
       await c.query(SPARSE)
       await c.query(`select run_schedule()`)
-      const narrow = await c.query(
-        `select department_id, load_date, round(utilisation, 6) as utilisation, status
-           from schedule_department_day
-          where run_id = current_run_id()
-          order by department_id, load_date`,
-      )
 
-      // Every rated pairing put back into the grid, as the engine used to do.
-      await c.query(
+      const aggregate = `
+        select department_id, load_date,
+               round(sum(utilisation), 6) as utilisation,
+               count(*) filter (where qty_planned > 0) as loaded
+          from schedule_component_load
+         where run_id = current_run_id()
+         group by department_id, load_date
+         order by department_id, load_date`
+
+      const narrow = await c.query(aggregate)
+
+      // The rated pairings the plan does not touch, put back as the engine used
+      // to write them — over a bounded window, because all 994 across the whole
+      // horizon is 179,000 rows and a minute and a half of test time for a
+      // claim fifteen days prove just as well.
+      const added = await c.query(
         `insert into schedule_daily_capacity
            (run_id, department_id, shift_id, component_id, load_date, capacity)
          select current_run_id(), cr.department_id, cr.shift_id, cr.component_id,
-                w.calendar_date, cr.units_per_day
+                d.load_date, cr.units_per_day
            from component_rates cr
-           join working_days w on w.is_working
-          where w.calendar_date between
-                  (select min(load_date) from schedule_daily_capacity
-                    where run_id = current_run_id())
-              and (select max(load_date) from schedule_daily_capacity
-                    where run_id = current_run_id())
-         on conflict do nothing`,
+           cross join (
+             select distinct load_date from schedule_daily_capacity
+              where run_id = current_run_id()
+              order by load_date
+              limit 15
+           ) d
+          where not exists (
+            select 1 from schedule_tasks t
+             where t.run_id = current_run_id()
+               and t.component_id = cr.component_id
+          )
+         on conflict do nothing
+         returning 1`,
       )
-      // The put-back has to have actually put something back, or the
-      // comparison below compares a thing with itself and proves nothing.
-      const grew = await c.query<{ before: string; after: string }>(
-        `select (select count(distinct component_id) from schedule_daily_capacity
-                  where run_id = current_run_id())::text as after,
-                $1::text as before`,
-        [String(12 * 14)],
-      )
-      expect(Number(grew.rows[0].after)).toBeGreaterThan(Number(grew.rows[0].before))
+      // The put-back has to have actually put something back, or the comparison
+      // below compares a thing with itself and proves nothing.
+      expect(added.rowCount).toBeGreaterThan(0)
 
-      const wide = await c.query(
-        `select department_id, load_date, round(utilisation, 6) as utilisation, status
-           from schedule_department_day
-          where run_id = current_run_id()
-          order by department_id, load_date`,
-      )
-
+      const wide = await c.query(aggregate)
       expect(wide.rows.length).toBeGreaterThan(0)
       expect(narrow.rows).toEqual(wide.rows)
     })
   })
+
+  it('stores the department-day figure the aggregate would have computed', async () => {
+    // The other half of materialising it: the engine writes this once, and if
+    // the written figure ever drifts from the expression it replaced, every
+    // heatmap cell, breach count and flagged day is quietly wrong with nothing
+    // to compare against.
+    await withRollback(async (c) => {
+      await c.query(SPARSE)
+      await c.query(`select run_schedule()`)
+
+      const { rows } = await c.query<{ mismatched: string; total: string }>(
+        `with computed as (
+           select department_id, load_date,
+                  round(sum(utilisation), 6) as utilisation,
+                  case
+                    when sum(utilisation) > 1.0001 then 'over'
+                    when sum(utilisation) > 0 then 'loaded'
+                    else 'idle'
+                  end as status
+             from schedule_component_load
+            where run_id = current_run_id()
+            group by department_id, load_date
+         )
+         select count(*) filter (
+                  where s.utilisation is null
+                     or round(s.utilisation, 6) <> c.utilisation
+                     or s.status <> c.status
+                )::text as mismatched,
+                count(*)::text as total
+           from computed c
+           left join schedule_daily_department s
+             on s.run_id = current_run_id()
+            and s.department_id = c.department_id
+            and s.load_date = c.load_date`,
+      )
+      expect(Number(rows[0].total)).toBeGreaterThan(0)
+      expect(Number(rows[0].mismatched)).toBe(0)
+    })
+  })
+
 })

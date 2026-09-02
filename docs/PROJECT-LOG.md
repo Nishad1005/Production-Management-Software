@@ -658,6 +658,51 @@ could not have caught this and had to be told to look.
 The 20 Aug script's asks are not lost: they are DBBS/UM/KRAM/06, which is the
 sheet the generated script closes by handing over.
 
+### 2026-09-02 — Two runs at once, and a test that had been proving nothing
+
+Asked whether pressing **Run the schedule** would work before a demonstration.
+It had been verified through the API and never through the button, so it was
+driven in a browser — and the first check was written so that it could not fail:
+it waited for "a run duration on screen", which was already there from the
+previous run. It reported success in zero seconds.
+
+Rewritten to wait for that stamp to *change*, it failed:
+
+    run_schedule: canceling statement due to lock timeout
+
+Not a defect — the first, broken check had left a 72-second run in flight and
+the second press collided with it. The button works: the run it started
+completed, 168 tasks, 72 s, and is the current plan. But **a raw Postgres
+sentence is what a collision puts on screen**, and two planners at two desks is
+not a hypothetical. `friendlyWriteError` now rewrites lock and statement
+timeouts into what the reader can act on, and — the part that matters — says
+nothing was changed, because a planner who thinks a failed run left the plan
+half-written will not press the button again. Everything unrecognised passes
+through verbatim; a message nobody anticipated is the one most worth reading
+exactly. Same rule as `friendlyAuthError`, which it now sits beside.
+
+**And the suite turned up worse.** `engine-scale`'s "leaves the department-level
+figures identical either way" timed out at 60 s, having taken 153: it inserted
+179,000 capacity rows to make its point. Looking at why, it was also **vacuous**.
+It compared two reads of `schedule_department_day` — which since 30 Aug is a
+view over a stored table — before and after inserting rows into
+`schedule_daily_capacity`, which that table does not read. Two identical reads
+of something nothing had touched, passing for three days.
+
+The risk was noted in the 30 Aug entry when the table was introduced and the
+test was not revisited, which is the whole lesson: **materialising a value moves
+where its test has to point**, and a test left pointing at the old place keeps
+passing, which is why nobody looks. It now compares the aggregate over
+`schedule_component_load`, where the claim actually lives, over a fifteen-day
+window rather than the whole horizon — 12,000 rows instead of 179,000, and one
+second instead of two and a half minutes.
+
+A second test was added with it: the stored `schedule_daily_department` must
+equal the aggregate it replaced, row for row. Nudging one stored figure by 0.5
+makes it report exactly one mismatch. Without it, the engine could write a wrong
+department-day figure and every heatmap cell, breach count and flagged day would
+be quietly wrong with nothing to compare against.
+
 ## 9. Log
 
 Newest first. One entry per working session — what changed, and anything a
