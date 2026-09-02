@@ -77,7 +77,7 @@ unmodified in the browser, so the demo runs the real engine with no backend.
 `npm run build` produces a static folder.
 
 **Online.** Supabase project `fiqfbbnmksppbpxmhnbv` — *kram*, Mumbai
-(ap-south-1), Postgres 17.6. All fifty-seven migrations applied, the last on 30 Aug (§9).
+(ap-south-1), Postgres 17.6. All fifty-eight migrations applied, the last on 30 Aug (§9).
 
 > **Migrations are append-only from here.** Editing one now means the file and
 > the live database disagree, silently, until something breaks in a way that
@@ -702,6 +702,50 @@ equal the aggregate it replaced, row for row. Nudging one stored figure by 0.5
 makes it report exactly one mismatch. Without it, the engine could write a wrong
 department-day figure and every heatmap cell, breach count and flagged day would
 be quietly wrong with nothing to compare against.
+
+### 2026-09-02 — The acceptance check runs the engine, and was never told it could
+
+    check_order_acceptance: canceling statement due to statement timeout
+
+From *Can we take this order?* on the live project. The function inserts a
+hypothetical shipment line, calls `run_schedule`, reports what breaks and rolls
+the line away — a full re-plan of the factory, 76 seconds, running under the
+eight Supabase gives the `authenticated` role.
+
+`20260823100000` raised the ceiling on `run_schedule`, `run_what_if` and
+`rebuild_working_days`. It missed this one, because that list was written from
+the functions that were slow *that day*, and this one is slow by virtue of what
+it calls rather than what it contains.
+
+**The test made the omission permanent.** `tests/engine-timeout.test.ts`
+asserted those three names and then asserted that *nothing else* carried a
+raised timeout — a rule written to stop a ceiling being lifted quietly, whose
+side effect was to state that this function's missing ceiling was correct. It
+was green over `check_order_acceptance` from the day both existed until the
+screen failed in front of the client.
+
+The set is now **derived from the catalogue**: a recursive walk over
+`pg_proc.prosrc` finds every function that reaches `run_schedule` or
+`run_what_if` at any depth, and each must carry a raised timeout. Removing the
+new migration makes it fail naming both offenders. Matching on `name(` in source
+text will occasionally catch a mention in a comment, which errs towards
+demanding a ceiling on a function that may not need one — the safe direction,
+and one a person resolves by looking.
+
+**A second function surfaced from the same walk.** `suggest_stuffing_date` calls
+the acceptance check up to twelve times, each a full run: roughly fifteen
+minutes. It is given 180 seconds and will exceed it, deliberately — no ceiling
+makes a fifteen-minute API call reasonable, and it cannot work until the engine
+builds its grid set-based (§8.1). It is wired to no screen, which makes it the
+**seventh** built-and-tested thing found connected to nothing.
+
+The acceptance screen printed the raw error in its own panel regardless of the
+banner, so both now go through `friendlyWriteError`.
+
+**Two ceilings raised in two weeks, both found by a client hitting them.** The
+pattern is not that ceilings get forgotten; it is that *a list of names is the
+wrong shape for this rule*. Every hand-written list in this repository that
+enumerates what should be true of a set is a candidate for the same failure.
 
 ## 9. Log
 

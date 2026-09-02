@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useAcceptanceCheck, useArticles } from '@/data/planning'
+import { friendlyWriteError } from '@/lib/queryClient'
 import { Button, Field, Panel, Table, Tag, Td, Th } from '@/components/ui'
 import { BREACH_EXPLAINER, BREACH_LABEL, formatDateLong, formatNumber, inputClass } from '@/components/format'
 
@@ -151,9 +152,21 @@ export function Acceptance() {
 
       {check.isError ? (
         <Panel title="The check failed">
-          <pre className="text-flag overflow-x-auto text-[11.5px] whitespace-pre-wrap">
-            {String(check.error)}
-          </pre>
+          {/*
+            The same wording as the banner, and for the same reason. This
+            screen calls the engine — a full re-plan of the factory with the
+            proposed line added — so the message a planner meets here is a
+            Postgres timeout, and `Error: check_order_acceptance: canceling
+            statement due to statement timeout` tells them nothing they can do
+            anything about. Anything unrecognised still prints verbatim.
+          */}
+          <p className="text-flag text-[12.5px]">
+            {friendlyWriteError(
+              check.error instanceof Error
+                ? check.error.message
+                : String(check.error),
+            )}
+          </p>
         </Panel>
       ) : null}
     </div>
