@@ -622,6 +622,42 @@ All six notes render: KRAM/02, /04, /05, /06, the specification note and the
 demo script. `docs/*.pdf` is gitignored — the HTML is the source and the PDF is
 a build.
 
+### 2026-09-02 — The demonstration script is generated, because its numbers move
+
+`scripts/make-demo-script.mjs` reads the live project and writes
+`docs/demo-script.html` — eight screens, what will be on each one, what to say,
+and the questions each screen provokes with the answers. `npm run demo:script`,
+then `npm run pdf docs/demo-script.html`.
+
+**It is generated because the hand-written one was wrong twice over.** Written on
+20 Aug, it described a factory that six phases and an interim data load had
+since replaced. And the figures move on their own, which is the harder half:
+breach severity is `days_out < 15` against *today*, so a warning becomes a
+critical overnight with nothing changing in the database. Two days after the
+figures went into the runbook, `attention_breach` had gone from carrying
+criticals to none, because the earliest stuffing date is now 21 days out rather
+than 15. Standing in front of a client reading a number the screen contradicts
+is the worst available version of this project's own recurring failure.
+
+The generated script stamps when it was made, how old the plan it describes is,
+and prints a banner over the whole document if that plan is more than three days
+old — because a script and a stale plan disagree silently otherwise.
+
+**And it reproduced the thousand-row bug immediately.** Its first run printed
+*7 departments × 174 days* for the heatmap. There are fourteen. `heatmap_cell`
+holds 2,030 rows for the current run and PostgREST returns a thousand without
+saying so — the defect fixed in `src/lib/backend.ts` on 30 Aug, arriving in a
+script that carries its own client and never got the fix. **A defect fixed in
+one place is not fixed.** Both readers now page.
+
+`verify:live` now names any view whose true count exceeds a page, since that is
+the set where a reader that forgets will be silently wrong. It counts with
+`head: true`, so its own figures were never affected — which is precisely why it
+could not have caught this and had to be told to look.
+
+The 20 Aug script's asks are not lost: they are DBBS/UM/KRAM/06, which is the
+sheet the generated script closes by handing over.
+
 ## 9. Log
 
 Newest first. One entry per working session — what changed, and anything a

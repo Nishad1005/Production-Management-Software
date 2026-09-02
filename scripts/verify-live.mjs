@@ -213,6 +213,7 @@ async function timeViews(db) {
     'attention_handover', 'attention_department_unstaffed',
   ]
   const slow = []
+  const big = []
   for (const view of views) {
     const t0 = Date.now()
     const { error, count } = await db
@@ -226,7 +227,19 @@ async function timeViews(db) {
     }
     const mark = ms > 2000 ? 'SLOW' : 'ok  '
     if (ms > 2000) slow.push(view)
+    // Counted with head:true, so this is the true count and not what a reader
+    // would receive. Anything over a page is a view where a client that does
+    // not paginate gets a silent partial — which is how the heatmap came to
+    // draw six of fourteen departments, and how a generated demonstration
+    // script came to claim seven.
+    if ((count ?? 0) > 1000) big.push(`${view} (${count})`)
     console.log(`  ${mark} ${view.padEnd(24)} ${String(ms).padStart(6)} ms · ${count ?? 0} rows`)
+  }
+  if (big.length) {
+    console.log(
+      `\n  Over one page, so any reader that does not paginate gets part of it` +
+        ` silently:\n    ${big.join('\n    ')}`,
+    )
   }
   if (slow.length) {
     console.log(
