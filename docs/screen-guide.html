@@ -1,0 +1,626 @@
+<title>Kram — Every screen, every term</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  /* Kram's own register, as the request notes carry it, so a folder of these
+     reads as one set of documents. */
+  :root {
+    --paper: #e9edf1; --sheet: #ffffff; --ink: #16202e; --mid: #5c6b7a;
+    --faint: #8996a4; --rule: #c9d3dc; --rule-soft: #dfe6ec;
+    --blue: #2c4a6e; --amber: #b07d1a; --flag: #c4462e; --go: #1a6547;
+    --bar-text: #ffffff;
+    --sans: 'Archivo', ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) {
+      --paper: #0f151d; --sheet: #16202e; --ink: #e6ecf2; --mid: #a3b1c0;
+      --faint: #7e8d9d; --rule: #2c3a4b; --rule-soft: #223044;
+      --blue: #8fb4dc; --amber: #d9a441; --flag: #e8705c; --go: #4fb98c;
+    }
+  }
+  :root[data-theme='dark'] {
+    --paper: #0f151d; --sheet: #16202e; --ink: #e6ecf2; --mid: #a3b1c0;
+    --faint: #7e8d9d; --rule: #2c3a4b; --rule-soft: #223044;
+    --blue: #8fb4dc; --amber: #d9a441; --flag: #e8705c; --go: #4fb98c;
+  }
+
+  body { background: var(--paper); color: var(--ink); font-family: var(--sans);
+    font-size: 16px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  .doc { max-width: 60rem; margin: 0 auto; padding: 2.5rem 1.25rem 5rem;
+    display: flex; flex-direction: column; gap: 1.8rem; }
+
+  .head { background: var(--sheet); border: 1px solid var(--rule); }
+  .head__main { padding: 1.7rem 1.5rem 1.4rem; }
+  .firm { font-family: var(--mono); font-size: 0.6875rem; letter-spacing: 0.15em;
+    text-transform: uppercase; color: var(--faint); }
+  h1 { font-size: clamp(1.9rem, 5vw, 2.6rem); line-height: 1.05; margin: 0.4rem 0 0.55rem;
+    letter-spacing: -0.028em; font-weight: 700; text-wrap: balance; }
+  .sub { color: var(--mid); margin: 0; max-width: 56ch; font-size: 1.03rem; }
+  dl.stamp { margin: 0; display: grid; grid-template-columns: auto 1fr;
+    border-top: 1px solid var(--rule); font-family: var(--mono); font-size: 0.75rem; }
+  dl.stamp dt { padding: 0.45rem 0.9rem; color: var(--faint); text-transform: uppercase;
+    font-size: 0.6875rem; letter-spacing: 0.09em; border-bottom: 1px solid var(--rule-soft);
+    border-right: 1px solid var(--rule-soft); white-space: nowrap; }
+  dl.stamp dd { margin: 0; padding: 0.45rem 0.9rem; border-bottom: 1px solid var(--rule-soft); }
+
+  h2 { font-size: 1.32rem; margin: 0.8rem 0 0; letter-spacing: -0.015em; text-wrap: balance; }
+  h3 { font-size: 1rem; margin: 0; }
+  p { margin: 0; max-width: 72ch; }
+  .lede { color: var(--mid); }
+
+  .tag { display: inline-block; font-family: var(--mono); font-size: 0.625rem;
+    letter-spacing: 0.09em; text-transform: uppercase; padding: 0.14rem 0.45rem;
+    border: 1px solid currentColor; white-space: nowrap; }
+  .tag.setup { color: var(--flag); }
+  .tag.daily { color: var(--amber); }
+  .tag.tool  { color: var(--blue); }
+  .tag.output{ color: var(--go); }
+
+  .tablewrap { overflow-x: auto; border: 1px solid var(--rule); background: var(--sheet); }
+  table { border-collapse: collapse; width: 100%; font-size: 0.875rem; }
+  th, td { text-align: left; padding: 0.5rem 0.8rem; border-bottom: 1px solid var(--rule-soft); vertical-align: top; }
+  th { font-family: var(--mono); font-size: 0.625rem; letter-spacing: 0.11em;
+    text-transform: uppercase; color: var(--faint); font-weight: 600; white-space: nowrap; }
+  tr:last-child td { border-bottom: 0; }
+  td.term { font-weight: 600; white-space: nowrap; }
+  td.def { color: var(--mid); }
+  td.def strong { color: var(--ink); }
+
+  .screen { background: var(--sheet); border: 1px solid var(--rule); }
+  .screen__bar { background: var(--ink); color: var(--bar-text); padding: 0.55rem 1rem;
+    display: flex; gap: 0.85rem; align-items: baseline; flex-wrap: wrap; }
+  :root[data-theme='dark'] .screen__bar { background: #dbe4ee; color: #0f151d; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme='light']) .screen__bar { background: #dbe4ee; color: #0f151d; } }
+  .screen__nav { font-family: var(--mono); font-size: 0.6875rem; letter-spacing: 0.11em;
+    text-transform: uppercase; opacity: 0.78; }
+  .screen__title { font-weight: 600; font-size: 0.97rem; }
+  .screen__bar .tag { margin-left: auto; border-color: currentColor; }
+  .screen__body { padding: 1.05rem 1.1rem; display: flex; flex-direction: column; gap: 0.85rem; }
+
+  .needs { border-left: 3px solid var(--amber); padding: 0.55rem 0.9rem;
+    background: color-mix(in srgb, var(--amber) 7%, transparent); font-size: 0.92rem; }
+  .needs__t { font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.13em;
+    text-transform: uppercase; color: var(--amber); margin-bottom: 0.2rem; }
+
+  .note { background: var(--sheet); border: 1px solid var(--rule);
+    border-left: 3px solid var(--blue); padding: 1.05rem 1.2rem;
+    display: flex; flex-direction: column; gap: 0.5rem; }
+
+  footer { border-top: 1px solid var(--rule); padding-top: 1rem; color: var(--faint);
+    font-family: var(--mono); font-size: 0.7rem; display: flex; justify-content: space-between;
+    gap: 1rem; flex-wrap: wrap; }
+</style>
+
+<div class="doc">
+
+  <header class="head">
+    <div class="head__main">
+      <div class="firm">Data Brilliance Business Solutions LLP</div>
+      <h1>Every screen, every term</h1>
+      <p class="sub">What each of Kram's twenty screens is for, what every word
+        and column on it means, and which screens need something from U&amp;M's
+        people before they can do their job.</p>
+    </div>
+    <dl class="stamp">
+      <dt>Ref</dt><dd>DBBS/UM/KRAM/08</dd>
+      <dt>Revision</dt><dd>A</dd>
+      <dt>Client</dt><dd>U&amp;M Designs</dd>
+      <dt>Companion to</dt><dd>KRAM/06 (the asks) · KRAM/07 (the demonstration)</dd>
+    </dl>
+  </header>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>How to read the tags</h2>
+    <p class="lede">Every screen below carries one of four tags. Together they
+      answer the question this document exists for: <em>which pages expect
+      something from our side?</em></p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Tag</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td><span class="tag setup">Set-up input</span></td><td class="def">Needs data from U&amp;M <strong>once</strong> (then only when things change): rates, routes, parts lists, costs, people. Until it arrives, the screen runs on our placeholder figures or sits empty and says so.</td></tr>
+        <tr><td><span class="tag daily">Daily input</span></td><td class="def">Needs U&amp;M's people to <strong>type into it as part of the working day</strong> — this is where the software learns what actually happened.</td></tr>
+        <tr><td><span class="tag tool">Planner's tool</span></td><td class="def">Interactive, but nothing to maintain: a planner asks a question or makes a decision, the software answers or obeys.</td></tr>
+        <tr><td><span class="tag output">Output</span></td><td class="def">Pure display. Nobody enters anything here, ever — it is the software's own conclusions from the inputs above.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>All twenty screens at a glance</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Screen</th><th>In one line</th><th>Type</th><th>Whose job</th></tr></thead>
+      <tbody>
+        <tr><td class="term">Attention</td><td class="def">Everything needing an answer, one list, most urgent first</td><td><span class="tag output">Output</span></td><td class="def">Management, planner</td></tr>
+        <tr><td class="term">Command centre</td><td class="def">The whole plan in four numbers, and the button that re-plans</td><td><span class="tag tool">Planner's tool</span></td><td class="def">Planner</td></tr>
+        <tr><td class="term">Dashboard</td><td class="def">The MD's nine indicators — is the factory on track today</td><td><span class="tag output">Output</span></td><td class="def">MD</td></tr>
+        <tr><td class="term">Factory map</td><td class="def">The departments and what feeds what, coloured by pressure</td><td><span class="tag output">Output</span></td><td class="def">Everyone</td></tr>
+        <tr><td class="term">Load heatmap</td><td class="def">Every department × every day, coloured by how full</td><td><span class="tag output">Output</span></td><td class="def">Planner, MD</td></tr>
+        <tr><td class="term">Schedule</td><td class="def">Every job on a calendar; drag a bar to overrule the machine</td><td><span class="tag tool">Planner's tool</span></td><td class="def">Planner</td></tr>
+        <tr><td class="term">Order book</td><td class="def">Every promise; where new orders are entered</td><td><span class="tag daily">Daily input</span></td><td class="def">Merchandiser</td></tr>
+        <tr><td class="term">Accept an order</td><td class="def">Test a proposed order against everything already promised</td><td><span class="tag tool">Planner's tool</span></td><td class="def">Merchandiser, planner</td></tr>
+        <tr><td class="term">What if</td><td class="def">Try a capacity change on a copy of the plan</td><td><span class="tag tool">Planner's tool</span></td><td class="def">Planner</td></tr>
+        <tr><td class="term">WIP</td><td class="def">Where every order physically is, department by department</td><td><span class="tag output">Output</span></td><td class="def">Merchandiser, MD</td></tr>
+        <tr><td class="term">My department</td><td class="def">One department's work list for today</td><td><span class="tag output">Output</span></td><td class="def">Department heads</td></tr>
+        <tr><td class="term">Production</td><td class="def">Writing down what was made, good and rejected</td><td><span class="tag daily">Daily input</span></td><td class="def">Supervisors</td></tr>
+        <tr><td class="term">Manpower</td><td class="def">Who came in — and capacity follows attendance</td><td><span class="tag daily">Daily input</span></td><td class="def">Dept heads / HR</td></tr>
+        <tr><td class="term">Material</td><td class="def">What the plan commits you to buying, and by when</td><td><span class="tag setup">Set-up input</span></td><td class="def">Purchase, store</td></tr>
+        <tr><td class="term">Quality</td><td class="def">Rejections by department, article and cause</td><td><span class="tag output">Output</span></td><td class="def">Quality, MD</td></tr>
+        <tr><td class="term">Forecast</td><td class="def">What the factory really achieves — once it has earned the right to say</td><td><span class="tag output">Output</span></td><td class="def">MD, planner</td></tr>
+        <tr><td class="term">Money</td><td class="def">Cash going out, week by week, priced from the plan</td><td><span class="tag setup">Set-up input</span></td><td class="def">Accounts</td></tr>
+        <tr><td class="term">Capacity sheet</td><td class="def">The 994 boxes every other number is arithmetic on</td><td><span class="tag setup">Set-up input</span></td><td class="def">PPC</td></tr>
+        <tr><td class="term">Masters</td><td class="def">What the factory is: departments, products, machines, holidays</td><td><span class="tag setup">Set-up input</span></td><td class="def">PPC, planner</td></tr>
+        <tr><td class="term">Users</td><td class="def">Who can sign in, and what each role may do</td><td><span class="tag setup">Set-up input</span></td><td class="def">Management</td></tr>
+      </tbody>
+    </table></div>
+    <p class="lede">There is also a twenty-first, the <strong>Floor display</strong> —
+      a full-screen version of a department's day for a TV on the wall. Nobody
+      touches it, so it is not in the menu and not counted here.</p>
+    <p><strong>The short answer to "what do your people have to do":</strong>
+      five screens need data set up once (the capacity sheet above all), and
+      three need someone's two minutes a day — supervisors writing down
+      production, someone marking attendance, and merchandising entering orders
+      as they arrive. Everything else is the software talking back.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Words that appear everywhere</h2>
+    <p class="lede">Learn these nine and every screen reads easily.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Term</th><th>What it means</th></tr></thead>
+      <tbody>
+        <tr><td class="term">Article</td><td class="def">One product in your catalogue — one SKU. There are 71 on the live system, and they are yours.</td></tr>
+        <tr><td class="term">Component</td><td class="def">One department's piece of an article — the stitching work on a chair is one component, the ply-cut parts another. Departments make components; containers ship articles.</td></tr>
+        <tr><td class="term">Shipment line</td><td class="def"><strong>The unit everything is planned in.</strong> One quantity of one article going into one container on one date. An order shipping in two containers is two shipment lines — two separate deadlines, planned separately.</td></tr>
+        <tr><td class="term">Stuffing date</td><td class="def">The day the container is loaded. Every date in the system is calculated <em>backwards</em> from this one.</td></tr>
+        <tr><td class="term">D-minus</td><td class="def">How many days before the stuffing date a department must finish its part. Stitching at D-26 must finish 26 days before the container. These numbers come from your planning team, per article per department.</td></tr>
+        <tr><td class="term">Rate</td><td class="def">How many units of one article a department can make in a day <strong>doing nothing else</strong>. This "dedicated" wording matters: it is not the department's share of a normal mixed day, and entering it that way is the single most damaging mistake possible in this system.</td></tr>
+        <tr><td class="term">Utilisation</td><td class="def">How much of a department's day is spoken for, as a fraction. A department making three products at once adds the <em>share of the day</em> each takes: 0.4 + 0.4 + 0.4 = 1.20 — more work than the day holds. Anything over 1.00 is flagged.</td></tr>
+        <tr><td class="term">Yield</td><td class="def">The percentage of pieces that survive a department without being rejected. At 98%, a department must be given slightly more than the order needs. Losses compound down the route, so early departments make the most extra.</td></tr>
+        <tr><td class="term">Run</td><td class="def">One complete re-planning of the factory. Every run is kept forever and none is ever overwritten, so any old plan can be pulled back and compared with what really happened.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <!-- ================================================================ -->
+  <div class="screen">
+    <div class="screen__bar"><span class="screen__nav">Command centre</span>
+      <span class="screen__title">The whole plan, and the button that makes it</span>
+      <span class="tag tool">Planner's tool</span></div>
+    <div class="screen__body">
+      <p>The planner's home page. The <strong>Run the schedule</strong> button
+        re-plans the whole factory (about 70 seconds; every run is kept), and
+        the rest of the page summarises the result.</p>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Term</th><th>What it means</th></tr></thead>
+        <tbody>
+          <tr><td class="term">Include orders</td><td class="def">Which promises to plan for. <strong>Confirmed only</strong> — signed orders. <strong>Confirmed + probable</strong> — adds orders you expect to sign; the usual choice. <strong>Everything</strong> — adds speculative forecasts too.</td></tr>
+          <tr><td class="term">Shipment lines</td><td class="def">How many container-loads the current plan covers (see the everywhere-words above — the line, not the order, is the unit).</td></tr>
+          <tr><td class="term">Scheduled tasks</td><td class="def">The jobs the plan breaks into: one task = one shipment line × one department × one component. 12 lines through 14 departments makes 168 tasks.</td></tr>
+          <tr><td class="term">Breaches</td><td class="def">Tasks that <strong>cannot be done as planned</strong> — the arithmetic does not fit. Each carries a reason (defined under the Schedule screen below): not enough working days, no material in time, no rate entered, and so on.</td></tr>
+          <tr><td class="term">Flagged days</td><td class="def">Department-days where more than a full day's work has been placed — utilisation over 1.00. Six flagged days might be one department six times or six departments once.</td></tr>
+          <tr><td class="term">Bottleneck utilisation</td><td class="def">The table ranking departments by how loaded they are on average. The top one is the factory's real constraint — extra capacity anywhere else changes nothing, so this is where the next person or machine goes.</td></tr>
+          <tr><td class="term">Average</td><td class="def">The department's mean utilisation across the whole plan. 0.46 = a little under half of every day spoken for, on average.</td></tr>
+          <tr><td class="term">Peak</td><td class="def">Its single worst day. 2.00 = one day holding two days' work.</td></tr>
+          <tr><td class="term">Flagged</td><td class="def">How many of its days are over 1.00.</td></tr>
+          <tr><td class="term">Idle</td><td class="def">How many of its days have nothing planned at all. High idle next to a high peak means the work is bunched, not excessive — a re-sequencing problem, not a hiring one.</td></tr>
+          <tr><td class="term">Constraint</td><td class="def">The label on the bottleneck — the highest average utilisation in the factory.</td></tr>
+          <tr><td class="term">Flag triage</td><td class="def">The overloaded days as a to-do list, sorted by how much warning remains.</td></tr>
+          <tr><td class="term">Over by</td><td class="def">How far past a full day that department-day is. +57% = the day holds 1.57 days of work.</td></tr>
+          <tr><td class="term">Still possible</td><td class="def">What the remaining notice still allows, from arithmetic on lead time: 45+ days out, <em>hiring</em> is still an option; 15–45, <em>overtime / re-sequence / subcontract</em>; under 15, honestly, a <em>customer conversation</em>. A label, never an instruction.</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <div class="screen">
+    <div class="screen__bar"><span class="screen__nav">Attention</span>
+      <span class="screen__title">Everything needing an answer, in one list</span>
+      <span class="tag output">Output</span></div>
+    <div class="screen__body">
+      <p>Every conclusion the other screens reach, gathered into one list of
+        plain sentences and sorted by urgency. Each line links to the screen
+        that fixes it. There is deliberately no way to dismiss an item — an
+        alert you can silence while it is still true stops being read.</p>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Term</th><th>What it means</th></tr></thead>
+        <tbody>
+          <tr><td class="term">Needs an answer today</td><td class="def">The red items: work that cannot be made in time with under 15 days' notice, material past its last ordering date, a contradiction in the route, a department with nobody rostered.</td></tr>
+          <tr><td class="term">Worth knowing</td><td class="def">The amber items: overloaded days further out, material short against stock, machines down, articles that cannot yet be planned.</td></tr>
+          <tr><td class="term">For the record</td><td class="def">Informational: chiefly handovers one department has declared that the next has not yet counted in.</td></tr>
+          <tr><td class="term">The red count in the header</td><td class="def">The number beside "things need an answer today", visible on <em>every</em> screen — it is this list's red items, following you around.</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <div class="screen">
+    <div class="screen__bar"><span class="screen__nav">Dashboard</span>
+      <span class="screen__title">The MD's nine indicators</span>
+      <span class="tag output">Output</span></div>
+    <div class="screen__body">
+      <p>One page for the morning question: <em>is the factory on track
+        today?</em> Nine tiles, and a table of planned-against-made by
+        department. A tile that cannot be computed honestly says what it is
+        waiting for rather than showing a made-up figure.</p>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Term</th><th>What it means</th></tr></thead>
+        <tbody>
+          <tr><td class="term">Orders running</td><td class="def">Orders currently open or in production.</td></tr>
+          <tr><td class="term">Delayed orders</td><td class="def">Orders whose plan already carries a breach — something in them cannot be made as scheduled.</td></tr>
+          <tr><td class="term">Containers ready</td><td class="def">Shipment lines where every department has finished — ready to stuff.</td></tr>
+          <tr><td class="term">On time, in full</td><td class="def">Of recently finished lines, the share completed by their date at full quantity.</td></tr>
+          <tr><td class="term">Daily production</td><td class="def">Good pieces declared across the factory, recent days.</td></tr>
+          <tr><td class="term">Production efficiency</td><td class="def">Made against planned, as a percentage, from the floor's own declarations.</td></tr>
+          <tr><td class="term">Rejections</td><td class="def">Rejected pieces as a share of everything declared.</td></tr>
+          <tr><td class="term">Material shortages</td><td class="def">Materials the plan needs more of than the store holds. Empty until parts lists arrive.</td></tr>
+          <tr><td class="term">WIP value</td><td class="def">The rupee value of unfinished work. <strong>Deliberately refuses to display</strong> until article costs are entered — it is the number an MD would quote first, and the only one that would have had to be invented.</td></tr>
+          <tr><td class="term">Planned / Made / Variance</td><td class="def">Per department per day: what the plan asked for, what was declared, and the difference.</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <div class="screen">
+    <div class="screen__bar"><span class="screen__nav">Factory map</span>
+      <span class="screen__title">The factory, as it flows</span>
+      <span class="tag output">Output</span></div>
+    <div class="screen__body">
+      <p>Each department as a box, arrows showing what feeds what, each box
+        coloured by its worst day in the next fortnight and carrying its
+        work-in-progress count. Drawn from the route your team confirms — it is
+        a <em>flow</em> map, and says so; lay a real floor plan under it once
+        one is supplied.</p>
+    </div>
+  </div>
+
+  <div class="screen">
+    <div class="screen__bar"><span class="screen__nav">Load heatmap</span>
+      <span class="screen__title">Every department, every day, coloured</span>
+      <span class="tag output">Output</span></div>
+    <div class="screen__body">
+      <div class="tablewrap"><table>
+        <thead><tr><th>Term</th><th>What it means</th></tr></thead>
+        <tbody>
+          <tr><td class="term">Part loaded</td><td class="def">Light green — some work, room to spare (utilisation up to about 0.8).</td></tr>
+          <tr><td class="term">At capacity</td><td class="def">Dark green — effectively full.</td></tr>
+          <tr><td class="term">Over capacity</td><td class="def">Red — more than a day's work on the day. These are the flagged days.</td></tr>
+          <tr><td class="term">Idle</td><td class="def">Empty cell on a working day — nothing planned.</td></tr>
+          <tr><td class="term">Closed</td><td class="def">Hatched — Sunday or a declared holiday. No work is ever planned onto one.</td></tr>
+          <tr><td class="term">Share of day</td><td class="def">In the click-through panel: the fraction of that day one order's work takes. The cell's colour is these shares added up.</td></tr>
+          <tr><td class="term">Capacity / Planned</td><td class="def">Also in the panel: what the department could make of that component that day, against what the plan asks of it.</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <div class="screen">
+    <div class="screen__bar"><span class="screen__nav">Schedule</span>
+      <span class="screen__title">Every job on a calendar</span>
+      <span class="tag tool">Planner's tool</span></div>
+    <div class="screen__body">
+      <p>A bar per task, placed by working backwards from each stuffing date
+        through the D-minus offsets. Red bars are breaches. Drag a bar to
+        <strong>pin</strong> it.</p>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Term</th><th>What it means</th></tr></thead>
+        <tbody>
+          <tr><td class="term">Starts / Due</td><td class="def">The first day of the job, and the day it must be finished (stuffing date minus its D-minus, moved to the nearest working day).</td></tr>
+          <tr><td class="term">Must make</td><td class="def">Quantity for the task — the order quantity <em>grossed up</em> for the yield of every department after this one, so enough survives.</td></tr>
+          <tr><td class="term">Pin</td><td class="def">A planner's decision that a bar stays where it was dragged. The plan reshuffles around it, it survives every future run, and it must carry a written reason (<strong>Why — required</strong>) so the decision can be accounted for later.</td></tr>
+          <tr><td class="term">Manual pins</td><td class="def">The list of every standing pin, with its reason, and the release control.</td></tr>
+          <tr><td class="term" style="white-space:normal">Breach reasons</td><td class="def"><strong>Runway</strong> — fewer working days than the department needs; overtime cannot fix this. <strong>Material</strong> — the work would have to start before material arrives. <strong>No capacity</strong> — no rate entered for this component in this department. <strong>D-minus missing</strong> — the offset was never entered, so it cannot be scheduled at all. <strong>Out of horizon</strong> — the dates fall outside the working-day calendar. <strong>Pin</strong> — a manual pin has pushed this past its due date; reported, never overridden.</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <div class="screen">
+    <div class="screen__bar"><span class="screen__nav">Order book</span>
+      <span class="screen__title">Every promise the plan is built on</span>
+      <span class="tag daily">Daily input</span></div>
+    <div class="screen__body">
+      <div class="tablewrap"><table>
+        <thead><tr><th>Term</th><th>What it means</th></tr></thead>
+        <tbody>
+          <tr><td class="term">ERP order</td><td class="def">The order's number in Panipuri, so the two systems always agree on which order is which.</td></tr>
+          <tr><td class="term">Confidence</td><td class="def"><strong>Confirmed</strong> — signed. <strong>Probable</strong> — expected. <strong>Forecast</strong> — speculative. The planner chooses which levels each run plans for.</td></tr>
+          <tr><td class="term">Lines / Line</td><td class="def">The shipment lines under the order — one per container.</td></tr>
+          <tr><td class="term">Stuffing / First stuffing</td><td class="def">Each line's container date; the order row shows its earliest.</td></tr>
+          <tr><td class="term">Customer delivery</td><td class="def">The date the customer expects — recorded, but never planned from. Plans come from the stuffing date.</td></tr>
+          <tr><td class="term">Material ready</td><td class="def">Optional: the day material will be available. Work is never scheduled before it, and a line that cannot fit after it becomes a <em>Material</em> breach.</td></tr>
+          <tr><td class="term">Container reference</td><td class="def">Free text naming the container, for the floor's benefit.</td></tr>
+          <tr><td class="term">Not yet on a shipment line</td><td class="def">Order quantity not yet assigned to any container — unplanned until it is.</td></tr>
+          <tr><td class="term">Breaches</td><td class="def">Per order: how many of its tasks the current plan cannot honour.</td></tr>
+        </tbody>
+      </table></div>
+      <div class="needs"><div class="needs__t">What U&amp;M provides</div>
+        Merchandising enters each order as it is confirmed — a minute's typing.
+        Once a sample export from Panipuri is supplied and the import is built,
+        this becomes a file upload instead.</div>
+    </div>
+  </div>
+
+  <div class="screen">
+    <div class="screen__bar"><span class="screen__nav">Accept an order</span>
+      <span class="screen__title">Can we say yes?</span>
+      <span class="tag tool">Planner's tool</span></div>
+    <div class="screen__body">
+      <p>Enter an article, a quantity and a stuffing date. Kram plans it
+        provisionally <em>alongside everything already promised</em>, reports
+        the result, and throws the trial away — nothing joins the order book by
+        checking. It genuinely re-plans the factory, so the answer takes about
+        70 seconds.</p>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Term</th><th>What it means</th></tr></thead>
+        <tbody>
+          <tr><td class="term">Verdict</td><td class="def">Per department: <em>fits</em>, or the breach reason it would cause.</td></tr>
+          <tr><td class="term">Must make / Starts / Due</td><td class="def">As on the Schedule screen — the trial order's own tasks, shown so the answer can be argued with rather than taken on faith.</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <div class="screen">
+    <div class="screen__bar"><span class="screen__nav">What if</span>
+      <span class="screen__title">Try a change on a copy</span>
+      <span class="tag tool">Planner's tool</span></div>
+    <div class="screen__body">
+      <div class="tablewrap"><table>
+        <thead><tr><th>Term</th><th>What it means</th></tr></thead>
+        <tbody>
+          <tr><td class="term">Scenario</td><td class="def">The change being tried: one department's capacity scaled up or down between two dates — four more people in stitching for a fortnight, or a week's shutdown.</td></tr>
+          <tr><td class="term">What are you trying?</td><td class="def">A required label for the scenario, so runs can be told apart later.</td></tr>
+          <tr><td class="term">Breaches / flagged days — now vs in this scenario</td><td class="def">The before-and-after, side by side. The live plan is untouched.</td></tr>
+          <tr><td class="term">Now starts → then</td><td class="def">Per task that moved: its start date under the live plan against its start under the scenario.</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <div class="screen">
+    <div class="screen__bar"><span class="screen__nav">WIP</span>
+      <span class="screen__title">Where everything is, right now</span>
+      <span class="tag output">Output</span></div>
+    <div class="screen__body">
+      <div class="tablewrap"><table>
+        <thead><tr><th>Term</th><th>What it means</th></tr></thead>
+        <tbody>
+          <tr><td class="term">Work in progress</td><td class="def">Anything started and not finished — counted from the floor's declarations, not from the plan.</td></tr>
+          <tr><td class="term">Ready to stuff</td><td class="def">Lines where every department on the route has declared its full quantity.</td></tr>
+          <tr><td class="term">In progress</td><td class="def">Per line per department: declared good pieces against required — "Stitching: 120 of 184".</td></tr>
+          <tr><td class="term">Still to begin</td><td class="def">Lines no department has declared anything against yet.</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <div class="screen">
+    <div class="screen__bar"><span class="screen__nav">My department</span>
+      <span class="screen__title">One department's day</span>
+      <span class="tag output">Output</span></div>
+    <div class="screen__body">
+      <div class="tablewrap"><table>
+        <thead><tr><th>Term</th><th>What it means</th></tr></thead>
+        <tbody>
+          <tr><td class="term">What you owe</td><td class="def">This department's tasks due soonest, quantities and dates, from the current plan.</td></tr>
+          <tr><td class="term">Holding you up</td><td class="def">What this department is still waiting to receive from the departments that feed it — with <em>late</em> marked. The first place to look when a day stalls.</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <div class="screen">
+    <div class="screen__bar"><span class="screen__nav">Production</span>
+      <span class="screen__title">Writing down what was made</span>
+      <span class="tag daily">Daily input</span></div>
+    <div class="screen__body">
+      <p>The screen the whole system learns from, built thumb-sized so it can be
+        used standing on the floor.</p>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Term</th><th>What it means</th></tr></thead>
+        <tbody>
+          <tr><td class="term">What you were asked for</td><td class="def">Today's planned jobs for the chosen department.</td></tr>
+          <tr><td class="term">Good / Rejected</td><td class="def">What the day actually produced: pieces that passed, pieces that failed (with the defect cause, which feeds the Quality screen). Declaring the same day twice <em>corrects</em> it rather than double-counting.</td></tr>
+          <tr><td class="term">Handed to you, not yet counted in</td><td class="def">Quantities the previous department says it sent, awaiting this department's acceptance.</td></tr>
+          <tr><td class="term">They made / You received</td><td class="def">The two sides of a handover. They may differ — that difference is transit loss or a miscount, and the software records it instead of assuming either side is right.</td></tr>
+        </tbody>
+      </table></div>
+      <div class="needs"><div class="needs__t">What U&amp;M provides</div>
+        Two minutes per department per shift: good, rejected, and accepting
+        what arrived. This single habit powers the Dashboard, WIP, Quality and
+        Forecast screens.</div>
+    </div>
+  </div>
+
+  <div class="screen">
+    <div class="screen__bar"><span class="screen__nav">Manpower</span>
+      <span class="screen__title">Who came in — and capacity follows</span>
+      <span class="tag daily">Daily input</span></div>
+    <div class="screen__body">
+      <div class="tablewrap"><table>
+        <thead><tr><th>Term</th><th>What it means</th></tr></thead>
+        <tbody>
+          <tr><td class="term">Who is in</td><td class="def">Each department's people marked present, absent or on leave. A rate measured with 22 people scales down honestly when 19 come in — today's capacity moves everywhere in the software.</td></tr>
+          <tr><td class="term">Sanctioned</td><td class="def">The established crew for a department on a shift — the denominator attendance is measured against.</td></tr>
+          <tr><td class="term">Deployment</td><td class="def">Where people are against where the plan needs them today.</td></tr>
+          <tr><td class="term">Overtime</td><td class="def">Recorded as hours actually worked, per person — so extra capacity is real, never assumed. The ceiling per day is configurable and awaits your compliance adviser's confirmation.</td></tr>
+          <tr><td class="term">Where overtime would close the gap</td><td class="def">Overloaded days where the shortfall is small enough that lawful overtime covers it — and, by omission, the days where it will not.</td></tr>
+        </tbody>
+      </table></div>
+      <div class="needs"><div class="needs__t">What U&amp;M provides</div>
+        Attendance marked daily (department head or HR), overtime hours as
+        worked. Set-up: the sanctioned crew per department, in the capacity
+        workbook.</div>
+    </div>
+  </div>
+
+  <div class="screen">
+    <div class="screen__bar"><span class="screen__nav">Material</span>
+      <span class="screen__title">What to buy, and by when</span>
+      <span class="tag setup">Set-up input</span></div>
+    <div class="screen__body">
+      <div class="tablewrap"><table>
+        <thead><tr><th>Term</th><th>What it means</th></tr></thead>
+        <tbody>
+          <tr><td class="term">Needed</td><td class="def">How much of a material the current plan consumes, from the parts lists.</td></tr>
+          <tr><td class="term">On hand / Counted</td><td class="def">The store's last stock figure, and when it was counted — so an old count is visibly old.</td></tr>
+          <tr><td class="term">Short by</td><td class="def">Needed minus on hand, where positive.</td></tr>
+          <tr><td class="term">First needed</td><td class="def">The first production date that consumes it.</td></tr>
+          <tr><td class="term">Order now, or it will be late</td><td class="def">Materials past their last safe ordering date — first needed, minus the supplier's lead time. The red half of the screen.</td></tr>
+        </tbody>
+      </table></div>
+      <div class="needs"><div class="needs__t">What U&amp;M provides</div>
+        Set-up: a bill of materials per article (what it consumes, how much),
+        suppliers and lead times. Ongoing: stock counts from the store. One
+        article's parts list switches the screen on for that article.</div>
+    </div>
+  </div>
+
+  <div class="screen">
+    <div class="screen__bar"><span class="screen__nav">Quality</span>
+      <span class="screen__title">Where the losses come from</span>
+      <span class="tag output">Output</span></div>
+    <div class="screen__body">
+      <div class="tablewrap"><table>
+        <thead><tr><th>Term</th><th>What it means</th></tr></thead>
+        <tbody>
+          <tr><td class="term">Yield, counted</td><td class="def">The yield the floor's declarations actually show — good over good-plus-rejected.</td></tr>
+          <tr><td class="term">Against plan</td><td class="def">Counted yield versus the yield the master claims for that department. The gap is the finding.</td></tr>
+          <tr><td class="term">Biggest cause / Explained</td><td class="def">The leading defect cause, and how much of the rejection total has a cause recorded at all — an unexplained balance is shown, not hidden.</td></tr>
+        </tbody>
+      </table></div>
+      <p class="lede">Nothing is entered here; it is fed entirely by the
+        rejections and causes written on the Production screen.</p>
+    </div>
+  </div>
+
+  <div class="screen">
+    <div class="screen__bar"><span class="screen__nav">Forecast</span>
+      <span class="screen__title">What the factory really achieves</span>
+      <span class="tag output">Output</span></div>
+    <div class="screen__body">
+      <div class="tablewrap"><table>
+        <thead><tr><th>Term</th><th>What it means</th></tr></thead>
+        <tbody>
+          <tr><td class="term">How much of this is worth believing</td><td class="def">Always first: how many days of real history exist against the <strong>ten observations</strong> each figure needs before it will speak.</td></tr>
+          <tr><td class="term">Too few to say</td><td class="def">The refusal. Under ten observations the screen shows the count instead of a number, because a figure from two days and one from two hundred look identical and only one deserves action.</td></tr>
+          <tr><td class="term">Claimed / Achieved</td><td class="def">The rate the capacity sheet claims, against what declarations show the department really does. <strong>Reported, never applied</strong> — the software never silently corrects a master.</td></tr>
+          <tr><td class="term">Plan allows / Actually took</td><td class="def">Per article: the days the D-minus offsets allow end-to-end, against the real span from first declaration to last.</td></tr>
+          <tr><td class="term">Window gone vs Work done</td><td class="def">For each open line: how much of its time has passed against how much of its work is complete. 65% of the window gone with 4% done is the picture of a line in trouble.</td></tr>
+          <tr><td class="term">Reading / Because</td><td class="def">The verdict band — <em>on track</em>, <em>at risk</em>, <em>likely late</em>, <em>not started</em> — and the reason in a sentence. Bands, not percentages: a percentage would be read as a probability, and it would be invented.</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <div class="screen">
+    <div class="screen__bar"><span class="screen__nav">Money</span>
+      <span class="screen__title">Cash out, week by week</span>
+      <span class="tag setup">Set-up input</span></div>
+    <div class="screen__body">
+      <div class="tablewrap"><table>
+        <thead><tr><th>Term</th><th>What it means</th></tr></thead>
+        <tbody>
+          <tr><td class="term">Committed</td><td class="def">Money the plan obliges you to spend in a given week — materials by their order-by dates, labour and packing by production dates.</td></tr>
+          <tr><td class="term">Unit cost / Labour / Materials / Packing &amp; freight</td><td class="def">The cost build-up per article, as your accounts team enters it.</td></tr>
+          <tr><td class="term">Unpriced</td><td class="def">Work in the plan with no cost entered — shown as a named gap, never estimated around.</td></tr>
+          <tr><td class="term">By supplier / Terms</td><td class="def">The same commitments grouped by who gets paid, with their payment terms.</td></tr>
+        </tbody>
+      </table></div>
+      <div class="needs"><div class="needs__t">What U&amp;M provides</div>
+        A cost per article (labour, material, packing), and supplier payment
+        terms. One article's cost switches the screen on for that article.</div>
+    </div>
+  </div>
+
+  <div class="screen">
+    <div class="screen__bar"><span class="screen__nav">Capacity sheet</span>
+      <span class="screen__title">The 994 boxes everything is arithmetic on</span>
+      <span class="tag setup">Set-up input</span></div>
+    <div class="screen__body">
+      <p>71 articles × 14 departments. Each box wants three numbers, and they
+        come from PPC in an Excel workbook that loads back in one step.</p>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Term</th><th>What it means</th></tr></thead>
+        <tbody>
+          <tr><td class="term">Units per day</td><td class="def">The dedicated rate — see the everywhere-words. The most important number in the system, and the one most damaging to enter as a blended figure.</td></tr>
+          <tr><td class="term">Manpower</td><td class="def">The crew size the rate was measured with. Without it, attendance cannot scale the day.</td></tr>
+          <tr><td class="term">D-minus / Missing D-minus</td><td class="def">The finish-by offset per article per department. A missing one <strong>blocks that article from being planned</strong> — deliberately, because guessing a deadline of zero would look normal and be wrong.</td></tr>
+          <tr><td class="term">Articles routed</td><td class="def">How many articles pass through each department — i.e. carry a rate there.</td></tr>
+          <tr><td class="term">A department is due before something that feeds it</td><td class="def">The contradiction check: an offset that finishes a department <em>earlier</em> than one feeding it. The current 71 findings trace to one route link awaiting your answer.</td></tr>
+        </tbody>
+      </table></div>
+      <div class="needs"><div class="needs__t">What U&amp;M provides</div>
+        The completed workbook from PPC — rate, crew and D-minus per box. The
+        single biggest ask, and the single blocker: every date in the system is
+        arithmetic on these numbers.</div>
+    </div>
+  </div>
+
+  <div class="screen">
+    <div class="screen__bar"><span class="screen__nav">Masters</span>
+      <span class="screen__title">What the factory is</span>
+      <span class="tag setup">Set-up input</span></div>
+    <div class="screen__body">
+      <div class="tablewrap"><table>
+        <thead><tr><th>Term</th><th>What it means</th></tr></thead>
+        <tbody>
+          <tr><td class="term">Product master</td><td class="def">The article list — code, name, category, and whether each can currently be planned (it needs a route and complete D-minus).</td></tr>
+          <tr><td class="term">Route position</td><td class="def">A department's display order on screens. The real sequencing is the dependency grid below, not this number.</td></tr>
+          <tr><td class="term">Dependency grid</td><td class="def">The what-feeds-what table: one tick per pair of departments. This is the route the scheduler walks, and the home of the machining / ply cutting question.</td></tr>
+          <tr><td class="term">Yield %</td><td class="def">Per department: the share expected to pass. Drives the grossing-up of quantities.</td></tr>
+          <tr><td class="term">Shifts / Overtime ceiling</td><td class="def">Which shifts each department runs, and the maximum lawful overtime per person per day.</td></tr>
+          <tr><td class="term">Machine master / Book downtime</td><td class="def">Each department's machines, and planned out-of-service periods. A department's capacity scales with what is actually running. Empty until a machine list arrives.</td></tr>
+          <tr><td class="term">Holidays</td><td class="def">The non-working calendar. Sundays are assumed; everything else is entered here and the schedule plans around it.</td></tr>
+          <tr><td class="term">Bill of materials</td><td class="def">Per article: the materials it consumes (feeds the Material screen).</td></tr>
+          <tr><td class="term">Save everything to a file</td><td class="def">A one-click export of masters, order book and production history — a copy U&amp;M holds, independent of us and of the platform.</td></tr>
+        </tbody>
+      </table></div>
+      <div class="needs"><div class="needs__t">What U&amp;M provides</div>
+        Confirmation of the route (the dependency grid), the holiday calendar,
+        a machine list per department, and parts lists — each its own small
+        session, none daily.</div>
+    </div>
+  </div>
+
+  <div class="screen">
+    <div class="screen__bar"><span class="screen__nav">Users</span>
+      <span class="screen__title">Who can sign in, and as what</span>
+      <span class="tag setup">Set-up input</span></div>
+    <div class="screen__body">
+      <div class="tablewrap"><table>
+        <thead><tr><th>Term</th><th>What it means</th></tr></thead>
+        <tbody>
+          <tr><td class="term">Role</td><td class="def">A job title carrying permissions: MD, planner, merchandiser, department head, HR, purchase, store, quality, maintenance, accounts, admin, kiosk. A person can hold several.</td></tr>
+          <tr><td class="term">What each role can do</td><td class="def">The permission list, readable on screen. Enforced in the database itself, so it holds no matter how the system is reached.</td></tr>
+          <tr><td class="term">Kiosk</td><td class="def">The one deliberately blind role: it can show the Floor display and nothing else — safe to leave signed in on a TV.</td></tr>
+        </tbody>
+      </table></div>
+      <div class="needs"><div class="needs__t">What U&amp;M provides</div>
+        Names and email addresses, a role for each, and one standing decision:
+        should a department head see other departments' figures, or only their
+        own?</div>
+    </div>
+  </div>
+
+  <div class="note">
+    <h3>The dependency, in one sentence each</h3>
+    <p><strong>The capacity sheet</strong> makes the plan real ·
+      <strong>orders</strong> give it something to plan ·
+      <strong>production and attendance</strong>, typed daily, let it compare
+      promise with fact · <strong>parts lists and costs</strong> switch on the
+      last two screens · and everything else on this list is the software
+      answering back. Five set-up inputs, three daily habits, twelve screens of
+      output.</p>
+  </div>
+
+  <footer>
+    <span>DBBS/UM/KRAM/08 · terms as of Rev B, September 2026</span>
+    <span>companion: KRAM/06 (asks) · KRAM/07 (demo script)</span>
+  </footer>
+</div>

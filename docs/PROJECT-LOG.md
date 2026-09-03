@@ -781,6 +781,36 @@ Choices worth recording:
 Still generated, never hand-edited: the numbers in it move on their own, and a
 script that contradicts the screen is worse than none.
 
+### 2026-09-03 — Every screen, every term, and who feeds it (KRAM/08)
+
+Asked what the words on the screens actually mean — shipment lines, breaches,
+flagged days, average, peak, idle — and which screens expect input from U&M's
+side. `docs/screen-guide.html` (DBBS/UM/KRAM/08) answers both, for all twenty
+screens plus the floor display, rendered to PDF through the same pipeline.
+
+Structure worth keeping for future notes of this kind:
+
+- **The vocabulary was extracted from the screen code, not recalled.** Panel
+  titles, column headers and figure labels were pulled from `src/routes/*.tsx`
+  so every defined term is one that actually appears — the breach reasons come
+  verbatim from `BREACH_LABEL`/`BREACH_EXPLAINER`, the nine dashboard KPIs from
+  the `md_dashboard` migration. A glossary that defines words the screen does
+  not use is worse than none.
+- **Nine "words that appear everywhere" are defined once** — article, component,
+  shipment line, stuffing date, D-minus, rate, utilisation, yield, run — then
+  each screen defines only what is its own.
+- **Every screen carries one of four tags**: set-up input (five screens —
+  Capacity sheet, Masters, Material, Money, Users), daily input (three —
+  Production, Manpower, Order book), planner's tool (four), output (the rest).
+  The tags are the direct answer to "which pages expect an input from their
+  guys", and the closing note compresses it to a sentence: five set-up inputs,
+  three daily habits, twelve screens of output.
+
+The document set now reads: KRAM/06 what we need, /07 how to show it, /08 what
+it all means. Static rather than generated, deliberately — definitions do not
+move with the plan, and the one number in it that could drift (994) changes
+only when the article list does.
+
 ## 9. Log
 
 Newest first. One entry per working session — what changed, and anything a
