@@ -305,7 +305,7 @@ function Row({
                 ? `${dept.code} · ${day} · ${cell.utilisation.toFixed(2)} of capacity`
                 : `${day} — closed`
             }
-            className={`m-[1px] h-[18px] rounded-[3px] ${className} ${
+            className={`m-[1px] h-[18px] rounded-[2px] ${className} ${
               isSelected ? 'outline-ink outline-2 outline-offset-1' : ''
             } ${cell ? 'cursor-pointer' : 'cursor-default'}`}
             style={style}
@@ -328,7 +328,7 @@ function Legend({
   return (
     <span className="flex items-center gap-1.5">
       <span
-        className={`inline-block h-3 w-3 rounded-[3px] ${className}`}
+        className={`inline-block h-3 w-3 rounded-[2px] ${className}`}
         style={style}
       />
       {label}

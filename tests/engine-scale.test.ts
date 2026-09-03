@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { withRollback } from './helpers/db'
+import { applySeed, createOrder, runSchedule } from './helpers/fixtures'
 
 /**
  * Spec §11 sizes the real workload: "324 orders averaging two shipment lines,
@@ -272,9 +273,16 @@ describe('a book that touches a fraction of the masters', () => {
     // the written figure ever drifts from the expression it replaced, every
     // heatmap cell, breach count and flagged day is quietly wrong with nothing
     // to compare against.
+    //
+    // On the four-department seed rather than the sparse fixture above. The
+    // claim is that a stored row equals the aggregate it replaced, which is
+    // true of any run — and the sparse fixture plans seventy-one articles,
+    // which took this test past three minutes and through its timeout on a
+    // busy machine. A check nobody can afford to run is not a check.
     await withRollback(async (c) => {
-      await c.query(SPARSE)
-      await c.query(`select run_schedule()`)
+      await applySeed(c)
+      await createOrder(c, { qty: 400, stuffingDate: '2026-12-01' })
+      await runSchedule(c)
 
       const { rows } = await c.query<{ mismatched: string; total: string }>(
         `with computed as (

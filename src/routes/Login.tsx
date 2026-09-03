@@ -10,17 +10,22 @@ export function Login() {
   const [busy, setBusy] = useState(false)
 
   return (
-    <div className="grid min-h-full place-items-center px-6 py-16">
+    <div className="gridpaper grid min-h-full place-items-center px-6 py-16">
       <div className="w-full max-w-md">
         <div className="text-center">
-          <h1 className="text-display font-bold tracking-[-0.03em]">Kram</h1>
+          <p className="text-blue font-mono text-[11px] tracking-[0.16em] uppercase">
+            Data Brilliance Business Solutions LLP
+          </p>
+          <h1 className="font-display text-display mt-2 font-extrabold tracking-[-0.03em]">
+            Kram
+          </h1>
           <p className="text-mid text-small mt-1.5">
             Production planning &amp; control for U&amp;M Designs.
           </p>
         </div>
 
         <form
-          className="border-rule-soft bg-sheet rounded-card shadow-card mt-6 border p-8"
+          className="border-ink bg-sheet rounded-card shadow-card mt-6 border p-8"
           onSubmit={async (e) => {
             e.preventDefault()
             setBusy(true)
@@ -94,10 +99,10 @@ export function NoAccess({
   onSignOut: () => void
 }) {
   return (
-    <div className="grid min-h-full place-items-center px-6 py-16">
-      <div className="border-rule-soft bg-sheet rounded-card shadow-card w-full max-w-lg border p-8">
+    <div className="gridpaper grid min-h-full place-items-center px-6 py-16">
+      <div className="border-ink bg-sheet rounded-card shadow-card w-full max-w-lg border p-8">
         <p className="label">Kram</p>
-        <h1 className="text-title mt-2 font-semibold tracking-[-0.02em]">
+        <h1 className="font-display text-title mt-2 font-bold tracking-[-0.02em]">
           Your account has no roles yet
         </h1>
         <p className="text-mid text-small mt-3">

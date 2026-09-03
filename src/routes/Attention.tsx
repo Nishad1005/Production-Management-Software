@@ -144,7 +144,7 @@ const ACCENT: Record<Finding['severity'], string> = {
 function FindingCard({ row }: { row: Finding }) {
   return (
     <div
-      className={`border-rule-soft bg-sheet rounded-card shadow-card border border-l-[3px] p-4 ${ACCENT[row.severity]}`}
+      className={`border-rule bg-sheet rounded-card shadow-card border border-l-[3px] p-4 ${ACCENT[row.severity]}`}
       data-testid={`finding-${row.kind}`}
       data-severity={row.severity}
     >

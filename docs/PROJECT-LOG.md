@@ -906,6 +906,57 @@ tables, Gantt bars stayed divs, and `data-dense-grid` stayed on the heatmap —
 so the 39 text anchors, the 44px contract, the no-sideways-scroll audit and the
 43 testids all hold. 340 tests, 49 browser checks, 29 hosted checks, green.
 
+### 2026-09-03 — Legible was not the same as good, and generic was the price
+
+The redesign earlier today fixed everything measurable and the verdict was that
+it now looked **generic — "very AI developed"**. Both halves of that are true,
+and worth separating, because the fix depended on which was which.
+
+**What was genuinely fixed and had to survive:** Inter actually loaded, a
+six-step scale, a 12px floor, 4.5:1 secondary text, real spacing, cards.
+
+**What had been thrown away with it:** the whole of Kram's face. Stock #2563eb
+— the accent every dashboard built from a component library this year is
+accented with. Fully rounded pills. 10px radii. Light headers on white cards.
+Labels in the body face. Nothing on any screen that could not have come out of
+any other product.
+
+The identity was never the small type; it was the **drafting room** — a title
+block, graph paper, a typewriter annotating a drawing. That is what came back:
+
+- **Three faces, each with a job.** Archivo (new, bundled) for the wordmark,
+  panel titles and figures — the same face as the KRAM notes, so the software
+  and the paperwork are one product. Inter for everything read in sentences.
+  IBM Plex Mono for data *and for the `label` utility*: every small uppercase
+  caption in the product is typewritten again, which is most of what makes a
+  screen of figures look like this and not like a template.
+- **Drafting navy** (`#2c4a6e`) replaces the stock blue. One value, and the
+  most recognisable single thing about the old design.
+- **The ink title bar is back**, at about half its old height, with the title
+  in Archivo and the meta in mono capitals. Modal headers match it again.
+- **Graph paper** returns on the app bar and the sign-in page, under a 2px ink
+  rule; the stamp table returns as the one line anybody read — `REF
+  DBBS/UM/KRAM/01 · REV B`. Deliberately without the Build/Signed-in row, which
+  is where `Offline draft` lived and which a hosted check asserts absent.
+- **Radii 10px → 6px, chips from pills back to bordered stamps**, bars and
+  heatmap cells squared to 2px. Ten pixels of radius is a component library;
+  six is a corner somebody cut.
+
+Everything from the morning that was about *reading* is untouched: the scale,
+the floor, the contrast, the sans body text, the cards, the spacing.
+
+**And a slow test of my own, caught by the final run.** `engine-scale`'s
+department-day drift check ran the sparse fixture — seventy-one articles
+planned — and timed out at sixty seconds having taken 186 on a machine also
+running a dev server and a browser. Its claim (a stored row equals the
+aggregate it replaced) is true of any run, so it runs on the four-department
+seed now: nine seconds for the file. **A check nobody can afford to run is not
+a check** — the same lesson as yesterday's flake, arriving as cost rather than
+as flakiness.
+
+340 tests, 49 browser checks, 29 hosted checks. 25 woff2 bundled, no external
+font requests.
+
 ## 9. Log
 
 Newest first. One entry per working session — what changed, and anything a

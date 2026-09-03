@@ -244,9 +244,9 @@ export function UtilisationBar({ value }: { value: number }) {
     value > 1 ? 'bg-flag' : value > 0.85 ? 'bg-amber' : 'bg-clear'
   return (
     <span className="flex items-center justify-end gap-2.5">
-      <span className="bg-rule-soft relative hidden h-2 w-24 overflow-hidden rounded-full sm:block">
+      <span className="bg-rule-soft relative hidden h-2 w-24 overflow-hidden rounded-[2px] sm:block">
         <span
-          className={`absolute inset-y-0 left-0 rounded-full ${tone}`}
+          className={`absolute inset-y-0 left-0 ${tone}`}
           style={{ width: `${pct * 100}%` }}
         />
         {/* The 1.0 line — the only threshold that means anything here. The

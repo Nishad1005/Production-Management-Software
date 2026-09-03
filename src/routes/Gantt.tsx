@@ -325,7 +325,7 @@ function Bar({
           <div
             onPointerDown={startDrag}
             data-testid="gantt-bar"
-            className={`absolute top-1/2 h-3.5 min-w-[3px] -translate-y-1/2 cursor-grab touch-none rounded-[3px] active:cursor-grabbing ${tone} ${
+            className={`absolute top-1/2 h-3.5 min-w-[3px] -translate-y-1/2 cursor-grab touch-none rounded-[2px] active:cursor-grabbing ${tone} ${
               dragDays !== null ? 'ring-ink opacity-80 ring-2' : ''
             }`}
             style={{ left: `${left}%`, width: `${width}%` }}

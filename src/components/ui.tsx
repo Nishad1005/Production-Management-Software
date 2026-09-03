@@ -3,10 +3,12 @@ import type { ReactNode } from 'react'
 /**
  * The card every screen is built out of.
  *
- * Was a hairline box under a solid ink title bar — the specification
- * document's panel, and the thing that made twenty screens read as paperwork.
- * Now a white card on a tinted ground: soft border, small shadow, a light
- * header carrying a 16px title.
+ * A white card on a tinted ground, under a slim ink title bar.
+ *
+ * The bar went away for one round and took the product's face with it: light
+ * headers on white cards is what every dashboard looks like. It is back at
+ * roughly half its old height, with the title in Archivo and the meta in
+ * typewriter capitals — the drawing's title block, not a toolbar.
  *
  * The `title` prop is the anchor for a dozen browser checks (`text=Bottleneck
  * utilisation` and friends), so the wording of any title passed to this
@@ -25,11 +27,17 @@ export function Panel({
 }) {
   return (
     <section
-      className={`border-rule-soft bg-sheet rounded-card border shadow-card ${className}`}
+      className={`border-rule bg-sheet rounded-card border shadow-card ${className}`}
     >
-      <header className="border-rule-soft flex flex-wrap items-baseline justify-between gap-3 border-b px-5 pt-4 pb-3">
-        <b className="text-emphasis font-semibold tracking-[-0.01em]">{title}</b>
-        {meta ? <span className="text-caption text-faint">{meta}</span> : null}
+      <header className="bg-ink flex flex-wrap items-baseline justify-between gap-3 rounded-t-[5px] px-5 py-2.5 text-white">
+        <b className="font-display text-emphasis font-semibold tracking-[-0.01em]">
+          {title}
+        </b>
+        {meta ? (
+          <span className="text-faint-inverse font-mono text-[11px] tracking-[0.08em] uppercase">
+            {meta}
+          </span>
+        ) : null}
       </header>
       <div className="p-5">{children}</div>
     </section>
@@ -70,11 +78,11 @@ export function Metric({
   }
   return (
     <div
-      className={`border-rule-soft bg-sheet rounded-card border border-l-[3px] p-4 shadow-card ${accents[tone]}`}
+      className={`border-rule bg-sheet rounded-card border border-l-[3px] p-4 shadow-card ${accents[tone]}`}
     >
       <div className="label">{label}</div>
       <div
-        className={`nums text-display mt-1 font-semibold tracking-[-0.02em] ${figures[tone]}`}
+        className={`font-display nums text-display mt-1 font-bold tracking-[-0.02em] ${figures[tone]}`}
       >
         {value}
       </div>
@@ -105,7 +113,7 @@ export function Th({
 }) {
   return (
     <th
-      className={`text-faint border-rule text-caption border-b py-2.5 pr-3 font-medium tracking-[0.04em] whitespace-nowrap uppercase ${
+      className={`text-mid border-ink border-b-[1.5px] py-2.5 pr-3 font-mono text-[11px] font-medium tracking-[0.06em] whitespace-nowrap uppercase ${
         align === 'right' ? 'pr-0 text-right' : 'text-left'
       }`}
     >
@@ -142,15 +150,15 @@ export function Tag({
   tone?: 'clear' | 'flag' | 'amber' | 'blue' | 'mid'
 }) {
   const tones = {
-    clear: 'bg-clear-wash text-clear',
-    flag: 'bg-flag-wash text-flag',
-    amber: 'bg-amber-wash text-amber',
-    blue: 'bg-blue-wash text-blue',
-    mid: 'bg-paper text-mid',
+    clear: 'bg-clear-wash text-clear border-clear/40',
+    flag: 'bg-flag-wash text-flag border-flag/40',
+    amber: 'bg-amber-wash text-amber border-amber/40',
+    blue: 'bg-blue-wash text-blue border-blue/40',
+    mid: 'bg-paper text-mid border-rule',
   }
   return (
     <span
-      className={`text-caption inline-flex items-center rounded-full px-2 py-0.5 font-medium tracking-[0.02em] whitespace-nowrap uppercase ${tones[tone]}`}
+      className={`inline-flex items-center rounded-[3px] border px-1.5 py-0.5 font-mono text-[11px] font-medium tracking-[0.04em] whitespace-nowrap uppercase ${tones[tone]}`}
     >
       {children}
     </span>
@@ -186,8 +194,8 @@ export function Button({
     'px-3.5 font-semibold rounded-control transition-colors disabled:opacity-40 disabled:cursor-not-allowed min-h-11 py-2.5 text-body sm:min-h-0 sm:py-2 sm:text-small'
   const styles =
     variant === 'primary'
-      ? 'bg-blue text-white hover:bg-blue/90'
-      : 'border border-rule bg-sheet text-ink hover:bg-paper hover:border-faint'
+      ? 'bg-ink text-white hover:bg-blue'
+      : 'border border-rule bg-sheet text-ink hover:border-blue hover:text-blue'
   return (
     <button
       type={type}

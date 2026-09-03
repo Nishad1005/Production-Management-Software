@@ -8,9 +8,14 @@
  * so every visitor silently got the system fallback and none of the typography
  * was the typography anybody had chosen.
  *
- * Inter for everything read; IBM Plex Mono for data only — codes, quantities,
- * dates in columns.
+ * Three voices, and each has a job:
+ *   Archivo   — the wordmark, panel titles, figures. The same face as the
+ *               KRAM notes, so the software and the paperwork are one product.
+ *   Inter     — everything read in sentences.
+ *   Plex Mono — data, codes, and the small uppercase labels: the typewriter
+ *               annotation on a drawing.
  */
+@import '@fontsource-variable/archivo';
 @import '@fontsource-variable/inter';
 @import '@fontsource/ibm-plex-mono/400.css';
 @import '@fontsource/ibm-plex-mono/500.css';
@@ -32,20 +37,25 @@
  */
 @theme {
   /* Surfaces and text. `faint` was #8996a4 — about 3.2:1 on white, under the
-     readable floor, and used 147 times. It is now 4.7:1. */
-  --color-paper: #f4f6f9;
+     readable floor, and used 147 times. Everything here stays above 4.5:1;
+     the hues went back towards steel and away from the neutral greys every
+     dashboard template ships with. */
+  --color-paper: #eef1f5;
   --color-sheet: #ffffff;
-  --color-ink: #101828;
-  --color-mid: #475467;
-  --color-faint: #667085;
-  --color-rule: #d0d5dd;
-  --color-rule-soft: #e6eaf0;
+  --color-ink: #16202e;
+  --color-mid: #46586a;
+  --color-faint: #64778c;
+  --color-rule: #c6d0da;
+  --color-rule-soft: #dfe5ec;
 
-  /* Accent and the three load states. */
-  --color-blue: #2563eb;
-  --color-flag: #d92d20;
-  --color-clear: #047857;
-  --color-amber: #b45309;
+  /* Accent and the three load states.
+     `blue` is drafting navy, not the stock #2563eb every AI-built dashboard
+     is accented with — the single most recognisable thing about the old
+     design, and the first thing that went missing when it left. */
+  --color-blue: #2c4a6e;
+  --color-flag: #c4462e;
+  --color-clear: #1f6b4d;
+  --color-amber: #96690f;
 
   /* Muted text on a dark ground — the one colour the old palette had no name
      for, so #93a6b8 was written out by hand in three places. */
@@ -53,13 +63,15 @@
 
   /* Tints, for status fills that must not shout. Also the two hexes the
      factory map's SVG carried inline. */
-  --color-flag-wash: #fef3f2;
-  --color-amber-wash: #fffaeb;
-  --color-clear-wash: #ecfdf3;
-  --color-blue-wash: #eff4ff;
+  --color-flag-wash: #faeae6;
+  --color-amber-wash: #faf3e0;
+  --color-clear-wash: #e7f2ec;
+  --color-blue-wash: #e9eef5;
 
-  --radius-card: 10px;
-  --radius-control: 6px;
+  /* Drawn, not moulded. Ten pixels of radius is the shape of every product
+     built from a component library this year; six is a corner somebody cut. */
+  --radius-card: 6px;
+  --radius-control: 4px;
 
   --shadow-card:
     0 1px 2px rgb(16 24 40 / 0.05), 0 1px 3px rgb(16 24 40 / 0.08);
@@ -87,6 +99,9 @@
   --text-display: 28px;
   --text-display--line-height: 1.15;
 
+  --font-display:
+    'Archivo Variable', 'Inter Variable', ui-sans-serif, -apple-system,
+    BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-sans:
     'Inter Variable', ui-sans-serif, -apple-system, BlinkMacSystemFont,
     'Segoe UI', sans-serif;
@@ -118,17 +133,31 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+/* The graph paper the masthead and the sign-in page are drawn on. */
+.gridpaper {
+  background-image:
+    linear-gradient(var(--color-rule-soft) 1px, transparent 1px),
+    linear-gradient(90deg, var(--color-rule-soft) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
 /*
  * The small uppercase caption above a figure or a field.
+ *
+ * Monospaced on purpose: it is the annotation hand on a drawing, and it is
+ * most of what makes a screen of figures look like this product rather than
+ * like any dashboard. Set at 11px, where the previous 10.5px was too small to
+ * read comfortably and 11.5px in a proportional face read as ordinary text.
  *
  * `text-transform` rather than literal capitals, deliberately: two browser
  * checks read `textContent` and expect what is actually in the DOM, so
  * typing the capitals would quietly flip them.
  */
 @utility label {
-  font-size: 11.5px;
+  font-family: var(--font-mono);
+  font-size: 11px;
   font-weight: 500;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--color-faint);
 }

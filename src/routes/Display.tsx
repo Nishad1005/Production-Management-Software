@@ -70,7 +70,7 @@ export function Display() {
   return (
     <div className="bg-ink min-h-screen p-6 text-white" data-testid="floor-display">
       <div className="flex flex-wrap items-baseline justify-between gap-4 border-b border-white/20 pb-4">
-        <h1 className="text-[44px] leading-none font-extrabold tracking-tight">
+        <h1 className="font-display text-[44px] leading-none font-extrabold tracking-tight">
           {department?.name ?? '—'}
         </h1>
         <div className="flex items-center gap-6 text-[20px]">

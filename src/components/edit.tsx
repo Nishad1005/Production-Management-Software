@@ -171,7 +171,7 @@ export function Modal({
     >
       <div
         data-testid="modal"
-        className="border-rule-soft bg-sheet rounded-card shadow-pop mx-auto w-full max-w-2xl border"
+        className="border-ink bg-sheet rounded-card shadow-pop mx-auto w-full max-w-2xl border"
         onClick={(e) => e.stopPropagation()}
       >
         <header className="border-rule-soft flex items-center justify-between gap-4 border-b px-5 py-4">

@@ -175,7 +175,7 @@ function KpiCard({ kpi }: { kpi: Kpi }) {
 
   return (
     <div
-      className={`bg-sheet border-rule-soft rounded-card shadow-card border border-l-[3px] p-4 ${TONE[kpi.status]}`}
+      className={`bg-sheet border-rule rounded-card shadow-card border border-l-[3px] p-4 ${TONE[kpi.status]}`}
     >
       <div className="label">{kpi.label}</div>
 
@@ -183,7 +183,7 @@ function KpiCard({ kpi }: { kpi: Kpi }) {
         <>
           <div className="mt-1 flex items-baseline gap-2">
             <span
-              className={`nums text-display font-semibold tracking-[-0.02em] ${LABEL[kpi.status]}`}
+              className={`font-display nums text-display font-bold tracking-[-0.02em] ${LABEL[kpi.status]}`}
             >
               {money ? '₹' : ''}
               {formatNumber(kpi.actual, kpi.unit === '%' ? 1 : 0)}
@@ -208,7 +208,7 @@ function KpiCard({ kpi }: { kpi: Kpi }) {
         </>
       ) : (
         <>
-          <div className="text-faint text-display mt-1 font-semibold">—</div>
+          <div className="text-faint font-display text-display mt-1 font-bold">—</div>
           {/* The reason, not a dash on its own. An empty figure with no
               explanation reads as a bug; with one it reads as a next step. */}
           <p className="text-mid mt-1 text-caption">

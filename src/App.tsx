@@ -88,11 +88,11 @@ function Boot({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="grid min-h-full place-items-center px-6">
-      <div className="border-rule-soft bg-sheet rounded-card shadow-card max-w-lg border p-6">
+      <div className="border-ink bg-sheet rounded-card shadow-card max-w-lg border p-6">
         <p className="label">Kram</p>
         {state === 'booting' ? (
           <>
-            <p className="text-title mt-2 font-semibold tracking-[-0.02em]">
+            <p className="font-display text-title mt-2 font-bold tracking-[-0.02em]">
               Starting the database
             </p>
             <p className="text-mid text-small mt-2">
@@ -102,7 +102,7 @@ function Boot({ children }: { children: React.ReactNode }) {
           </>
         ) : (
           <>
-            <p className="text-flag text-title mt-2 font-semibold tracking-[-0.02em]">
+            <p className="text-flag font-display text-title mt-2 font-bold tracking-[-0.02em]">
               The database did not start
             </p>
             <pre className="border-rule-soft bg-paper text-flag rounded-control text-caption mt-3 overflow-x-auto border p-3 font-mono whitespace-pre-wrap">
@@ -234,7 +234,7 @@ function AttentionBadge() {
       to="/attention"
       data-testid="attention-badge"
       data-critical={critical}
-      className="border-flag/30 bg-flag-wash text-flag text-caption flex min-h-11 items-center gap-2 rounded-full border px-3 py-1.5 font-semibold hover:brightness-95 sm:min-h-0"
+      className="border-flag/40 bg-flag-wash text-flag text-caption flex min-h-11 items-center gap-2 rounded-[3px] border px-3 py-1.5 font-semibold hover:brightness-95 sm:min-h-0"
     >
       <span className="bg-flag inline-block h-2 w-2 rounded-full" />
       {critical} {critical === 1 ? 'thing needs' : 'things need'} an answer today
@@ -250,27 +250,35 @@ function Shell({ children }: { children: React.ReactNode }) {
     <div className="min-h-full">
       <ProvisionalBanner />
       {/*
-        An application bar, not a title block.
+        An application bar that is still a title block.
 
-        What this replaces: a 42px masthead, a paragraph of description and a
-        REF/REVISION/CLIENT stamp table — the conventions of a specification
-        document, which cost about a third of the first screenful before any
-        work appeared. The identity moved to the printed notes, where it
-        belongs; the software gets a wordmark and its navigation.
+        The first pass replaced a 42px masthead, a paragraph of description and
+        a four-row REF/REVISION/CLIENT stamp with a plain white bar — and the
+        product stopped looking like itself. This keeps the compactness that
+        was the point (the old header cost a third of the first screenful) and
+        puts the identity back in the space it left: graph paper, the ink rule
+        under it, and the stamp reduced to the one line anybody actually reads.
       */}
-      <header className="bg-sheet border-rule border-b">
+      <header className="gridpaper bg-sheet border-ink border-b-2">
         <div className="mx-auto max-w-[1400px] px-4 sm:px-6">
           <div className="flex h-14 items-center justify-between gap-4">
             <div className="flex items-baseline gap-2.5">
-              <span className="text-title font-bold tracking-[-0.02em]">
+              <span className="font-display text-title font-extrabold tracking-[-0.025em]">
                 Kram
               </span>
-              <span className="text-faint text-caption hidden md:inline">
+              <span className="text-blue hidden font-mono text-[11px] tracking-[0.12em] uppercase md:inline">
                 production planning &amp; control
               </span>
             </div>
 
             <div className="flex items-center gap-4">
+              {/* What is left of the stamp table: the two fields that identify
+                  which document this software is, in the hand the drawings
+                  use. The Build/Signed-in row is deliberately not here — it
+                  said "Offline draft", which a hosted check asserts absent. */}
+              <span className="border-ink text-mid hidden border-[1.5px] px-2.5 py-1 font-mono text-[11px] tracking-[0.06em] uppercase lg:inline-block">
+                Ref DBBS/UM/KRAM/01 · Rev B
+              </span>
               <AttentionBadge />
               {!access.isOffline ? (
                 <>
@@ -318,7 +326,7 @@ function Shell({ children }: { children: React.ReactNode }) {
       <main className="mx-auto max-w-[1400px] px-6 py-8">{children}</main>
 
       <footer className="border-rule-soft bg-sheet mt-8 border-t">
-        <div className="text-faint text-caption mx-auto flex max-w-[1400px] flex-wrap justify-between gap-4 px-6 py-4">
+        <div className="text-faint mx-auto flex max-w-[1400px] flex-wrap justify-between gap-4 px-6 py-4 font-mono text-[11px] tracking-[0.04em]">
           <span>
             {access.isOffline
               ? 'Kram — offline draft. Postgres runs in the browser.'
