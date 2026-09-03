@@ -34,7 +34,7 @@ export function OrderBook() {
     <div className="space-y-6">
       <Panel title="Order book" meta={`${orders.data?.length ?? 0} orders`}>
         <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
-          <p className="text-mid max-w-[70ch] text-[12px]">
+          <p className="text-mid max-w-[70ch] text-caption">
             An order is not a single dated commitment. It ships in phases, and
             each shipment line is scheduled backwards from its own container
             stuffing date. Select an order to see its lines.
@@ -120,7 +120,7 @@ export function OrderBook() {
 
         {!orders.data?.length ? <Empty>No orders yet.</Empty> : null}
 
-        <p className="text-faint mt-4 text-[11.5px]">
+        <p className="text-faint mt-4 text-caption">
           An exclamation beside the line count means the shipment lines do not
           add up to the order total — a warning, not an error, since the first of
           three phases is a legitimate thing to have entered.
@@ -173,7 +173,7 @@ function Lines({
               <Td align="right">
                 <button
                   type="button"
-                  className="text-faint hover:text-flag text-[11px]"
+                  className="text-faint hover:text-flag text-caption"
                   onClick={() => deleteLine.mutate(l.id)}
                 >
                   Remove
@@ -190,12 +190,12 @@ function Lines({
         </Button>
         <button
           type="button"
-          className="text-faint hover:text-flag text-[11px]"
+          className="text-faint hover:text-flag text-caption"
           onClick={onDeleteOrder}
         >
           Delete this order
         </button>
-        <span className="text-faint text-[11px]">
+        <span className="text-faint text-caption">
           The customer delivery date is held for reference and never used in the
           arithmetic — the stuffing date is the only anchor.
         </span>
@@ -391,7 +391,7 @@ function AddOrder({ onClose }: { onClose: () => void }) {
                 </select>
                 <button
                   type="button"
-                  className="text-blue shrink-0 text-[11.5px] hover:underline"
+                  className="text-blue shrink-0 text-caption hover:underline"
                   onClick={() => setAddingCustomer(true)}
                 >
                   New
@@ -437,13 +437,13 @@ function AddOrder({ onClose }: { onClose: () => void }) {
           />
         </div>
 
-        <p className="text-mid mt-4 max-w-[65ch] text-[11.5px]">
+        <p className="text-mid mt-4 max-w-[65ch] text-caption">
           The ERP order number is the idempotency key for imports, so it has to
           be unique — re-importing the same file updates rather than duplicating.
         </p>
 
         {create.isError ? (
-          <p className="text-flag mt-3 text-[11.5px]">
+          <p className="text-flag mt-3 text-caption">
             {String(create.error).includes('orders_erp_order_no_key')
               ? 'That ERP order number already exists.'
               : String(create.error)}
@@ -512,7 +512,7 @@ function AddShipmentLine({
             setDeliveryDate={setDeliveryDate}
           />
         </div>
-        <p className="text-mid mt-4 max-w-[65ch] text-[11.5px]">
+        <p className="text-mid mt-4 max-w-[65ch] text-caption">
           This phase schedules independently of the others — a separate backward
           pass from its own stuffing date.
         </p>

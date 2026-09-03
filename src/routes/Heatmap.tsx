@@ -20,17 +20,32 @@ function eachDay(from: string, to: string): string[] {
   return out
 }
 
+/*
+ * Five steps of green rather than a continuous fade.
+ *
+ * This used to set `opacity` on a solid green, which lightened the cell
+ * towards whatever was behind it and made a quarter-full day and an empty one
+ * hard to tell apart at a glance. Mixing towards white instead keeps the
+ * colour honest at every step, and stepping it means neighbouring days read as
+ * different rather than as a gradient.
+ */
+const RAMP = [25, 45, 65, 85, 100]
+
+function loadFill(utilisation: number) {
+  const step = RAMP[Math.min(RAMP.length - 1, Math.floor(utilisation * RAMP.length))]
+  return `color-mix(in oklab, var(--color-clear) ${step}%, white)`
+}
+
 function cellStyle(cell: HeatmapCell | undefined) {
   // A day with no row at all is a day the factory is closed — Sunday or a
   // declared holiday. Drawn, not skipped, so the week has its real shape.
   if (!cell) return { className: 'border border-dashed border-rule', style: {} }
-  if (cell.status === 'over')
-    return { className: 'bg-flag', style: {} }
+  if (cell.status === 'over') return { className: 'bg-flag', style: {} }
   if (cell.status === 'idle')
     return { className: 'border border-rule-soft', style: {} }
   return {
-    className: 'bg-clear',
-    style: { opacity: Math.max(0.28, Math.min(1, cell.utilisation)) },
+    className: '',
+    style: { backgroundColor: loadFill(Math.min(1, cell.utilisation)) },
   }
 }
 
@@ -108,7 +123,7 @@ export function Heatmap() {
             : undefined
         }
       >
-        <p className="text-mid mb-4 max-w-[85ch] text-[12px]">
+        <p className="text-mid mb-4 max-w-[85ch] text-caption">
           Each cell is one department on one day, shaded by how much of the day
           the planned work consumes. Because a department can be making several
           components at once, the figure is the sum of the fractions of the day
@@ -150,7 +165,7 @@ export function Heatmap() {
                     <div
                       key={`${m.label}-${i}`}
                       style={{ gridColumn: `span ${m.span}` }}
-                      className="label border-rule-soft border-r border-b py-1 pl-1.5 text-[9.5px]"
+                      className="label border-rule-soft border-r border-b py-1 pl-1.5 text-caption"
                     >
                       {m.span > 3 ? m.label : ''}
                     </div>
@@ -170,14 +185,20 @@ export function Heatmap() {
               </div>
             </div>
 
-            <p className="text-faint mt-2 text-[11px]">
+            <p className="text-faint mt-2 text-caption">
               {model.days.length} days across the horizon — scroll sideways for
               the rest. Tap or hover any cell for its figure.
             </p>
 
-            <div className="text-mid mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-[11.5px]">
-              <Legend className="bg-clear opacity-40" label="Part loaded" />
-              <Legend className="bg-clear" label="At capacity" />
+            <div className="text-mid mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-caption">
+              <Legend
+                style={{ backgroundColor: loadFill(0.3) }}
+                label="Part loaded"
+              />
+              <Legend
+                style={{ backgroundColor: loadFill(1) }}
+                label="At capacity"
+              />
               <Legend className="bg-flag" label={`Over capacity · ${totals.over}`} />
               <Legend
                 className="border-rule-soft border"
@@ -230,7 +251,7 @@ export function Heatmap() {
           ) : null}
         </Panel>
       ) : (
-        <p className="text-faint text-[11.5px]">
+        <p className="text-faint text-caption">
           Select a cell to see which orders and components are on that day. The
           grid stays dense on a phone on purpose — a heatmap is for seeing the
           shape of a month at once, and thumb-sized cells would show a week.
@@ -260,7 +281,7 @@ function Row({
   return (
     <>
       <div className="bg-sheet border-rule-soft sticky left-0 z-10 border-r border-b px-2 py-1.5">
-        <div className="font-sans text-[12px] font-semibold">{dept.code}</div>
+        <div className="text-caption font-semibold">{dept.code}</div>
       </div>
       {days.map((day) => {
         const cell = byKey.get(`${dept.id}|${day}`)
@@ -284,7 +305,7 @@ function Row({
                 ? `${dept.code} · ${day} · ${cell.utilisation.toFixed(2)} of capacity`
                 : `${day} — closed`
             }
-            className={`m-[1px] h-[18px] ${className} ${
+            className={`m-[1px] h-[18px] rounded-[3px] ${className} ${
               isSelected ? 'outline-ink outline-2 outline-offset-1' : ''
             } ${cell ? 'cursor-pointer' : 'cursor-default'}`}
             style={style}
@@ -295,10 +316,21 @@ function Row({
   )
 }
 
-function Legend({ className, label }: { className: string; label: string }) {
+function Legend({
+  className = '',
+  style,
+  label,
+}: {
+  className?: string
+  style?: React.CSSProperties
+  label: string
+}) {
   return (
     <span className="flex items-center gap-1.5">
-      <span className={`inline-block h-3 w-3 ${className}`} />
+      <span
+        className={`inline-block h-3 w-3 rounded-[3px] ${className}`}
+        style={style}
+      />
       {label}
     </span>
   )

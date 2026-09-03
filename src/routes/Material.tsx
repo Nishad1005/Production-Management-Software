@@ -54,7 +54,7 @@ export function Material() {
             </div>
           )}
         </div>
-        <p className="text-faint mt-3 max-w-[85ch] text-[11.5px]">
+        <p className="text-faint mt-3 max-w-[85ch] text-caption">
           Counted back from the day the department that uses it starts — leather
           when cutting begins, not when the container sails — less the supplier's
           lead time. Lead times are calendar days: a supplier does not observe
@@ -103,7 +103,7 @@ export function Material() {
         </div>
 
         {uncounted.length ? (
-          <p className="text-amber mt-3 max-w-[85ch] text-[11.5px]">
+          <p className="text-amber mt-3 max-w-[85ch] text-caption">
             {uncounted.length}{' '}
             {uncounted.length === 1 ? 'material has' : 'materials have'} never
             been counted. They are not being reported as short — nobody has been
@@ -121,8 +121,8 @@ function OrderCard({ row }: { row: MaterialShortage }) {
     <div className="border-rule bg-sheet border p-3.5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <div className="text-[14px] font-semibold">{row.material_name}</div>
-          <div className="text-mid text-[12px]">
+          <div className="text-body font-semibold">{row.material_name}</div>
+          <div className="text-mid text-caption">
             {row.material_code}
             {row.supplier_code ? ` · ${row.supplier_code}` : ' · no supplier'}
           </div>
@@ -130,7 +130,7 @@ function OrderCard({ row }: { row: MaterialShortage }) {
         <Tag tone="flag">order by {formatDate(row.first_order_by)}</Tag>
       </div>
 
-      <div className="text-mid mt-2.5 flex flex-wrap gap-x-5 gap-y-1 text-[12px]">
+      <div className="text-mid mt-2.5 flex flex-wrap gap-x-5 gap-y-1 text-caption">
         <span>
           <strong>{formatNumber(row.qty_required, 2)}</strong> {row.uom} needed
         </span>
@@ -145,7 +145,7 @@ function OrderCard({ row }: { row: MaterialShortage }) {
 
       {/* The stock line changes what to do about it, so it sits with the date
           rather than in the table below. */}
-      <p className="text-faint mt-1.5 text-[11.5px]">
+      <p className="text-faint mt-1.5 text-caption">
         {row.status === 'not counted'
           ? 'Nobody has counted this one — it may already be in the store.'
           : row.status === 'covered'
@@ -223,7 +223,7 @@ function StockRow({
         <tr>
           <td colSpan={7} className="bg-paper/60 px-3 py-2">
             {jobs.data?.length ? (
-              <div className="space-y-1 text-[11.5px]">
+              <div className="space-y-1 text-caption">
                 {jobs.data.map((j, i) => (
                   <div key={i} className="text-mid flex flex-wrap gap-x-4">
                     <span className="font-semibold">{j.erp_order_no}</span>
@@ -240,7 +240,7 @@ function StockRow({
                 ))}
               </div>
             ) : (
-              <p className="text-faint text-[11.5px]">Loading…</p>
+              <p className="text-faint text-caption">Loading…</p>
             )}
           </td>
         </tr>

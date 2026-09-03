@@ -33,9 +33,15 @@ export const BREACH_EXPLAINER: Record<string, string> = {
  * reliably, and 16px is the smallest iOS will render without zooming the whole
  * page in when the field takes focus. Both drop back to the desk sizes at `sm`,
  * where a pointer is doing the aiming and density is worth more.
+ *
+ * The mobile size stays a literal `text-[16px]` rather than the `text-emphasis`
+ * step it currently equals. They are the same 16px today, and the step is free
+ * to move — it answers to typography, this answers to Safari. Tying them
+ * together would mean a later decision to set emphasis at 15px silently
+ * reintroduces zoom-on-focus, on a phone, on a factory floor.
  */
 export const inputClass =
-  'w-full border border-rule bg-sheet px-2.5 rounded-[2px] focus-visible:outline-2 focus-visible:outline-blue min-h-11 py-2.5 text-[16px] sm:min-h-0 sm:py-2 sm:text-[13px]'
+  'w-full border border-rule bg-sheet px-3 rounded-control focus-visible:outline-2 focus-visible:outline-blue focus-visible:outline-offset-1 min-h-11 py-2.5 text-[16px] sm:min-h-0 sm:py-2 sm:text-small'
 
 /**
  * Dates are handled as plain ISO strings throughout and formatted in UTC.

@@ -50,7 +50,7 @@ export function Money() {
             <div className="space-y-1.5">
               {rows.map((w) => (
                 <div key={w.week_starting} className="flex items-center gap-3">
-                  <div className="w-[130px] shrink-0 text-[12.5px]">
+                  <div className="w-[130px] shrink-0 text-small">
                     {formatDateLong(w.week_starting)}
                   </div>
                   <div className="bg-paper relative h-5 flex-1">
@@ -61,7 +61,7 @@ export function Money() {
                       }}
                     />
                   </div>
-                  <div className="nums text-mid w-[190px] shrink-0 text-right text-[11.5px]">
+                  <div className="nums text-mid w-[190px] shrink-0 text-right text-caption">
                     ₹{formatNumber(w.amount)}
                     <span className="text-faint">
                       {' '}
@@ -78,7 +78,7 @@ export function Money() {
           )}
         </div>
 
-        <p className="text-faint mt-4 max-w-[85ch] text-[11.5px]">
+        <p className="text-faint mt-4 max-w-[85ch] text-caption">
           Each material falls due the day it is needed plus the supplier's terms
           — the invoice follows the delivery, not the order. Weeks, because a
           cash question is asked in weeks and a daily list of four hundred rows
@@ -86,14 +86,14 @@ export function Money() {
         </p>
 
         {unpriced ? (
-          <p className="text-amber mt-2 max-w-[85ch] text-[11.5px]">
+          <p className="text-amber mt-2 max-w-[85ch] text-caption">
             {unpriced} {unpriced === 1 ? 'line has' : 'lines have'} no rate
             against the material, so they are counted here and not costed. The
             totals above are what we can price, not what the plan will cost.
           </p>
         ) : null}
 
-        <p className="text-mid mt-2 max-w-[85ch] text-[12px]">
+        <p className="text-mid mt-2 max-w-[85ch] text-caption">
           <strong>This is money out only.</strong> Kram holds no order values, so
           it cannot say what comes in — and a cash-flow figure with an invented
           revenue side would be worse than none.
@@ -183,7 +183,7 @@ export function Money() {
             </Table>
           )}
         </div>
-        <p className="text-faint mt-3 max-w-[85ch] text-[11.5px]">
+        <p className="text-faint mt-3 max-w-[85ch] text-caption">
           Where an article has a breakdown, its unit cost is the sum of those
           lines — there is no second figure to disagree with them. A typed total
           with nothing behind it is still perfectly usable, and says so.
@@ -246,7 +246,7 @@ function CostRow({
       {open && lines.data?.length ? (
         <tr>
           <td colSpan={6} className="bg-paper/60 px-3 py-2">
-            <div className="grid gap-x-6 gap-y-1 text-[11.5px] sm:grid-cols-2">
+            <div className="grid gap-x-6 gap-y-1 text-caption sm:grid-cols-2">
               {lines.data.map((l) => (
                 <div
                   key={l.cost_line_code}

@@ -46,11 +46,11 @@ export function Production() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end gap-3 sm:gap-4">
         <label className="flex min-w-0 flex-1 flex-col gap-1 sm:flex-none">
-          <span className="text-faint text-[11px] uppercase tracking-wider">
+          <span className="text-faint text-caption uppercase tracking-wider">
             Department
           </span>
           <select
-            className={`${inputClass} h-12 text-[15px] sm:h-auto sm:text-[13px]`}
+            className={`${inputClass} h-12 text-emphasis sm:h-auto sm:text-small`}
             value={departmentCode ?? ''}
             onChange={(e) => setDepartmentCode(e.target.value)}
             data-testid="production-department"
@@ -64,19 +64,19 @@ export function Production() {
         </label>
 
         <label className="flex shrink-0 flex-col gap-1">
-          <span className="text-faint text-[11px] uppercase tracking-wider">
+          <span className="text-faint text-caption uppercase tracking-wider">
             Date
           </span>
           <input
             type="date"
-            className={`${inputClass} h-12 text-[15px] sm:h-auto sm:text-[13px]`}
+            className={`${inputClass} h-12 text-emphasis sm:h-auto sm:text-small`}
             value={date}
             onChange={(e) => setDate(e.target.value)}
             data-testid="production-date"
           />
         </label>
 
-        <p className="text-mid hidden max-w-[52ch] text-[12px] sm:block">
+        <p className="text-mid hidden max-w-[52ch] text-caption sm:block">
           Entering output does not move any dates. The plan stays where it is —
           it is what everyone is working to today.
         </p>
@@ -105,7 +105,7 @@ export function Production() {
             </Empty>
             {days.data?.length ? (
               <div className="mt-4">
-                <p className="text-mid mb-2 text-[12px]">
+                <p className="text-mid mb-2 text-caption">
                   Days this department is asked to work:
                 </p>
                 <div className="flex flex-wrap gap-2">
@@ -114,7 +114,7 @@ export function Production() {
                       key={d.work_date}
                       type="button"
                       onClick={() => setDate(d.work_date)}
-                      className="border-rule hover:border-blue hover:text-blue min-h-11 rounded-[2px] border px-3 py-1 text-[13px] sm:min-h-0 sm:px-2.5 sm:text-[11.5px]"
+                      className="border-rule hover:border-blue hover:text-blue min-h-11 rounded-[2px] border px-3 py-1 text-small sm:min-h-0 sm:px-2.5 sm:text-caption"
                       title={`${formatNumber(d.qty_planned)} planned across ${d.jobs} job${d.jobs === 1 ? '' : 's'}`}
                     >
                       {formatDateLong(d.work_date)}
@@ -126,7 +126,7 @@ export function Production() {
                 </div>
               </div>
             ) : (
-              <p className="text-faint mt-3 max-w-[80ch] text-[11.5px]">
+              <p className="text-faint mt-3 max-w-[80ch] text-caption">
                 The current schedule does not ask this department for anything at
                 all. Either it has no component rates, or no open order passes
                 through it.
@@ -159,7 +159,7 @@ export function Production() {
           </div>
         )}
 
-        <p className="text-faint mt-3 hidden max-w-[80ch] text-[11.5px] sm:block">
+        <p className="text-faint mt-3 hidden max-w-[80ch] text-caption sm:block">
           Good and rejected are counted separately rather than entered as a
           percentage. The two figures are things you can stand behind; the
           percentage is worked out from them, and is what the yield on Masters
@@ -202,7 +202,7 @@ function WorklistEntry({ row, date }: { row: WorklistRow; date: string }) {
   ) : row.declaration_id ? (
     <Tag tone="clear">Entered</Tag>
   ) : (
-    <span className="text-faint text-[11px]">Not yet entered</span>
+    <span className="text-faint text-caption">Not yet entered</span>
   )
 
   return (
@@ -221,16 +221,16 @@ function WorklistEntry({ row, date }: { row: WorklistRow; date: string }) {
           <div className="border-rule bg-sheet border p-3.5">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <div className="text-[14px] font-semibold">
+                <div className="text-body font-semibold">
                   {row.erp_order_no}
                 </div>
-                <div className="text-mid text-[12px]">{row.article_code}</div>
+                <div className="text-mid text-caption">{row.article_code}</div>
               </div>
               <div className="text-right">
-                <div className="text-faint text-[10px] tracking-wider uppercase">
+                <div className="text-faint text-caption tracking-wider uppercase">
                   Asked for
                 </div>
-                <div className="text-[17px] font-semibold">
+                <div className="text-emphasis font-semibold">
                   {formatNumber(row.qty_planned)}
                 </div>
               </div>
@@ -244,7 +244,7 @@ function WorklistEntry({ row, date }: { row: WorklistRow; date: string }) {
 
             <div className="mt-3 grid grid-cols-2 gap-3">
               <label className="flex flex-col gap-1">
-                <span className="text-faint text-[10px] tracking-wider uppercase">
+                <span className="text-faint text-caption tracking-wider uppercase">
                   Good
                 </span>
                 <input
@@ -252,14 +252,14 @@ function WorklistEntry({ row, date }: { row: WorklistRow; date: string }) {
                   inputMode="numeric"
                   min={0}
                   step="any"
-                  className={`${inputClass} h-12 w-full text-[17px]`}
+                  className={`${inputClass} h-12 w-full text-emphasis`}
                   value={good}
                   onChange={(e) => setGood(e.target.value)}
                   aria-label={`Good, ${row.erp_order_no} ${row.component_code}`}
                 />
               </label>
               <label className="flex flex-col gap-1">
-                <span className="text-faint text-[10px] tracking-wider uppercase">
+                <span className="text-faint text-caption tracking-wider uppercase">
                   Rejected
                 </span>
                 <input
@@ -267,7 +267,7 @@ function WorklistEntry({ row, date }: { row: WorklistRow; date: string }) {
                   inputMode="numeric"
                   min={0}
                   step="any"
-                  className={`${inputClass} h-12 w-full text-[17px]`}
+                  className={`${inputClass} h-12 w-full text-emphasis`}
                   value={rejected}
                   onChange={(e) => setRejected(e.target.value)}
                   aria-label={`Rejected, ${row.erp_order_no} ${row.component_code}`}
@@ -282,7 +282,7 @@ function WorklistEntry({ row, date }: { row: WorklistRow; date: string }) {
               type="button"
               onClick={save}
               disabled={!dirty || declare.isPending}
-              className="bg-ink disabled:bg-rule mt-3 h-12 w-full rounded-[2px] text-[15px] font-semibold text-white disabled:cursor-not-allowed"
+              className="bg-ink disabled:bg-rule mt-3 h-12 w-full rounded-[2px] text-emphasis font-semibold text-white disabled:cursor-not-allowed"
             >
               {declare.isPending
                 ? 'Saving…'
@@ -363,7 +363,7 @@ function AcceptancePanel({
       title="Handed to you, not yet counted in"
       meta={`${rows.length} waiting`}
     >
-      <p className="text-mid mb-3 max-w-[80ch] text-[12px]">
+      <p className="text-mid mb-3 max-w-[80ch] text-caption">
         Count what actually arrived. If it does not match what they said, enter
         what you have — the difference is kept, not smoothed over.
       </p>
@@ -404,25 +404,25 @@ function AcceptancePanel({
                       <div className="border-rule bg-sheet border p-3.5">
                         <div className="flex items-start justify-between gap-3">
                           <div>
-                            <div className="text-[14px] font-semibold">
+                            <div className="text-body font-semibold">
                               {row.erp_order_no}
                             </div>
-                            <div className="text-mid text-[12px]">
+                            <div className="text-mid text-caption">
                               from {row.from_department_name}
                             </div>
                           </div>
                           <div className="text-right">
-                            <div className="text-faint text-[10px] tracking-wider uppercase">
+                            <div className="text-faint text-caption tracking-wider uppercase">
                               They made
                             </div>
-                            <div className="text-[17px] font-semibold">
+                            <div className="text-emphasis font-semibold">
                               {formatNumber(row.qty_declared)}
                             </div>
                           </div>
                         </div>
 
                         <label className="mt-3 flex flex-col gap-1">
-                          <span className="text-faint text-[10px] tracking-wider uppercase">
+                          <span className="text-faint text-caption tracking-wider uppercase">
                             You received
                           </span>
                           <input
@@ -430,7 +430,7 @@ function AcceptancePanel({
                             inputMode="numeric"
                             min={0}
                             step="any"
-                            className={`${inputClass} h-12 w-full text-[17px]`}
+                            className={`${inputClass} h-12 w-full text-emphasis`}
                             value={value}
                             onChange={(e) => onChange(e.target.value)}
                             aria-label={`Received, ${row.erp_order_no} ${row.component_code}`}
@@ -440,7 +440,7 @@ function AcceptancePanel({
                         {short ? (
                           <p
                             data-testid="shortfall"
-                            className="text-amber mt-2 text-[12px] font-semibold"
+                            className="text-amber mt-2 text-caption font-semibold"
                           >
                             {formatNumber(row.qty_declared - Number(value))}{' '}
                             short of what they declared
@@ -451,7 +451,7 @@ function AcceptancePanel({
                           type="button"
                           onClick={countIn}
                           disabled={accept.isPending}
-                          className="bg-ink disabled:bg-rule mt-3 h-12 w-full rounded-[2px] text-[15px] font-semibold text-white disabled:cursor-not-allowed"
+                          className="bg-ink disabled:bg-rule mt-3 h-12 w-full rounded-[2px] text-emphasis font-semibold text-white disabled:cursor-not-allowed"
                         >
                           {accept.isPending ? 'Saving…' : 'Count in'}
                         </button>
@@ -519,7 +519,7 @@ function AcceptancePanel({
       </div>
 
       {accept.isError ? (
-        <p className="text-flag mt-3 max-w-[80ch] text-[11.5px]">
+        <p className="text-flag mt-3 max-w-[80ch] text-caption">
           {String(accept.error).includes('not fed by')
             ? 'This work was not handed to your department. Check What feeds what on Masters.'
             : String(accept.error)}
@@ -560,7 +560,7 @@ function TodaysCapacity({
         ))}
       </div>
 
-      <p className="text-faint mt-3 hidden max-w-[80ch] text-[11.5px] sm:block">
+      <p className="text-faint mt-3 hidden max-w-[80ch] text-caption sm:block">
         The standing rate assumes the crew it was measured with. Entering who
         came in moves the day in proportion; entering a figure overrides it
         outright, and needs a reason because someone will ask in six weeks.
@@ -622,17 +622,17 @@ function ShiftCapacity({
   return (
     <div className="border-rule border p-3.5">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <span className="text-[13px] font-semibold">
+        <span className="text-small font-semibold">
           Shift {row.shift_code}
         </span>
-        <span className="text-faint text-[11.5px]">
+        <span className="text-faint text-caption">
           {row.sanctioned} on the books
         </span>
       </div>
 
       <div className="mt-3 grid gap-3 sm:grid-cols-[200px_1fr]">
         <label className="flex flex-col gap-1">
-          <span className="text-faint text-[10px] tracking-wider uppercase">
+          <span className="text-faint text-caption tracking-wider uppercase">
             Who came in
           </span>
           <div className="flex gap-2">
@@ -643,7 +643,7 @@ function ShiftCapacity({
               step="1"
               disabled={!scalable}
               placeholder={String(row.sanctioned)}
-              className={`${inputClass} h-12 text-[15px] disabled:opacity-50 sm:h-auto sm:text-[13px]`}
+              className={`${inputClass} h-12 text-emphasis disabled:opacity-50 sm:h-auto sm:text-small`}
               value={present}
               onChange={(e) => setPresent(e.target.value)}
               aria-label={`People present, shift ${row.shift_code}`}
@@ -652,14 +652,14 @@ function ShiftCapacity({
               type="button"
               onClick={saveAttendance}
               disabled={!scalable || setAttendance.isPending}
-              className="border-rule hover:border-blue hover:text-blue h-12 shrink-0 rounded-[2px] border px-3 text-[13px] font-semibold disabled:opacity-40 sm:h-auto sm:py-2"
+              className="border-rule hover:border-blue hover:text-blue h-12 shrink-0 rounded-[2px] border px-3 text-small font-semibold disabled:opacity-40 sm:h-auto sm:py-2"
             >
               {setAttendance.isPending ? '…' : 'Save'}
             </button>
           </div>
         </label>
 
-        <div className="text-[12px]">
+        <div className="text-caption">
           {!scalable ? (
             <p className="text-amber">
               No crew size recorded against this department's rates, so who came
@@ -689,7 +689,7 @@ function ShiftCapacity({
       </div>
 
       <details className="mt-3" open={row.override_units !== null}>
-        <summary className="text-blue cursor-pointer text-[12px] font-semibold">
+        <summary className="text-blue cursor-pointer text-caption font-semibold">
           Override the figure instead
         </summary>
         <div className="mt-2 grid gap-2 sm:grid-cols-[140px_1fr_auto]">
@@ -699,7 +699,7 @@ function ShiftCapacity({
             min={0}
             step="any"
             placeholder="Units"
-            className={`${inputClass} h-12 text-[15px] sm:h-auto sm:text-[13px]`}
+            className={`${inputClass} h-12 text-emphasis sm:h-auto sm:text-small`}
             value={units}
             onChange={(e) => setUnits(e.target.value)}
             aria-label={`Units for the day, shift ${row.shift_code}`}
@@ -707,7 +707,7 @@ function ShiftCapacity({
           <input
             type="text"
             placeholder="Why — a machine down, new operators, a difficult fabric"
-            className={`${inputClass} h-12 text-[15px] sm:h-auto sm:text-[13px]`}
+            className={`${inputClass} h-12 text-emphasis sm:h-auto sm:text-small`}
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             aria-label={`Reason, shift ${row.shift_code}`}
@@ -716,13 +716,13 @@ function ShiftCapacity({
             type="button"
             onClick={saveOverride}
             disabled={setDayCapacity.isPending}
-            className="bg-ink h-12 rounded-[2px] px-4 text-[13px] font-semibold text-white disabled:opacity-40 sm:h-auto sm:py-2"
+            className="bg-ink h-12 rounded-[2px] px-4 text-small font-semibold text-white disabled:opacity-40 sm:h-auto sm:py-2"
           >
             {setDayCapacity.isPending ? 'Saving…' : 'Apply'}
           </button>
         </div>
         {setDayCapacity.isError ? (
-          <p className="text-flag mt-2 text-[11.5px]">
+          <p className="text-flag mt-2 text-caption">
             {String(setDayCapacity.error).includes('needs a reason')
               ? 'An override needs a reason — somebody will ask in six weeks.'
               : String(setDayCapacity.error)}

@@ -27,7 +27,7 @@ export function Acceptance() {
   return (
     <div className="space-y-6">
       <Panel title="Can we take this order?" meta="Checked against the live book">
-        <p className="text-mid mb-4 max-w-[80ch] text-[12px]">
+        <p className="text-mid mb-4 max-w-[80ch] text-caption">
           The proposed line is scheduled provisionally alongside everything
           already committed, and then removed again — nothing is added to the
           order book. What comes back is which departments break, and why.
@@ -90,12 +90,12 @@ export function Acceptance() {
               breaches.length ? 'border-flag' : 'border-clear'
             }`}
           >
-            <p className="font-sans text-[15px] font-semibold">
+            <p className="text-emphasis font-semibold">
               {breaches.length
                 ? `${breaches.length} of ${rows.length} steps cannot be made to this date.`
                 : 'Every department can make this within its window.'}
             </p>
-            <p className="text-mid mt-1 max-w-[75ch] text-[12px]">
+            <p className="text-mid mt-1 max-w-[75ch] text-caption">
               {breaches.length
                 ? 'Kram reports the shortfall. Whether to run overtime, resequence, subcontract or move the date is a production decision resting on material, cash and the customer relationship — none of which the system can see.'
                 : 'Scheduled against everything already committed, with no day pushed over capacity.'}
@@ -132,7 +132,7 @@ export function Acceptance() {
                               r.breach_reason}
                           </Tag>
                         </span>
-                        <span className="text-mid text-[11px]">
+                        <span className="text-mid text-caption">
                           {BREACH_EXPLAINER[r.breach_reason ?? '']}
                         </span>
                       </span>
@@ -143,7 +143,7 @@ export function Acceptance() {
             </tbody>
           </Table>
 
-          <p className="text-faint mt-4 text-[11.5px]">
+          <p className="text-faint mt-4 text-caption">
             Quantities are inflated for yield — each department must make enough
             that the shipped quantity survives every loss downstream of it.
           </p>
@@ -160,7 +160,7 @@ export function Acceptance() {
             statement due to statement timeout` tells them nothing they can do
             anything about. Anything unrecognised still prints verbatim.
           */}
-          <p className="text-flag text-[12.5px]">
+          <p className="text-flag text-small">
             {friendlyWriteError(
               check.error instanceof Error
                 ? check.error.message

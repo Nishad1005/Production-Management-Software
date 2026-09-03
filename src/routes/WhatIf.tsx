@@ -114,7 +114,7 @@ export function WhatIf() {
   return (
     <div className="space-y-6">
       <Panel title="Try a change" meta="Nothing here touches the live plan">
-        <p className="text-mid mb-4 max-w-[80ch] text-[12px]">
+        <p className="text-mid mb-4 max-w-[80ch] text-caption">
           A scenario is scheduled as its own version of the plan, alongside the
           live one, and compared against it. The capacity change is applied for
           the run and taken straight back out — the masters are never edited.
@@ -195,7 +195,7 @@ export function WhatIf() {
                 disabled={!departmentCode}
                 onClick={() => setFactor(String(p.factor))}
                 title={p.hint}
-                className={`min-h-11 rounded-[2px] border px-2.5 py-1.5 text-[13px] disabled:opacity-40 sm:min-h-0 sm:text-[12px] ${
+                className={`min-h-11 rounded-[2px] border px-2.5 py-1.5 text-small disabled:opacity-40 sm:min-h-0 sm:text-caption ${
                   Number(factor) === p.factor && departmentCode
                     ? 'border-blue text-blue bg-white font-semibold'
                     : 'border-rule text-mid hover:border-blue'
@@ -204,10 +204,10 @@ export function WhatIf() {
                 {p.label}
               </button>
             ))}
-            <span className="text-faint text-[11.5px]">
+            <span className="text-faint text-caption">
               ×
               <input
-                className="border-rule ml-1 min-h-11 w-20 border px-1.5 py-1 text-[16px] sm:min-h-0 sm:w-16 sm:text-[12px]"
+                className="border-rule ml-1 min-h-11 w-20 border px-1.5 py-1 text-emphasis sm:min-h-0 sm:w-16 sm:text-caption"
                 type="number"
                 step="0.1"
                 min="0"
@@ -218,7 +218,7 @@ export function WhatIf() {
             </span>
           </div>
 
-          <label className="flex min-h-11 items-center gap-2 text-[13px] sm:min-h-0 sm:text-[12.5px]">
+          <label className="flex min-h-11 items-center gap-2 text-small sm:min-h-0 sm:text-small">
             <input
               type="checkbox"
               checked={includeProbable}
@@ -273,7 +273,7 @@ export function WhatIf() {
           </div>
 
           {partial ? (
-            <p className="border-amber text-mid border-l-[3px] py-1 pl-4 text-[12px]">
+            <p className="border-amber text-mid border-l-[3px] py-1 pl-4 text-caption">
               Only {scenario?.what_if_applied} of {scenario?.what_if_intended}{' '}
               component rates took the change — the rest already had a capacity
               override booked in that window, and a real one is not overwritten by
@@ -355,7 +355,7 @@ export function WhatIf() {
               >
                 Discard
               </Button>
-              <span className="text-faint text-[11.5px]">
+              <span className="text-faint text-caption">
                 Promoting keeps the plan it replaces — every run is kept, so you
                 can always go back and see what was decided.
               </span>
@@ -420,7 +420,7 @@ export function WhatIf() {
       ) : null}
 
       <Panel title="Runs" meta={`${runs.data?.length ?? 0} kept`}>
-        <p className="text-mid mb-3 max-w-[80ch] text-[12px]">
+        <p className="text-mid mb-3 max-w-[80ch] text-caption">
           Every run is kept and none is ever overwritten, so an earlier plan can
           be recovered and compared against what actually happened. Select one to
           compare it with the live plan.
@@ -471,11 +471,11 @@ export function WhatIf() {
                 </Td>
                 <Td align="right">
                   {r.is_current ? (
-                    <span className="text-faint text-[11px]">—</span>
+                    <span className="text-faint text-caption">—</span>
                   ) : (
                     <button
                       type="button"
-                      className="text-blue text-[11px] hover:underline"
+                      className="text-blue text-caption hover:underline"
                       onClick={() => setScenarioId(r.id)}
                     >
                       Compare

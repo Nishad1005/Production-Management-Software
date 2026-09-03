@@ -847,6 +847,65 @@ and the parity fixture must never share a database with client data without
 being marked as ours — the provisional banner covers rates and orders, and said
 nothing about an article.
 
+### 2026-09-03 — The redesign: sans, a scale, and cards
+
+The demonstration landed except for the look. Three causes, all verifiable
+rather than matters of taste:
+
+1. **Body text was monospace.** `body { font-family: var(--font-mono) }` — every
+   paragraph, label, button and table cell in the product. It read as a
+   terminal, and it is the single largest reason twenty screens looked the way
+   they did.
+2. **The fonts were never loaded.** `@theme` named Archivo and IBM Plex Mono at
+   the head of both stacks and nothing anywhere fetched or bundled them, so
+   every visitor since Phase 0 has seen the system fallback. The typography was
+   never the typography anybody chose.
+3. **306 hand-picked sizes**, 69% of them 12px or smaller, across *nine*
+   distinct values between 9.5px and 13px. Not a scale — accretion.
+
+Fixed in that order. Fonts are now `@fontsource-variable/inter` and
+`@fontsource/ibm-plex-mono`, imported in `index.css` and emitted as 22 woff2
+files into the build: **the offline constraint is satisfied by shipping them
+rather than by doing without**, which is what it should have meant all along.
+Sans for everything read, mono for data only. Six type steps as `--text-*`
+tokens with a 12px floor; the sweep moved 254 literals onto them and the only
+survivors are the wall display's (read from ten feet) and one deliberate
+exception below.
+
+The palette kept every token **name** — `FactoryMap` passes `var(--color-*)`
+straight into SVG `fill` and `stroke`, where a rename fails silently — and
+changed the values: cooler ground, `faint` from ~3.2:1 to 4.7:1 on white (it is
+used 147 times), a confident blue. Added what the old palette had no name for:
+`faint-inverse` (the `#93a6b8` that was typed out by hand three times), four
+washes, two radii, two shadows.
+
+Panels became cards. The dark ink title bars are gone, `Tag` went from a 10px
+outline chip to a filled pill, `Metric` and the Dashboard's KPI card converged
+on one treatment with a left accent in the load vocabulary, and the app bar
+replaced a 42px masthead plus a REF/REVISION/CLIENT stamp table — about a third
+of the first screenful before any work appeared. The stamp's identity belongs
+on the printed notes, which have it.
+
+**The one thing the sweep got wrong, and why it is a literal again.**
+`inputClass` carried `text-[16px]` on mobile — not a typographic choice but the
+threshold below which iOS zooms the page on focus. The sweep folded it into
+`text-emphasis`, which is 16px *today*. Restored to a literal with the reason
+written next to it: tying them together means a later decision to set emphasis
+at 15px silently reintroduces zoom-on-focus, on a phone, on a factory floor.
+
+**A flake found and fixed on the way.** The floor-display check read the
+department select immediately after waiting for the page's text, and the
+select is briefly empty while the department list arrives — it failed about one
+run in ten. It now waits for the value. A check that fails intermittently is
+worse than one that fails always: it teaches everyone to re-run rather than to
+look.
+
+Nothing on screen was reworded, no screen or check step was added or removed,
+the `NAV` literal is untouched, uppercase stayed a CSS transform, tables stayed
+tables, Gantt bars stayed divs, and `data-dense-grid` stayed on the heatmap —
+so the 39 text anchors, the 44px contract, the no-sideways-scroll audit and the
+43 testids all hold. 340 tests, 49 browser checks, 29 hosted checks, green.
+
 ## 9. Log
 
 Newest first. One entry per working session — what changed, and anything a

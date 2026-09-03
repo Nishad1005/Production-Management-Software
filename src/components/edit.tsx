@@ -166,27 +166,28 @@ export function Modal({
 
   return (
     <div
-      className="fixed inset-0 z-50 grid place-items-start overflow-y-auto bg-black/35 p-6 pt-[8vh]"
+      className="bg-ink/40 fixed inset-0 z-50 grid place-items-start overflow-y-auto p-6 pt-[8vh]"
       onClick={onClose}
     >
       <div
         data-testid="modal"
-        className="border-ink bg-sheet mx-auto w-full max-w-2xl border shadow-lg"
+        className="border-rule-soft bg-sheet rounded-card shadow-pop mx-auto w-full max-w-2xl border"
         onClick={(e) => e.stopPropagation()}
       >
-        <header className="bg-ink flex items-center justify-between gap-4 px-4 py-2.5 text-white">
+        <header className="border-rule-soft flex items-center justify-between gap-4 border-b px-5 py-4">
           <div>
-            <b className="font-sans text-[13px] font-semibold">{title}</b>
+            <b className="text-emphasis font-semibold tracking-[-0.01em]">
+              {title}
+            </b>
             {subtitle ? (
-              <span className="ml-3 text-[10.5px] tracking-[0.12em] text-[#93a6b8] uppercase">
-                {subtitle}
-              </span>
+              <span className="text-caption text-faint ml-3">{subtitle}</span>
             ) : null}
           </div>
+          {/* A visible control outside a table, so it owes the 44px floor. */}
           <button
             type="button"
             onClick={onClose}
-            className="text-[18px] leading-none text-[#93a6b8] hover:text-white"
+            className="text-faint hover:text-ink -mr-2 min-h-11 px-2 text-title leading-none sm:min-h-0"
             aria-label="Close"
           >
             ×

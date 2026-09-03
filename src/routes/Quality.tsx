@@ -48,7 +48,7 @@ export function Quality() {
         </div>
 
         {worst.length === 2 ? (
-          <p className="text-mid mt-4 max-w-[80ch] text-[12px]">
+          <p className="text-mid mt-4 max-w-[80ch] text-caption">
             <strong>{worst[0].name}</strong> and <strong>{worst[1].name}</strong>{' '}
             account for{' '}
             {formatNumber(worst[0].share_pct + worst[1].share_pct, 0)}% of
@@ -57,7 +57,7 @@ export function Quality() {
         ) : null}
 
         {unexplained ? (
-          <p className="text-amber mt-2 max-w-[80ch] text-[11.5px]">
+          <p className="text-amber mt-2 max-w-[80ch] text-caption">
             {formatNumber(unexplained.qty)} rejected pieces —{' '}
             {formatNumber(unexplained.share_pct, 0)}% — have no cause against
             them. Nobody is required to explain every reject, but an unexplained
@@ -128,7 +128,7 @@ export function Quality() {
             </Table>
           )}
         </div>
-        <p className="text-faint mt-3 max-w-[85ch] text-[11.5px]">
+        <p className="text-faint mt-3 max-w-[85ch] text-caption">
           A department with nothing declared is absent rather than shown at zero.
           Zero rejections and no reporting look identical on a screen and are
           opposite findings.
@@ -171,7 +171,7 @@ export function Quality() {
             </Table>
           )}
         </div>
-        <p className="text-faint mt-3 max-w-[85ch] text-[11.5px]">
+        <p className="text-faint mt-3 max-w-[85ch] text-caption">
           The same rejections seen from the other side. A department having a bad
           month and one article being hard to make produce the same figure above,
           and only one of them is fixed by talking to the department.
@@ -193,10 +193,10 @@ function CauseBar({ row }: { row: ParetoRow }) {
   const unexplained = row.code === 'UNATTRIBUTED'
   return (
     <div className="flex items-center gap-3">
-      <div className="w-[220px] shrink-0 text-[12.5px]">
+      <div className="w-[220px] shrink-0 text-small">
         <span className={unexplained ? 'text-amber' : ''}>{row.name}</span>
         {!unexplained ? (
-          <span className="text-faint text-[10.5px]"> · {row.category}</span>
+          <span className="text-faint text-caption"> · {row.category}</span>
         ) : null}
       </div>
       <div className="bg-paper relative h-5 flex-1">
@@ -205,7 +205,7 @@ function CauseBar({ row }: { row: ParetoRow }) {
           style={{ width: `${Math.max(row.share_pct, 1)}%` }}
         />
       </div>
-      <div className="nums text-mid w-[130px] shrink-0 text-right text-[11.5px]">
+      <div className="nums text-mid w-[130px] shrink-0 text-right text-caption">
         {formatNumber(row.qty)} · {formatNumber(row.share_pct, 0)}%
         <span className="text-faint"> ({formatNumber(row.running_pct, 0)}%)</span>
       </div>

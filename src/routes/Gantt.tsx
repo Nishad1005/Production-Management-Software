@@ -77,7 +77,7 @@ export function Gantt() {
         title="Schedule"
         meta={`${rows.length} tasks${rows.length !== (gantt.data?.length ?? 0) ? ` of ${gantt.data?.length}` : ''}`}
       >
-        <p className="text-mid mb-4 max-w-[85ch] text-[12px]">
+        <p className="text-mid mb-4 max-w-[85ch] text-caption">
           Each bar is one component in one department, running from its start
           date to the day it must be finished; the marker is the department's own
           deadline. <strong>Drag a bar</strong> to reschedule it — you will be
@@ -112,7 +112,7 @@ export function Gantt() {
               ))}
             </select>
           </label>
-          <label className="flex min-h-11 items-center gap-2 pb-2 text-[13px] sm:min-h-0 sm:pb-2 sm:text-[12.5px]">
+          <label className="flex min-h-11 items-center gap-2 pb-2 text-small sm:min-h-0 sm:pb-2 sm:text-small">
             <input
               type="checkbox"
               checked={onlyBreaches}
@@ -129,14 +129,14 @@ export function Gantt() {
             {groups.map((group) => (
               <div key={`${group.header.erp_order_no}#${group.header.line_no}`}>
                 <div className="border-rule-soft flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b pb-1.5">
-                  <span className="font-sans text-[13px] font-semibold">
+                  <span className="text-small font-semibold">
                     {group.header.erp_order_no}
                     <span className="text-faint font-normal">
                       {' '}
                       line {group.header.line_no}
                     </span>
                   </span>
-                  <span className="text-mid text-[11.5px]">
+                  <span className="text-mid text-caption">
                     {group.header.customer_name} ·{' '}
                     {formatNumber(group.header.line_qty)} units · stuffing{' '}
                     {formatDateLong(group.header.stuffing_date)}
@@ -176,7 +176,7 @@ export function Gantt() {
 
       {pins.data?.length ? (
         <Panel title="Manual pins" meta={`${pins.data.length} active`}>
-          <p className="text-mid mb-3 max-w-[80ch] text-[12px]">
+          <p className="text-mid mb-3 max-w-[80ch] text-caption">
             A planner who moves a task has made a decision the engine cannot see
             the reasons for. Every run schedules around these and reports any
             breach they cause, rather than quietly undoing them.
@@ -206,7 +206,7 @@ export function Gantt() {
                   <Td align="right">
                     <button
                       type="button"
-                      className="text-faint hover:text-flag text-[11px]"
+                      className="text-faint hover:text-flag text-caption"
                       onClick={() =>
                         releasePin.mutate({
                           shipmentLineId: p.shipment_line_id,
@@ -304,7 +304,7 @@ function Bar({
 
   return (
     <div className="grid grid-cols-[190px_1fr] items-center gap-3 select-none">
-      <div className="flex items-center gap-1.5 text-[11.5px]">
+      <div className="flex items-center gap-1.5 text-caption">
         <span className="w-16 font-semibold">{task.department_code}</span>
         <span className="text-mid truncate">{task.component_code}</span>
         {task.is_pinned ? (
@@ -325,7 +325,7 @@ function Bar({
           <div
             onPointerDown={startDrag}
             data-testid="gantt-bar"
-            className={`absolute top-1/2 h-[11px] -translate-y-1/2 cursor-grab touch-none rounded-[1px] active:cursor-grabbing ${tone} ${
+            className={`absolute top-1/2 h-3.5 min-w-[3px] -translate-y-1/2 cursor-grab touch-none rounded-[3px] active:cursor-grabbing ${tone} ${
               dragDays !== null ? 'ring-ink opacity-80 ring-2' : ''
             }`}
             style={{ left: `${left}%`, width: `${width}%` }}
@@ -336,7 +336,7 @@ function Bar({
             } — drag to reschedule`}
           />
         ) : (
-          <span className="text-flag absolute top-1/2 left-0 -translate-y-1/2 bg-white pr-2 text-[11px]">
+          <span className="text-flag bg-sheet text-caption absolute top-1/2 left-0 -translate-y-1/2 pr-2 font-medium">
             {BREACH_LABEL[task.breach_reason ?? ''] ?? 'Not scheduled'}
           </span>
         )}
@@ -352,12 +352,12 @@ function Bar({
           />
         ) : null}
         {dragDays !== null && dragDays !== 0 ? (
-          <span className="text-blue pointer-events-none absolute top-1/2 right-0 -translate-y-1/2 bg-white pl-2 text-[10.5px] font-semibold">
+          <span className="text-blue pointer-events-none absolute top-1/2 right-0 -translate-y-1/2 bg-white pl-2 text-caption font-semibold">
             {dragDays > 0 ? '+' : ''}
             {dragDays} days
           </span>
         ) : !task.is_feasible && task.breach_reason ? (
-          <span className="text-flag pointer-events-none absolute top-1/2 right-0 -translate-y-1/2 bg-white pl-2 text-[10px] tracking-[0.05em] uppercase">
+          <span className="text-flag pointer-events-none absolute top-1/2 right-0 -translate-y-1/2 bg-white pl-2 text-caption tracking-[0.05em] uppercase">
             {BREACH_LABEL[task.breach_reason] ?? task.breach_reason}
           </span>
         ) : null}
@@ -401,7 +401,7 @@ function PinDialog({
           )
         }}
       >
-        <dl className="border-rule-soft grid grid-cols-[130px_1fr] gap-y-1 border-b pb-4 text-[12.5px]">
+        <dl className="border-rule-soft grid grid-cols-[130px_1fr] gap-y-1 border-b pb-4 text-small">
           <dt className="text-faint">Order</dt>
           <dd>
             {task.erp_order_no} line {task.line_no} — {task.customer_name}
@@ -433,7 +433,7 @@ function PinDialog({
           </Field>
         </div>
 
-        <p className="text-mid mt-3 max-w-[65ch] text-[11.5px]">
+        <p className="text-mid mt-3 max-w-[65ch] text-caption">
           The reason is required because a pin without one is indistinguishable
           from a mistake six weeks later. Every later run honours this date and
           schedules around it; if it pushes the work past the deadline, that is
@@ -441,7 +441,7 @@ function PinDialog({
         </p>
 
         {createPin.isError ? (
-          <p className="text-flag mt-3 text-[11.5px]">
+          <p className="text-flag mt-3 text-caption">
             {String(createPin.error)}
           </p>
         ) : null}

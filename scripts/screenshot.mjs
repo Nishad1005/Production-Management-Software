@@ -974,10 +974,25 @@ await step('floor display', async () => {
     await screen.waitForTimeout(600)
 
     // The choice survives a power cut, which is what localStorage is for here.
+    //
+    // Waited for rather than read once: "Waiting on" renders before the
+    // department list has arrived, so the select is briefly empty and a single
+    // read caught it there about one run in ten. A check that fails
+    // intermittently is worse than one that fails always — it teaches everyone
+    // to re-run rather than to look.
     await screen.reload()
     await screen.waitForSelector('text=Waiting on', { timeout: 60_000 })
-    const kept = await screen.inputValue('[data-testid="display-department"]')
-    if (kept !== 'STITCH') throw new Error(`came back showing ${kept}`)
+    await screen
+      .waitForFunction(
+        () =>
+          document.querySelector('[data-testid="display-department"]')?.value ===
+          'STITCH',
+        { timeout: 15_000 },
+      )
+      .catch(async () => {
+        const kept = await screen.inputValue('[data-testid="display-department"]')
+        throw new Error(`came back showing ${kept || '(nothing)'}`)
+      })
 
     await screen.screenshot({ path: `${outDir}/floor-display.png` })
     return 'no chrome, and it remembers its department across a reload'

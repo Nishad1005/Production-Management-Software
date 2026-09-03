@@ -40,7 +40,7 @@ export function Dashboard() {
         </div>
 
         {missing.length ? (
-          <p className="text-faint mt-4 max-w-[80ch] text-[11.5px]">
+          <p className="text-faint mt-4 max-w-[80ch] text-caption">
             {missing.length} of {rows.length} cannot be computed yet, and say so
             rather than showing a zero. Each names what it is waiting for.
           </p>
@@ -147,12 +147,18 @@ function Row({ row }: { row: ProductionVsPlan }) {
   )
 }
 
+/*
+ * The same card as `Metric` in ui.tsx — a left accent in the load vocabulary,
+ * a caption, a large tabular figure. Kept as its own component because a KPI
+ * carries things a metric does not: a target, a unit, a caveat, and the
+ * possibility of having no answer at all.
+ */
 const TONE: Record<Kpi['status'], string> = {
-  good: 'border-clear',
-  warn: 'border-amber',
-  bad: 'border-flag',
-  none: 'border-rule',
-  unavailable: 'border-rule',
+  good: 'border-l-clear',
+  warn: 'border-l-amber',
+  bad: 'border-l-flag',
+  none: 'border-l-rule',
+  unavailable: 'border-l-rule',
 }
 
 const LABEL: Record<Kpi['status'], string> = {
@@ -168,42 +174,44 @@ function KpiCard({ kpi }: { kpi: Kpi }) {
   const suffix = kpi.unit === '%' ? '%' : ''
 
   return (
-    <div className={`bg-sheet border-l-2 border p-3.5 ${TONE[kpi.status]}`}>
-      <div className="text-faint text-[10px] tracking-wider uppercase">
-        {kpi.label}
-      </div>
+    <div
+      className={`bg-sheet border-rule-soft rounded-card shadow-card border border-l-[3px] p-4 ${TONE[kpi.status]}`}
+    >
+      <div className="label">{kpi.label}</div>
 
       {kpi.available ? (
         <>
-          <div className="mt-1.5 flex items-baseline gap-2">
-            <span className={`text-[26px] font-semibold ${LABEL[kpi.status]}`}>
+          <div className="mt-1 flex items-baseline gap-2">
+            <span
+              className={`nums text-display font-semibold tracking-[-0.02em] ${LABEL[kpi.status]}`}
+            >
               {money ? '₹' : ''}
               {formatNumber(kpi.actual, kpi.unit === '%' ? 1 : 0)}
               {suffix}
             </span>
             {kpi.target > 0 ? (
-              <span className="text-faint text-[12px]">
+              <span className="text-faint text-caption">
                 target {formatNumber(kpi.target, 0)}
                 {suffix}
               </span>
             ) : null}
           </div>
           {kpi.unit !== '%' && kpi.unit !== '₹' ? (
-            <div className="text-faint text-[11.5px]">{kpi.unit}</div>
+            <div className="text-faint text-caption">{kpi.unit}</div>
           ) : null}
           {/* A total that quietly omits part of the floor is worse than no
               total, so the caveat sits with the number rather than in a
               footnote nobody reads. */}
           {kpi.note ? (
-            <div className="text-mid mt-1 text-[11.5px]">{kpi.note}</div>
+            <div className="text-mid mt-1 text-caption">{kpi.note}</div>
           ) : null}
         </>
       ) : (
         <>
-          <div className="text-faint mt-1.5 text-[22px] font-semibold">—</div>
+          <div className="text-faint text-display mt-1 font-semibold">—</div>
           {/* The reason, not a dash on its own. An empty figure with no
               explanation reads as a bug; with one it reads as a next step. */}
-          <p className="text-mid mt-1 text-[11.5px]">
+          <p className="text-mid mt-1 text-caption">
             {kpi.unavailable_because}
           </p>
         </>

@@ -186,7 +186,7 @@ export function CapacitySheet() {
         title="Capacity sheet"
         meta={`${model.articleCodes.length} articles × ${model.departments.length} departments`}
       >
-        <p className="text-mid mb-4 max-w-[85ch] text-[12px]">
+        <p className="text-mid mb-4 max-w-[85ch] text-caption">
           The same grid as the capacity spreadsheet, writing where the engine
           reads it. A <strong>units</strong> figure means the article passes
           through that department at that rate; a blank means it does not go
@@ -203,7 +203,7 @@ export function CapacitySheet() {
                   type="button"
                   title={m.hint}
                   onClick={() => setMeasure(m.key)}
-                  className={`min-h-11 rounded-[2px] border px-2.5 py-1.5 text-[13px] sm:min-h-0 sm:text-[12px] ${
+                  className={`min-h-11 rounded-[2px] border px-2.5 py-1.5 text-small sm:min-h-0 sm:text-caption ${
                     measure === m.key
                       ? 'border-blue text-blue bg-white font-semibold'
                       : 'border-rule text-mid hover:border-blue'
@@ -223,7 +223,7 @@ export function CapacitySheet() {
               placeholder="Code or name"
             />
           </label>
-          <p className="text-faint pb-2 text-[11.5px]">{active.hint}</p>
+          <p className="text-faint pb-2 text-caption">{active.hint}</p>
         </div>
 
         {!model.articleCodes.length ? (
@@ -234,7 +234,7 @@ export function CapacitySheet() {
           <div className="border-rule overflow-x-auto border">
             <table
               data-testid="capacity-grid"
-              className="nums min-w-max border-collapse text-[12px]"
+              className="nums min-w-max border-collapse text-caption"
             >
               <thead>
                 <tr>
@@ -245,7 +245,7 @@ export function CapacitySheet() {
                     <th
                       key={d.code}
                       title={`${d.name} — position ${d.position}`}
-                      className="text-blue border-rule-soft border-b px-1 py-2 text-[10px] tracking-[0.06em] whitespace-nowrap uppercase"
+                      className="text-blue border-rule-soft border-b px-1 py-2 text-caption tracking-[0.06em] whitespace-nowrap uppercase"
                     >
                       {d.code}
                     </th>
@@ -261,14 +261,14 @@ export function CapacitySheet() {
                     <tr key={code} className="hover:bg-paper">
                       <td className="bg-sheet border-rule-soft sticky left-0 z-10 max-w-[280px] border-r border-b px-2 py-1.5">
                         <div className="font-semibold">{code}</div>
-                        <div className="text-faint truncate text-[10.5px]">
+                        <div className="text-faint truncate text-caption">
                           {first?.article_name}
                         </div>
                         {/* One value for the whole row, so it lives here rather
                             than behind the measure switch — that changes what
                             each cell means, and a cost is not per department.
                             Never required: blank is "nobody has said". */}
-                        <div className="text-[10.5px]" data-testid="article-cost">
+                        <div className="text-caption" data-testid="article-cost">
                           <span className="text-faint">₹</span>
                           <EditableNumber
                             value={first?.unit_cost ?? null}
@@ -316,7 +316,7 @@ export function CapacitySheet() {
           <Empty>Nothing matches “{filter}”.</Empty>
         ) : null}
 
-        <div className="text-mid mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-[11.5px]">
+        <div className="text-mid mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-caption">
           <span className="flex items-center gap-1.5">
             <span className="border-rule-soft inline-block h-3 w-3 border" />
             Routed through here
@@ -330,7 +330,7 @@ export function CapacitySheet() {
           ) : null}
         </div>
 
-        <p className="text-faint mt-3 max-w-[85ch] text-[11.5px]">
+        <p className="text-faint mt-3 max-w-[85ch] text-caption">
           A units figure is what the department makes in a day working{' '}
           <em>only</em> that article. That is what lets a department's day be
           added up correctly when it is making several things at once — and it is
@@ -361,7 +361,7 @@ function RouteConflicts({ rows }: { rows: RouteConflict[] }) {
       title="A department is due before something that feeds it"
       meta={`${rows.length} to look at`}
     >
-      <p className="text-mid mb-4 max-w-[85ch] text-[12px]">
+      <p className="text-mid mb-4 max-w-[85ch] text-caption">
         Each row below has a department due no later than something that must
         finish <em>before</em> it can start. Either the D-minus is wrong, or the
         two are not really dependent — the software will not guess which.
@@ -410,12 +410,12 @@ function RouteConflicts({ rows }: { rows: RouteConflict[] }) {
       </Table>
 
       {rows.length > 30 ? (
-        <p className="text-faint mt-3 text-[11.5px]">
+        <p className="text-faint mt-3 text-caption">
           Showing 30 of {rows.length}.
         </p>
       ) : null}
 
-      <p className="text-faint mt-4 max-w-[85ch] text-[11.5px]">
+      <p className="text-faint mt-4 max-w-[85ch] text-caption">
         The rule: a department's D-minus must be larger than that of everything
         feeding it, larger meaning earlier. Change the D-minus here, or change
         what feeds it on Masters → What feeds what.

@@ -94,7 +94,7 @@ export function Wip() {
         </div>
       </Panel>
 
-      <p className="text-faint max-w-[80ch] text-[11.5px]">
+      <p className="text-faint max-w-[80ch] text-caption">
         Counted, not valued. Every figure here is what was declared against what
         the plan asked for; rupee value needs a cost per article and is not in
         yet.
@@ -129,22 +129,22 @@ function LineCard({
       >
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <div className="text-[14px] font-semibold">
+            <div className="text-body font-semibold">
               {line.erp_order_no}
               {line.line_no > 1 ? (
                 <span className="text-faint"> · line {line.line_no}</span>
               ) : null}
             </div>
-            <div className="text-mid text-[12px]">
+            <div className="text-mid text-caption">
               {line.article_code} · {line.customer_code} ·{' '}
               {formatNumber(line.line_qty)} units
             </div>
           </div>
           <div className="text-right">
-            <div className="text-faint text-[10px] tracking-wider uppercase">
+            <div className="text-faint text-caption tracking-wider uppercase">
               Through the route
             </div>
-            <div className="text-[19px] font-semibold">
+            <div className="text-title font-semibold">
               {Math.round(line.fraction_done * 100)}%
             </div>
           </div>
@@ -178,7 +178,7 @@ function LineCard({
             {line.departments_done} of {line.departments} departments
           </Tag>
           {line.last_declared ? (
-            <span className="text-faint text-[11.5px]">
+            <span className="text-faint text-caption">
               last entry {formatDateLong(line.last_declared)}
             </span>
           ) : null}
@@ -192,10 +192,10 @@ function LineCard({
               key={r.department_code}
               className="border-rule-soft flex flex-wrap items-baseline justify-between gap-2 border-b py-1.5 last:border-b-0"
             >
-              <span className="text-[12.5px] font-semibold">
+              <span className="text-small font-semibold">
                 {r.department_name}
               </span>
-              <span className="text-mid text-[12px]">
+              <span className="text-mid text-caption">
                 {formatNumber(r.qty_good)} of {formatNumber(r.qty_required)}
                 {r.qty_rejected > 0 ? (
                   <span className="text-amber">

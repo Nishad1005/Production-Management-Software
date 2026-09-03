@@ -115,7 +115,7 @@ export function Attention() {
         </Panel>
       ) : null}
 
-      <p className="text-faint max-w-[85ch] text-[11.5px]">
+      <p className="text-faint max-w-[85ch] text-caption">
         Nothing here is computed twice. Every line is a conclusion another screen
         already reaches — the schedule's breaches, the capacity sheet's
         contradictions, the material shortages, the machines that are down — put
@@ -133,28 +133,36 @@ const TONE: Record<Finding['severity'], 'flag' | 'amber' | 'mid'> = {
   info: 'mid',
 }
 
+/* The severity, carried as a left accent as well as a chip — so a list of
+   findings has a readable shape before any of it is read. */
+const ACCENT: Record<Finding['severity'], string> = {
+  critical: 'border-l-flag',
+  warning: 'border-l-amber',
+  info: 'border-l-rule',
+}
+
 function FindingCard({ row }: { row: Finding }) {
   return (
     <div
-      className="border-rule bg-sheet border p-3.5"
+      className={`border-rule-soft bg-sheet rounded-card shadow-card border border-l-[3px] p-4 ${ACCENT[row.severity]}`}
       data-testid={`finding-${row.kind}`}
       data-severity={row.severity}
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="text-[14px] font-semibold">{row.title}</div>
-          <div className="text-mid mt-0.5 text-[12px]">{row.detail}</div>
+          <div className="text-body font-semibold">{row.title}</div>
+          <div className="text-mid text-small mt-1">{row.detail}</div>
         </div>
         <div className="flex shrink-0 items-center gap-2">
           {row.days_out > 0 ? (
-            <span className="text-faint text-[11.5px]">in {row.days_out}d</span>
+            <span className="text-faint text-caption">in {row.days_out}d</span>
           ) : null}
           <Tag tone={TONE[row.severity]}>{row.severity}</Tag>
         </div>
       </div>
       <Link
         to={row.route}
-        className="text-blue mt-2 inline-block min-h-11 text-[12px] font-semibold hover:underline sm:min-h-0"
+        className="text-blue text-small mt-2.5 inline-block min-h-11 font-semibold hover:underline sm:min-h-0"
       >
         Go to the screen that fixes this →
       </Link>
@@ -174,7 +182,7 @@ function Waiting({ state, error }: { state: 'loading' | 'failed'; error: unknown
     return <Empty>Running every check…</Empty>
   }
   return (
-    <div className="border-flag bg-sheet border-l-2 p-3.5 text-[12.5px]">
+    <div className="border-flag bg-sheet border-l-2 p-3.5 text-small">
       <div className="text-flag font-semibold">The checks did not run.</div>
       <div className="text-mid mt-1">
         Nothing here is a statement about the factory — it is a statement about

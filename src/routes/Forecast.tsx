@@ -52,7 +52,7 @@ export function Forecast() {
           {readiness.isPending ? (
             <Empty>Counting the history…</Empty>
           ) : readiness.isError ? (
-            <div className="border-flag bg-sheet border-l-2 p-3.5 text-[12.5px]">
+            <div className="border-flag bg-sheet border-l-2 p-3.5 text-small">
               <div className="text-flag font-semibold">
                 The history could not be counted.
               </div>
@@ -95,7 +95,7 @@ export function Forecast() {
           )}
         </div>
 
-        <p className="text-mid mt-4 max-w-[85ch] text-[12px]">
+        <p className="text-mid mt-4 max-w-[85ch] text-caption">
           Nothing below states a figure without stating what it is based on.
           Under <strong>{r?.threshold ?? 10} observations</strong> a prediction
           reports <em>too few to say</em> and shows the count instead — because a
@@ -136,7 +136,7 @@ export function Forecast() {
             </Table>
           )}
         </div>
-        <p className="text-faint mt-3 max-w-[85ch] text-[11.5px]">
+        <p className="text-faint mt-3 max-w-[85ch] text-caption">
           Bands rather than a percentage. A percentage would be read as a
           probability, and it would be a number invented to look like one — the
           comparison underneath is simply how much of the window has gone against
@@ -210,7 +210,7 @@ export function Forecast() {
             </Table>
           )}
         </div>
-        <p className="text-faint mt-3 max-w-[85ch] text-[11.5px]">
+        <p className="text-faint mt-3 max-w-[85ch] text-caption">
           Reported, never applied. Nothing here edits the capacity sheet — a
           master that corrects itself is one nobody can account for, and a rate
           that drifted on its own would move every date in the system with no
@@ -281,9 +281,9 @@ function Figure({
     tone === 'clear' ? 'border-clear' : tone === 'amber' ? 'border-amber' : 'border-rule'
   return (
     <div className={`bg-sheet border-l-2 border p-3.5 ${border}`}>
-      <div className="text-faint text-[10px] tracking-wider uppercase">{label}</div>
-      <div className="mt-1 text-[24px] font-semibold">{value}</div>
-      {hint ? <div className="text-faint text-[11px]">{hint}</div> : null}
+      <div className="text-faint text-caption tracking-wider uppercase">{label}</div>
+      <div className="mt-1 text-display font-semibold">{value}</div>
+      {hint ? <div className="text-faint text-caption">{hint}</div> : null}
     </div>
   )
 }
@@ -315,7 +315,7 @@ function RiskRow({ row }: { row: Risk }) {
       <Td>
         <Tag tone={BAND[row.band]}>{row.band}</Tag>
       </Td>
-      <Td className="text-mid text-[11.5px]">{row.because}</Td>
+      <Td className="text-mid text-caption">{row.because}</Td>
     </tr>
   )
 }

@@ -87,7 +87,7 @@ export function Masters() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <p className="text-mid max-w-[70ch] text-[12px]">
+        <p className="text-mid max-w-[70ch] text-caption">
           Underlined figures are editable — click one, type, press Enter. Every
           change re-runs the schedule.
         </p>
@@ -98,7 +98,7 @@ export function Masters() {
         title="Production route"
         meta={`${departments.data?.length ?? 0} departments`}
       >
-        <p className="text-mid mb-3 max-w-[80ch] text-[12px]">
+        <p className="text-mid mb-3 max-w-[80ch] text-caption">
           Departments are a configurable master, not hardcoded. The number on the
           left is only the order they are listed in — what has to finish before
           what is the next panel down, and that is the one the engine reads.
@@ -156,7 +156,7 @@ export function Masters() {
                 <Td align="right">
                   <button
                     type="button"
-                    className="text-faint hover:text-flag text-[11px]"
+                    className="text-faint hover:text-flag text-caption"
                     onClick={() =>
                       setActive.mutate({ id: d.id, isActive: false })
                     }
@@ -174,12 +174,12 @@ export function Masters() {
           <Button variant="quiet" onClick={() => setAddingDepartment(true)}>
             Add a department
           </Button>
-          <span className="text-faint text-[11.5px]">
+          <span className="text-faint text-caption">
             Deactivating never deletes — a department with history keeps it.
           </span>
         </div>
 
-        <p className="text-faint mt-3 max-w-[80ch] text-[11.5px]">
+        <p className="text-faint mt-3 max-w-[80ch] text-caption">
           Yield compounds backwards: a department must make the shipped quantity
           divided by its own yield and the yield of every department the material
           passes through after it — the path below, not everything further down
@@ -246,7 +246,7 @@ export function Masters() {
             ))}
           </tbody>
         </Table>
-        <p className="text-faint mt-3 max-w-[80ch] text-[11.5px]">
+        <p className="text-faint mt-3 max-w-[80ch] text-caption">
           Each article takes a different time through each department, so the
           offset is held per pair and entered by hand. Clearing a cell puts it
           back to blank and stops that article scheduling — deliberately, because
@@ -301,7 +301,7 @@ export function Masters() {
               ))}
             </tbody>
           </Table>
-          <p className="text-faint mt-3 text-[11.5px]">
+          <p className="text-faint mt-3 text-caption">
             A rate is what the department makes in a day{' '}
             <em>doing nothing else</em>. That is what lets utilisation be added
             across components, and it is the convention real figures must be
@@ -326,7 +326,7 @@ export function Masters() {
                   <Td align="right">
                     <button
                       type="button"
-                      className="text-faint hover:text-flag text-[11px]"
+                      className="text-faint hover:text-flag text-caption"
                       onClick={() => deleteHoliday.mutate(h.id)}
                     >
                       Remove
@@ -342,7 +342,7 @@ export function Masters() {
               Add a holiday
             </Button>
           </div>
-          <p className="text-faint mt-3 text-[11.5px]">
+          <p className="text-faint mt-3 text-caption">
             Declaring a holiday closes that day and renumbers the working-day
             calendar, so every schedule shifts to accommodate it.
           </p>
@@ -370,7 +370,7 @@ export function Masters() {
             ))}
           </tbody>
         </Table>
-        <p className="text-faint mt-3 max-w-[80ch] text-[11.5px]">
+        <p className="text-faint mt-3 max-w-[80ch] text-caption">
           Departments produce components, not chairs. A chair is ready only when
           the scarcest component is: everything else is stranded stock — real
           material and real labour producing nothing shippable. The BOM arrives
@@ -509,16 +509,16 @@ function MastersFileControls() {
         </Button>
       </div>
       {message ? (
-        <p className="text-clear mt-1.5 text-[11.5px]">{message}</p>
+        <p className="text-clear mt-1.5 text-caption">{message}</p>
       ) : null}
-      {error ? <p className="text-flag mt-1.5 text-[11.5px]">{error}</p> : null}
-      <p className="text-faint mt-1.5 max-w-[40ch] text-[11px]">
+      {error ? <p className="text-flag mt-1.5 text-caption">{error}</p> : null}
+      <p className="text-faint mt-1.5 max-w-[40ch] text-caption">
         Loading merges by code — it never wipes what is already there. The file
         moves between the offline and hosted systems unchanged.
       </p>
       {/* Said plainly, because the difference between a copy and a restore is
           exactly the thing people assume in the wrong direction. */}
-      <p className="text-faint mt-1.5 max-w-[40ch] text-[11px]">
+      <p className="text-faint mt-1.5 max-w-[40ch] text-caption">
         <strong>Save everything</strong> also takes the order book and the
         production ledger — the figures nobody can type again. Keep it somewhere
         other than this machine. It is a copy to hold, not something the software
@@ -543,7 +543,7 @@ function ShiftsPanel() {
       title="Shifts"
       meta={`${shifts.data?.filter((s) => s.is_active).length ?? 0} running`}
     >
-      <p className="text-mid mb-3 max-w-[80ch] text-[12px]">
+      <p className="text-mid mb-3 max-w-[80ch] text-caption">
         A department running two shifts has roughly double the daily capacity,
         and the overtime ceiling applies per person per shift rather than per
         day. Net production hours exclude breaks, setup and cleanup — the
@@ -605,7 +605,7 @@ function ShiftsPanel() {
               <Td align="right">
                 <button
                   type="button"
-                  className="text-faint hover:text-blue text-[11px]"
+                  className="text-faint hover:text-blue text-caption"
                   onClick={() =>
                     setShiftActive.mutate({ id: s.id, isActive: !s.is_active })
                   }
@@ -617,7 +617,7 @@ function ShiftsPanel() {
           ))}
         </tbody>
       </Table>
-      <p className="text-faint mt-3 max-w-[80ch] text-[11.5px]">
+      <p className="text-faint mt-3 max-w-[80ch] text-caption">
         Five hours of overtime on top of an eight-hour net shift is a long day
         under the Factories Act's daily and quarterly limits, and multi-shift
         working adds its own provisions. The ceiling is configurable and the
@@ -664,7 +664,7 @@ function RouteDependencyGrid() {
           : `${entryPoints.length} departments start the route`
       }
     >
-      <p className="text-mid mb-3 max-w-[80ch] text-[12px]">
+      <p className="text-mid mb-3 max-w-[80ch] text-caption">
         Read a row as “this department cannot start until…”, and tick the columns
         it waits for. A row with nothing ticked is an entry point — it waits for
         no one, which is what a feeder like metal finishing or fibre processing
@@ -715,8 +715,8 @@ function RouteDependencyGrid() {
                         }
                         className={
                           on
-                            ? 'text-clear text-[13px] font-semibold'
-                            : 'text-faint hover:text-blue text-[13px]'
+                            ? 'text-clear text-small font-semibold'
+                            : 'text-faint hover:text-blue text-small'
                         }
                         title={
                           on
@@ -736,14 +736,14 @@ function RouteDependencyGrid() {
       </div>
 
       {setDependency.isError ? (
-        <p className="text-flag mt-3 max-w-[80ch] text-[11.5px]">
+        <p className="text-flag mt-3 max-w-[80ch] text-caption">
           {String(setDependency.error).includes('cycle')
             ? 'That would make two departments wait for each other. One of them already runs after the other, so it cannot also run before it.'
             : String(setDependency.error)}
         </p>
       ) : null}
 
-      <p className="text-faint mt-3 max-w-[80ch] text-[11.5px]">
+      <p className="text-faint mt-3 max-w-[80ch] text-caption">
         This drives two things. A department is held back until everything
         feeding it is due — so a feeder wired into the wrong place produces
         runway breaches that are not real. And yield compounds along these edges,
@@ -771,7 +771,7 @@ function DepartmentShiftGrid() {
 
   return (
     <Panel title="Who works which shift" meta="Capacity is the sum of these">
-      <p className="text-mid mb-3 max-w-[80ch] text-[12px]">
+      <p className="text-mid mb-3 max-w-[80ch] text-caption">
         Switch a shift on for a department and its capacity is added to that
         department's day. The number beneath is the sanctioned headcount for that
         department on that shift — the establishment the overtime maths divides
@@ -813,7 +813,7 @@ function DepartmentShiftGrid() {
                             isActive: !cell.is_active,
                           })
                         }
-                        className={`text-[11px] ${
+                        className={`text-caption ${
                           cell.is_active
                             ? 'text-clear font-semibold'
                             : 'text-faint hover:text-blue'
@@ -829,7 +829,7 @@ function DepartmentShiftGrid() {
                         {cell.is_active ? 'Running' : 'Not running'}
                       </button>
                       {cell.is_active ? (
-                        <span className="text-[11px]">
+                        <span className="text-caption">
                           <EditableNumber
                             value={cell.sanctioned_headcount}
                             suffix=" people"
@@ -860,7 +860,7 @@ function DepartmentShiftGrid() {
       </Table>
 
       {missingRates.length ? (
-        <p className="text-flag mt-3 max-w-[80ch] text-[11.5px]">
+        <p className="text-flag mt-3 max-w-[80ch] text-caption">
           {missingRates.length} department-shift pairing
           {missingRates.length === 1 ? ' is' : 's are'} switched on with no
           component rates, so {missingRates.length === 1 ? 'it adds' : 'they add'}{' '}
@@ -868,7 +868,7 @@ function DepartmentShiftGrid() {
         </p>
       ) : null}
 
-      <p className="text-faint mt-3 max-w-[80ch] text-[11.5px]">
+      <p className="text-faint mt-3 max-w-[80ch] text-caption">
         Switching a shift on copies the department's existing rates across as a
         starting point, flagged estimated. They are almost certainly wrong if the
         headcount differs — a second shift with half the people does not make
@@ -911,7 +911,7 @@ function ArticlesPanel() {
           : 'none yet'
       }
     >
-      <p className="text-mid mb-3 max-w-[80ch] text-[12px]">
+      <p className="text-mid mb-3 max-w-[80ch] text-caption">
         In the finished system these arrive from Panipuri. Until then they are
         entered here, and the route and rates go on the capacity sheet. A new
         article cannot be planned until it passes through at least one department
@@ -980,7 +980,7 @@ function ArticlesPanel() {
                   <Td align="right">
                     <button
                       type="button"
-                      className="text-faint hover:text-flag text-[11px]"
+                      className="text-faint hover:text-flag text-caption"
                       onClick={() =>
                         setActive.mutate({
                           code: a.code,
@@ -1007,7 +1007,7 @@ function ArticlesPanel() {
         <Button variant="quiet" onClick={() => setAdding(true)}>
           Add an article
         </Button>
-        <span className="text-faint text-[11.5px]">
+        <span className="text-faint text-caption">
           Switching one off stops it being offered for new orders. Anything
           already ordered keeps its plan and its history.
         </span>
@@ -1049,7 +1049,7 @@ function MachinesPanel() {
           : 'none recorded'
       }
     >
-      <p className="text-mid mb-3 max-w-[80ch] text-[12px]">
+      <p className="text-mid mb-3 max-w-[80ch] text-caption">
         A department's day is scaled by the fraction of its machines running —
         four machines with one under maintenance is three quarters of a day. A
         department with <strong>no machines recorded</strong> is left exactly as
@@ -1068,7 +1068,7 @@ function MachinesPanel() {
               data-machines={s.machines}
             >
               <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <span className="text-[13px] font-semibold">
+                <span className="text-small font-semibold">
                   {s.department_name}
                 </span>
                 <Tag tone={s.available_pct < 60 ? 'flag' : 'amber'}>
@@ -1076,7 +1076,7 @@ function MachinesPanel() {
                   {formatNumber(s.available_pct, 0)}% of the day
                 </Tag>
               </div>
-              <div className="text-mid mt-1 text-[11.5px]">
+              <div className="text-mid mt-1 text-caption">
                 {active
                   .filter((m) => m.department_code === s.department_code && m.down_today)
                   .map((m) => `${m.name} — ${m.down_reason}`)
@@ -1137,7 +1137,7 @@ function MachinesPanel() {
                   <Td align="right">
                     <button
                       type="button"
-                      className="text-faint hover:text-flag text-[11px]"
+                      className="text-faint hover:text-flag text-caption"
                       onClick={() =>
                         setActive.mutate({ code: m.code, isActive: !m.is_active })
                       }
@@ -1169,7 +1169,7 @@ function MachinesPanel() {
         >
           Book downtime
         </Button>
-        <span className="text-faint text-[11.5px]">
+        <span className="text-faint text-caption">
           Retiring never deletes. A retired machine stops counting; a machine
           that is down still counts, and is simply not available.
         </span>
@@ -1182,7 +1182,7 @@ function MachinesPanel() {
             {downtime.data.map((d) => (
               <div
                 key={d.id}
-                className="text-mid flex flex-wrap items-baseline gap-x-3 text-[11.5px]"
+                className="text-mid flex flex-wrap items-baseline gap-x-3 text-caption"
               >
                 <span className="font-semibold">{d.machine_code}</span>
                 <span>
@@ -1284,14 +1284,14 @@ function AddMachine({ onClose }: { onClose: () => void }) {
           </Field>
         </div>
 
-        <p className="text-mid mt-4 max-w-[60ch] text-[11.5px]">
+        <p className="text-mid mt-4 max-w-[60ch] text-caption">
           Adding the first machine to a department changes what that department
           can make on any day one of them is down. Until then its capacity is
           the standing rate, untouched.
         </p>
 
         {create.isError ? (
-          <p className="text-flag mt-3 text-[11.5px]">{String(create.error)}</p>
+          <p className="text-flag mt-3 text-caption">{String(create.error)}</p>
         ) : null}
 
         <ModalActions
@@ -1387,14 +1387,14 @@ function BookDowntime({
           </Field>
         </div>
 
-        <p className="text-mid mt-4 max-w-[60ch] text-[11.5px]">
+        <p className="text-mid mt-4 max-w-[60ch] text-caption">
           A reason is required, as it is on a capacity override. A machine down
           for no stated reason is a number nobody can argue with or learn from.
           The schedule re-runs when this is saved.
         </p>
 
         {book.isError ? (
-          <p className="text-flag mt-3 text-[11.5px]">{String(book.error)}</p>
+          <p className="text-flag mt-3 text-caption">{String(book.error)}</p>
         ) : null}
 
         <ModalActions onCancel={onClose} submitLabel="Book it" busy={book.isPending} />
@@ -1453,14 +1453,14 @@ function AddArticle({ onClose }: { onClose: () => void }) {
           </Field>
         </div>
 
-        <p className="text-mid mt-4 max-w-[60ch] text-[11.5px]">
+        <p className="text-mid mt-4 max-w-[60ch] text-caption">
           The code is what orders and the capacity sheet refer to, so it is worth
           matching whatever Panipuri calls it. Adding one that already exists
           corrects its name rather than creating a second.
         </p>
 
         {setArticle.isError ? (
-          <p className="text-flag mt-3 text-[11.5px]">
+          <p className="text-flag mt-3 text-caption">
             {String(setArticle.error)}
           </p>
         ) : null}
@@ -1545,7 +1545,7 @@ function AddDepartment({
           </Field>
         </div>
 
-        <p className="text-mid mt-4 max-w-[60ch] text-[11.5px]">
+        <p className="text-mid mt-4 max-w-[60ch] text-caption">
           A new department gets a blank D-minus cell for every article, flagged
           incomplete. Those articles stop scheduling until the offsets are
           entered — which is the point: a missing value should be visible, not
@@ -1553,7 +1553,7 @@ function AddDepartment({
         </p>
 
         {create.isError ? (
-          <p className="text-flag mt-3 text-[11.5px]">{String(create.error)}</p>
+          <p className="text-flag mt-3 text-caption">{String(create.error)}</p>
         ) : null}
 
         <ModalActions

@@ -60,7 +60,7 @@ export function CommandCentre() {
                     key={key}
                     type="button"
                     onClick={() => setConfidence(key)}
-                    className={`rounded-[2px] border px-2.5 py-1.5 text-[12px] ${
+                    className={`rounded-[2px] border px-2.5 py-1.5 text-caption ${
                       confidence === key
                         ? 'border-blue text-blue bg-white font-semibold'
                         : 'border-rule text-mid hover:border-blue'
@@ -99,7 +99,7 @@ export function CommandCentre() {
           ) : null}
         </div>
 
-        <p className="text-mid mt-3 max-w-[80ch] text-[12px]">
+        <p className="text-mid mt-3 max-w-[80ch] text-caption">
           Each run writes a new immutable version, so an earlier plan can always
           be recovered and compared against what actually happened. Nothing is
           overwritten.
@@ -136,7 +136,7 @@ export function CommandCentre() {
           title="Bottleneck utilisation"
           meta="Which department is the constraint"
         >
-          <p className="text-mid mb-3 max-w-[60ch] text-[12px]">
+          <p className="text-mid mb-3 max-w-[60ch] text-caption">
             The heatmap shows which days hurt. This shows which department is
             structurally the constraint — capacity above the bottleneck is
             decorative. This is the view that answers where the next person or
@@ -184,7 +184,7 @@ export function CommandCentre() {
           title="Flag triage"
           meta={`${triage.data?.length ?? 0} flagged days`}
         >
-          <p className="text-mid mb-3 max-w-[60ch] text-[12px]">
+          <p className="text-mid mb-3 max-w-[60ch] text-caption">
             Sorted by how much time is left, and labelled with what is still
             possible at that lead time. A label, not a recommendation — the
             decision rests on material, cash and customer relationships the
@@ -223,7 +223,7 @@ export function CommandCentre() {
             <Empty>No day is over capacity. Nothing to triage.</Empty>
           ) : null}
           {(triage.data?.length ?? 0) > 12 ? (
-            <p className="text-faint mt-3 text-[11.5px]">
+            <p className="text-faint mt-3 text-caption">
               Showing the 12 earliest of {triage.data?.length}.{' '}
               <Link to="/heatmap" className="text-blue underline">
                 See them all on the heatmap
@@ -243,16 +243,17 @@ export function UtilisationBar({ value }: { value: number }) {
   const tone =
     value > 1 ? 'bg-flag' : value > 0.85 ? 'bg-amber' : 'bg-clear'
   return (
-    <span className="flex items-center justify-end gap-2">
-      <span className="bg-rule-soft relative hidden h-1.5 w-20 sm:block">
+    <span className="flex items-center justify-end gap-2.5">
+      <span className="bg-rule-soft relative hidden h-2 w-24 overflow-hidden rounded-full sm:block">
         <span
-          className={`absolute inset-y-0 left-0 ${tone}`}
+          className={`absolute inset-y-0 left-0 rounded-full ${tone}`}
           style={{ width: `${pct * 100}%` }}
         />
-        {/* The 1.0 line — the only threshold that means anything here. */}
-        <span className="bg-ink absolute inset-y-[-2px] left-1/2 w-px" />
+        {/* The 1.0 line — the only threshold that means anything here. The
+            scale is fixed at 0–2.0, so it always sits at the halfway point. */}
+        <span className="bg-ink/40 absolute inset-y-0 left-1/2 w-px" />
       </span>
-      <span className="w-10 text-right">{value.toFixed(2)}</span>
+      <span className="nums w-10 text-right">{value.toFixed(2)}</span>
     </span>
   )
 }

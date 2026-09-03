@@ -31,7 +31,7 @@ export function Users() {
   if (!hosted) {
     return (
       <Panel title="Users" meta="Hosted system only">
-        <p className="text-mid max-w-[70ch] text-[12px]">
+        <p className="text-mid max-w-[70ch] text-caption">
           This build runs a database inside your browser, with no accounts in
           it — there is nobody to administer. Roles and permissions apply to the
           hosted system.
@@ -46,14 +46,14 @@ export function Users() {
         title="Users and roles"
         meta={`${users.data?.length ?? 0} accounts`}
       >
-        <p className="text-mid mb-4 max-w-[85ch] text-[12px]">
+        <p className="text-mid mb-4 max-w-[85ch] text-caption">
           Roles decide what each person can reach, and they are enforced in the
           database on every request — not in this screen. A new account has no
           roles and can see nothing until given some.
         </p>
 
         {users.isError ? (
-          <p className="border-flag text-flag border-l-[3px] py-1 pl-3 text-[12px]">
+          <p className="border-flag text-flag border-l-[3px] py-1 pl-3 text-caption">
             {String(users.error).includes('administrator')
               ? 'Only an administrator can see the user list.'
               : String(users.error)}
@@ -116,7 +116,7 @@ export function Users() {
                                 ? revoke.mutate({ userId: u.user_id, role })
                                 : grant.mutate({ userId: u.user_id, role })
                             }
-                            className={`rounded-[2px] border px-1.5 py-px text-[10px] tracking-[0.05em] uppercase ${
+                            className={`rounded-[2px] border px-1.5 py-px text-caption tracking-[0.05em] uppercase ${
                               held
                                 ? 'border-clear text-clear font-semibold'
                                 : 'border-rule-soft text-faint hover:border-blue hover:text-blue'
@@ -131,7 +131,7 @@ export function Users() {
                   <Td align="right">
                     <button
                       type="button"
-                      className="text-faint hover:text-flag text-[11px]"
+                      className="text-faint hover:text-flag text-caption"
                       onClick={() =>
                         setProfile.mutate({
                           userId: u.user_id,
@@ -152,13 +152,13 @@ export function Users() {
 
         <div className="border-rule-soft mt-5 border-t pt-4">
           <p className="label mb-2">Adding someone</p>
-          <p className="text-mid max-w-[80ch] text-[12px]">
+          <p className="text-mid max-w-[80ch] text-caption">
             In the Supabase dashboard: <strong>Authentication → Users → Add
             user</strong>, with an email and password, and{' '}
             <em>Auto Confirm User</em> ticked. They appear here on the next
             refresh, with no roles, and can see nothing until you grant some.
           </p>
-          <p className="text-faint mt-2 max-w-[80ch] text-[11.5px]">
+          <p className="text-faint mt-2 max-w-[80ch] text-caption">
             Account creation needs a key that bypasses every access rule in the
             system, so it is deliberately not done from this screen. Assigning
             roles — which is what actually decides what people see — is.
@@ -186,7 +186,7 @@ export function Users() {
             ))}
           </tbody>
         </Table>
-        <p className="text-faint mt-3 max-w-[80ch] text-[11.5px]">
+        <p className="text-faint mt-3 max-w-[80ch] text-caption">
           Phases 0–2 exercise admin, planner, merchandiser and MD. The rest are
           declared and enforced, and become meaningful as their modules arrive —
           HOD with WIP tracking, HR with manpower, and so on.

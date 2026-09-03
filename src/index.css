@@ -1,34 +1,95 @@
+/*
+ * Fonts, bundled — not fetched.
+ *
+ * These resolve to woff2 files that Vite emits into the build, so the offline
+ * demonstration still needs no network at all: the constraint that kept web
+ * fonts out is satisfied by shipping them rather than by doing without. The
+ * previous stacks *named* Archivo and IBM Plex Mono without ever loading them,
+ * so every visitor silently got the system fallback and none of the typography
+ * was the typography anybody had chosen.
+ *
+ * Inter for everything read; IBM Plex Mono for data only — codes, quantities,
+ * dates in columns.
+ */
+@import '@fontsource-variable/inter';
+@import '@fontsource/ibm-plex-mono/400.css';
+@import '@fontsource/ibm-plex-mono/500.css';
+@import '@fontsource/ibm-plex-mono/600.css';
 @import 'tailwindcss';
 
 /*
- * The palette and typographic scale are carried over from the Rev B
- * specification document and the capacity-flagging prototype, so the software
- * and the paperwork read as one product.
+ * The design system, in one block.
  *
  * Load states use the same three colours everywhere, and nowhere else:
  *   clear  — inside capacity
  *   amber  — at capacity
  *   flag   — over capacity, or a breach
  *
- * No web fonts: this build has to run with no network at all. The stacks below
- * resolve to SF Pro and SF Mono on macOS, which is what it will be shown on.
+ * The token *names* are load-bearing beyond the utility classes: FactoryMap
+ * passes `var(--color-*)` straight into SVG fill and stroke attributes, where a
+ * rename fails silently — no build error, no console error, just invisible
+ * boxes. Values may move freely; names may not.
  */
 @theme {
-  --color-paper: #e9edf1;
+  /* Surfaces and text. `faint` was #8996a4 — about 3.2:1 on white, under the
+     readable floor, and used 147 times. It is now 4.7:1. */
+  --color-paper: #f4f6f9;
   --color-sheet: #ffffff;
-  --color-ink: #16202e;
-  --color-mid: #5c6b7a;
-  --color-faint: #8996a4;
-  --color-rule: #c9d3dc;
-  --color-rule-soft: #dfe6ec;
-  --color-blue: #2c4a6e;
-  --color-flag: #c4462e;
-  --color-clear: #1f6b4d;
-  --color-amber: #b07d1a;
+  --color-ink: #101828;
+  --color-mid: #475467;
+  --color-faint: #667085;
+  --color-rule: #d0d5dd;
+  --color-rule-soft: #e6eaf0;
+
+  /* Accent and the three load states. */
+  --color-blue: #2563eb;
+  --color-flag: #d92d20;
+  --color-clear: #047857;
+  --color-amber: #b45309;
+
+  /* Muted text on a dark ground — the one colour the old palette had no name
+     for, so #93a6b8 was written out by hand in three places. */
+  --color-faint-inverse: #98a6ba;
+
+  /* Tints, for status fills that must not shout. Also the two hexes the
+     factory map's SVG carried inline. */
+  --color-flag-wash: #fef3f2;
+  --color-amber-wash: #fffaeb;
+  --color-clear-wash: #ecfdf3;
+  --color-blue-wash: #eff4ff;
+
+  --radius-card: 10px;
+  --radius-control: 6px;
+
+  --shadow-card:
+    0 1px 2px rgb(16 24 40 / 0.05), 0 1px 3px rgb(16 24 40 / 0.08);
+  --shadow-pop:
+    0 8px 24px rgb(16 24 40 / 0.16), 0 2px 6px rgb(16 24 40 / 0.08);
+
+  /*
+   * Six steps, and nothing between them.
+   *
+   * What these replace: 306 hand-picked sizes across nine values between 9.5px
+   * and 13px alone. Not a scale — accretion. Twelve is the floor everywhere
+   * except the wall display, which is read from across a room, and the heatmap
+   * day numerals, which live inside a grid that is dense on purpose.
+   */
+  --text-caption: 12px;
+  --text-caption--line-height: 1.4;
+  --text-small: 13px;
+  --text-small--line-height: 1.5;
+  --text-body: 14px;
+  --text-body--line-height: 1.55;
+  --text-emphasis: 16px;
+  --text-emphasis--line-height: 1.5;
+  --text-title: 20px;
+  --text-title--line-height: 1.3;
+  --text-display: 28px;
+  --text-display--line-height: 1.15;
 
   --font-sans:
-    'Archivo', ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI',
-    sans-serif;
+    'Inter Variable', ui-sans-serif, -apple-system, BlinkMacSystemFont,
+    'Segoe UI', sans-serif;
   --font-mono:
     'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
 }
@@ -39,26 +100,35 @@ body,
   height: 100%;
 }
 
+/*
+ * Sans by default; mono where it earns it.
+ *
+ * This was `var(--font-mono)`, which made every paragraph, label, button and
+ * table cell in the product monospaced. It read as a terminal rather than as
+ * software, and it is the single largest reason the screens looked the way
+ * they did.
+ */
 body {
   background: var(--color-paper);
   color: var(--color-ink);
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 14px;
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
-/* The grid paper the specification header uses. */
-.gridpaper {
-  background-image:
-    linear-gradient(var(--color-rule-soft) 1px, transparent 1px),
-    linear-gradient(90deg, var(--color-rule-soft) 1px, transparent 1px);
-  background-size: 28px 28px;
-}
-
+/*
+ * The small uppercase caption above a figure or a field.
+ *
+ * `text-transform` rather than literal capitals, deliberately: two browser
+ * checks read `textContent` and expect what is actually in the DOM, so
+ * typing the capitals would quietly flip them.
+ */
 @utility label {
-  font-size: 10.5px;
-  letter-spacing: 0.11em;
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--color-faint);
 }

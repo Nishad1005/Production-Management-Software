@@ -51,11 +51,11 @@ export function DepartmentBoard() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end gap-3 sm:gap-4">
         <label className="flex min-w-0 flex-1 flex-col gap-1 sm:flex-none">
-          <span className="text-faint text-[11px] tracking-wider uppercase">
+          <span className="text-faint text-caption tracking-wider uppercase">
             Department
           </span>
           <select
-            className={`${inputClass} h-12 text-[15px] sm:h-auto sm:text-[13px]`}
+            className={`${inputClass} h-12 text-emphasis sm:h-auto sm:text-small`}
             value={departmentCode ?? ''}
             onChange={(e) => setDepartmentCode(e.target.value)}
             data-testid="board-department"
@@ -68,7 +68,7 @@ export function DepartmentBoard() {
           </select>
         </label>
 
-        <p className="text-mid hidden max-w-[52ch] text-[12px] sm:block">
+        <p className="text-mid hidden max-w-[52ch] text-caption sm:block">
           Ordered by the container each job ships in, not by this department's
           own deadline. The container sails when it sails.
         </p>
@@ -103,7 +103,7 @@ export function DepartmentBoard() {
           )}
 
           {notYetDue > 0 ? (
-            <p className="text-faint mt-3 text-[11.5px]">
+            <p className="text-faint mt-3 text-caption">
               {notYetDue} more {notYetDue === 1 ? 'job is' : 'jobs are'} still
               to come from upstream, none of it due yet.
             </p>
@@ -141,10 +141,10 @@ function InboundCard({ row }: { row: InboundRow }) {
     <div className="border-rule bg-sheet border p-3.5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <div className="text-[14px] font-semibold">
+          <div className="text-body font-semibold">
             {row.from_department_name}
           </div>
-          <div className="text-mid text-[12px]">
+          <div className="text-mid text-caption">
             for {row.erp_order_no} · {row.article_code}
           </div>
         </div>
@@ -153,7 +153,7 @@ function InboundCard({ row }: { row: InboundRow }) {
         </Tag>
       </div>
 
-      <div className="text-mid mt-2.5 flex flex-wrap gap-x-5 gap-y-1 text-[12px]">
+      <div className="text-mid mt-2.5 flex flex-wrap gap-x-5 gap-y-1 text-caption">
         <span>
           They owe <strong>{formatNumber(row.qty_required)}</strong>
         </span>
@@ -168,7 +168,7 @@ function InboundCard({ row }: { row: InboundRow }) {
         </span>
       </div>
 
-      <div className="text-faint mt-1.5 text-[11.5px]">
+      <div className="text-faint mt-1.5 text-caption">
         {row.days_to_their_due !== null && row.days_to_their_due < 0
           ? `${Math.abs(row.days_to_their_due)} days late — due ${formatDateLong(row.their_due_date)}`
           : `Due ${formatDateLong(row.their_due_date)}`}{' '}
@@ -186,16 +186,16 @@ function QueueCard({ row }: { row: QueueRow }) {
     <div className="border-rule bg-sheet border p-3.5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <div className="text-[14px] font-semibold">{row.erp_order_no}</div>
-          <div className="text-mid text-[12px]">
+          <div className="text-body font-semibold">{row.erp_order_no}</div>
+          <div className="text-mid text-caption">
             {row.article_code} · {row.customer_code}
           </div>
         </div>
         <div className="text-right">
-          <div className="text-faint text-[10px] tracking-wider uppercase">
+          <div className="text-faint text-caption tracking-wider uppercase">
             Still to make
           </div>
-          <div className="text-[19px] font-semibold">
+          <div className="text-title font-semibold">
             {formatNumber(row.qty_remaining)}
           </div>
         </div>
@@ -217,7 +217,7 @@ function QueueCard({ row }: { row: QueueRow }) {
         ) : null}
       </div>
 
-      <div className="text-faint mt-1.5 text-[11.5px]">
+      <div className="text-faint mt-1.5 text-caption">
         Yours by {formatDateLong(row.due_date)} · ships{' '}
         {formatDateLong(row.stuffing_date)}
       </div>

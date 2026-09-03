@@ -88,24 +88,24 @@ function Boot({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="grid min-h-full place-items-center px-6">
-      <div className="border-ink bg-sheet max-w-lg border p-6">
+      <div className="border-rule-soft bg-sheet rounded-card shadow-card max-w-lg border p-6">
         <p className="label">Kram</p>
         {state === 'booting' ? (
           <>
-            <p className="font-sans mt-2 text-xl font-bold tracking-tight">
+            <p className="text-title mt-2 font-semibold tracking-[-0.02em]">
               Starting the database
             </p>
-            <p className="text-mid mt-2 text-[13px]">
+            <p className="text-mid text-small mt-2">
               Postgres is compiling in the browser and the schema is being
               applied. A moment on first load, instant after that.
             </p>
           </>
         ) : (
           <>
-            <p className="font-sans text-flag mt-2 text-xl font-bold tracking-tight">
+            <p className="text-flag text-title mt-2 font-semibold tracking-[-0.02em]">
               The database did not start
             </p>
-            <pre className="border-rule text-flag mt-3 overflow-x-auto border p-3 text-[11.5px] whitespace-pre-wrap">
+            <pre className="border-rule-soft bg-paper text-flag rounded-control text-caption mt-3 overflow-x-auto border p-3 font-mono whitespace-pre-wrap">
               {error}
             </pre>
           </>
@@ -160,18 +160,18 @@ function WriteErrorBanner() {
   if (!message) return null
 
   return (
-    <div className="border-flag bg-sheet border-b-2">
+    <div className="border-flag/40 bg-flag-wash border-b">
       <div className="mx-auto flex max-w-[1400px] items-start justify-between gap-4 px-6 py-3">
         <div>
-          <p className="text-flag font-sans text-[13px] font-semibold">
+          <p className="text-flag text-small font-semibold">
             That change was not saved
           </p>
-          <p className="text-mid mt-0.5 text-[11.5px]">{message}</p>
+          <p className="text-mid text-caption mt-0.5">{message}</p>
         </div>
         <button
           type="button"
           onClick={clearWriteError}
-          className="text-faint hover:text-ink text-[16px] leading-none"
+          className="text-faint hover:text-ink min-h-11 px-2 text-title leading-none sm:min-h-0"
           aria-label="Dismiss"
         >
           ×
@@ -206,14 +206,14 @@ function ProvisionalBanner() {
 
   return (
     <div
-      className="border-amber bg-amber/10 border-b-2"
+      className="border-amber/40 bg-amber-wash border-b"
       data-testid="provisional-banner"
     >
       <div className="mx-auto max-w-[1400px] px-4 py-2.5 sm:px-6">
-        <p className="text-amber font-sans text-[13px] font-semibold">
+        <p className="text-amber text-small font-semibold">
           These figures are placeholders, not U&amp;M's
         </p>
-        <p className="text-mid mt-0.5 max-w-[95ch] text-[11.5px]">
+        <p className="text-mid text-caption mt-0.5 max-w-[95ch]">
           {state.data.what} Rates and D-minus will be replaced cell by cell when
           PPC's sheet is loaded; the {state.data.provisional_orders} orders
           marked <em className="not-italic">{state.data.order_prefix}</em> are
@@ -234,7 +234,7 @@ function AttentionBadge() {
       to="/attention"
       data-testid="attention-badge"
       data-critical={critical}
-      className="border-flag text-flag bg-sheet flex min-h-11 items-center gap-2 self-end border px-3 py-2 text-[12px] font-semibold hover:underline sm:min-h-0"
+      className="border-flag/30 bg-flag-wash text-flag text-caption flex min-h-11 items-center gap-2 rounded-full border px-3 py-1.5 font-semibold hover:brightness-95 sm:min-h-0"
     >
       <span className="bg-flag inline-block h-2 w-2 rounded-full" />
       {critical} {critical === 1 ? 'thing needs' : 'things need'} an answer today
@@ -249,94 +249,67 @@ function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-full">
       <ProvisionalBanner />
-      <header className="gridpaper bg-sheet border-ink border-b-2">
-        <div className="mx-auto max-w-[1400px] px-4 pt-3 sm:px-6 sm:pt-7">
-          <div className="flex flex-wrap items-end justify-between gap-6">
-            <div>
-              {/* The masthead is a document convention, and on a phone held on
-                  a factory floor it is 780px of scrolling before any work
-                  appears. Kept whole on a desk, cut to the name on a phone. */}
-              <p className="text-blue hidden text-[11px] tracking-[0.18em] uppercase sm:block">
-                Data Brilliance Business Solutions LLP
-              </p>
-              <h1 className="font-sans text-[24px] leading-none font-extrabold tracking-[-0.03em] sm:mt-2 sm:text-[42px]">
-                Kram{' '}
-                <em className="text-blue text-[13px] font-semibold not-italic sm:text-[22px]">
-                  production planning &amp; control
-                </em>
-              </h1>
-              <p className="text-mid mt-2 hidden max-w-[62ch] text-[13px] sm:block">
-                Backward scheduling from the container stuffing date, load
-                against capacity by component, and the days a department is
-                asked for more than it can make.
-              </p>
+      {/*
+        An application bar, not a title block.
+
+        What this replaces: a 42px masthead, a paragraph of description and a
+        REF/REVISION/CLIENT stamp table — the conventions of a specification
+        document, which cost about a third of the first screenful before any
+        work appeared. The identity moved to the printed notes, where it
+        belongs; the software gets a wordmark and its navigation.
+      */}
+      <header className="bg-sheet border-rule border-b">
+        <div className="mx-auto max-w-[1400px] px-4 sm:px-6">
+          <div className="flex h-14 items-center justify-between gap-4">
+            <div className="flex items-baseline gap-2.5">
+              <span className="text-title font-bold tracking-[-0.02em]">
+                Kram
+              </span>
+              <span className="text-faint text-caption hidden md:inline">
+                production planning &amp; control
+              </span>
             </div>
 
-            <AttentionBadge />
-
-            <div className="border-ink hidden min-w-[240px] border-[1.5px] sm:block">
-              {[
-                ['Ref', 'DBBS/UM/KRAM/01'],
-                ['Revision', 'B'],
-                ['Client', 'U&M Designs'],
-                [
-                  access.isOffline ? 'Build' : 'Signed in',
-                  access.isOffline ? 'Offline draft' : (access.email ?? ''),
-                ],
-              ].map(([k, v]) => (
-                <div
-                  key={k}
-                  className="border-rule grid grid-cols-[80px_1fr] border-b last:border-b-0"
-                >
-                  <span className="text-faint border-rule border-r px-2.5 py-1.5 text-[10.5px] tracking-[0.08em] uppercase">
-                    {k}
+            <div className="flex items-center gap-4">
+              <AttentionBadge />
+              {!access.isOffline ? (
+                <>
+                  <span className="text-faint text-caption hidden lg:inline">
+                    {access.roles.join(' · ')}
                   </span>
-                  <span className="truncate px-2.5 py-1.5 text-[11px] font-medium">
-                    {v}
-                  </span>
-                </div>
-              ))}
+                  <button
+                    type="button"
+                    onClick={signOut}
+                    className="text-mid hover:text-flag text-small min-h-11 font-medium sm:min-h-0"
+                  >
+                    Sign out
+                  </button>
+                </>
+              ) : null}
             </div>
           </div>
 
-          <div className="mt-3 flex flex-wrap items-end justify-between gap-4 sm:mt-6">
-            {/* One line that scrolls sideways on a phone rather than three
-                wrapped rows. -mx-4/px-4 lets it bleed to the screen edges so
-                there is no cut-off item pretending to be the last one. */}
-            <nav className="-mx-4 flex snap-x gap-x-5 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:gap-x-6 sm:gap-y-1 sm:overflow-visible sm:px-0">
-              {visible.map((item) => (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  end={item.end}
-                  className={({ isActive }) =>
-                    `font-sans flex shrink-0 snap-start items-center border-b-2 pb-2.5 text-[13px] font-semibold min-h-11 sm:min-h-0 ${
-                      isActive
-                        ? 'border-blue text-blue'
-                        : 'text-mid hover:text-ink border-transparent'
-                    }`
-                  }
-                >
-                  {item.label}
-                </NavLink>
-              ))}
-            </nav>
-
-            {!access.isOffline ? (
-              <div className="flex items-center gap-3 pb-2.5">
-                <span className="text-faint text-[11px]">
-                  {access.roles.join(' · ')}
-                </span>
-                <button
-                  type="button"
-                  onClick={signOut}
-                  className="text-mid hover:text-flag text-[11.5px]"
-                >
-                  Sign out
-                </button>
-              </div>
-            ) : null}
-          </div>
+          {/* One line that scrolls sideways on a phone rather than three
+              wrapped rows. -mx-4/px-4 lets it bleed to the screen edges so
+              there is no cut-off item pretending to be the last one. */}
+          <nav className="-mx-4 flex snap-x gap-x-5 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:gap-x-6 sm:gap-y-1 sm:overflow-visible sm:px-0">
+            {visible.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.end}
+                className={({ isActive }) =>
+                  `text-small flex shrink-0 snap-start items-center border-b-2 pb-2.5 font-medium min-h-11 sm:min-h-0 ${
+                    isActive
+                      ? 'border-blue text-blue'
+                      : 'text-mid hover:text-ink border-transparent'
+                  }`
+                }
+              >
+                {item.label}
+              </NavLink>
+            ))}
+          </nav>
         </div>
       </header>
 
@@ -344,8 +317,8 @@ function Shell({ children }: { children: React.ReactNode }) {
 
       <main className="mx-auto max-w-[1400px] px-6 py-8">{children}</main>
 
-      <footer className="border-ink bg-sheet mt-6 border-t-2">
-        <div className="text-faint mx-auto flex max-w-[1400px] flex-wrap justify-between gap-4 px-6 py-5 text-[11px] tracking-[0.06em]">
+      <footer className="border-rule-soft bg-sheet mt-8 border-t">
+        <div className="text-faint text-caption mx-auto flex max-w-[1400px] flex-wrap justify-between gap-4 px-6 py-4">
           <span>
             {access.isOffline
               ? 'Kram — offline draft. Postgres runs in the browser.'

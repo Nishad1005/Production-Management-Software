@@ -49,7 +49,7 @@ export function Manpower() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end gap-3 sm:gap-4">
         <label className="flex shrink-0 flex-col gap-1">
-          <span className="text-faint text-[11px] tracking-wider uppercase">
+          <span className="text-faint text-caption tracking-wider uppercase">
             Date
           </span>
           <input
@@ -60,7 +60,7 @@ export function Manpower() {
             data-testid="manpower-date"
           />
         </label>
-        <p className="text-mid hidden max-w-[56ch] text-[12px] sm:block">
+        <p className="text-mid hidden max-w-[56ch] text-caption sm:block">
           Marking somebody present or absent changes what their department can
           make that day, so the plan re-runs. Overtime here is hours actually
           worked.
@@ -90,18 +90,18 @@ export function Manpower() {
           )}
         </div>
         {ahead.length > 20 ? (
-          <p className="text-faint mt-3 text-[11.5px]">
+          <p className="text-faint mt-3 text-caption">
             Showing the 20 soonest of {ahead.length}.
           </p>
         ) : null}
         {past.length ? (
-          <p className="text-amber mt-3 text-[11.5px]">
+          <p className="text-amber mt-3 text-caption">
             {past.length} overloaded {past.length === 1 ? 'day has' : 'days have'}{' '}
             already gone by. No amount of overtime reaches them — that work is
             late, and it moves on the schedule rather than here.
           </p>
         ) : null}
-        <p className="text-faint mt-3 hidden max-w-[85ch] text-[11.5px] sm:block">
+        <p className="text-faint mt-3 hidden max-w-[85ch] text-caption sm:block">
           An overtime hour is worth less than a normal one — the efficiency
           figure on each shift says how much less. Where the ceiling is reached,
           the balance is reported as people instead. This is the arithmetic from
@@ -128,14 +128,14 @@ export function Manpower() {
                 data-present={r.present}
               >
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <span className="text-[14px] font-semibold">
+                  <span className="text-body font-semibold">
                     {r.department_name}
                   </span>
-                  <span className="text-faint text-[11.5px]">
+                  <span className="text-faint text-caption">
                     {r.sanctioned} on the books · shift {r.shift_code}
                   </span>
                 </div>
-                <div className="text-mid mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[12.5px]">
+                <div className="text-mid mt-2 flex flex-wrap gap-x-4 gap-y-1 text-small">
                   <span>
                     <strong>{r.present}</strong> in
                   </span>
@@ -161,7 +161,7 @@ export function Manpower() {
 
       <Panel title="Deployment" meta={`${people.data?.length ?? 0} people`}>
         <label className="mb-3 flex max-w-xs flex-col gap-1">
-          <span className="text-faint text-[11px] tracking-wider uppercase">
+          <span className="text-faint text-caption tracking-wider uppercase">
             Department
           </span>
           <select
@@ -202,8 +202,8 @@ function OvertimeCard({ row }: { row: OvertimeRow }) {
     <div className="border-rule bg-sheet border p-3.5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <div className="text-[14px] font-semibold">{row.department_name}</div>
-          <div className="text-mid text-[12px]">
+          <div className="text-body font-semibold">{row.department_name}</div>
+          <div className="text-mid text-caption">
             {formatDateLong(row.load_date)} ·{' '}
             {row.days_out === 0 ? 'today' : `in ${row.days_out}d`}
           </div>
@@ -215,7 +215,7 @@ function OvertimeCard({ row }: { row: OvertimeRow }) {
         </Tag>
       </div>
 
-      <div className="text-mid mt-2.5 flex flex-wrap gap-x-5 gap-y-1 text-[12px]">
+      <div className="text-mid mt-2.5 flex flex-wrap gap-x-5 gap-y-1 text-caption">
         <span>
           Over by <strong>{Math.round(row.over_fraction * 100)}%</strong>
         </span>
@@ -229,7 +229,7 @@ function OvertimeCard({ row }: { row: OvertimeRow }) {
       </div>
 
       {!row.covered_by_overtime ? (
-        <p className="text-faint mt-1.5 text-[11.5px]">
+        <p className="text-faint mt-1.5 text-caption">
           Overtime alone runs out. {row.people_instead} extra people would cover
           it without any.
         </p>
@@ -253,8 +253,8 @@ function PersonCard({ person, date }: { person: EmployeeDay; date: string }) {
     <div className="border-rule bg-sheet border p-3.5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <div className="text-[14px] font-semibold">{person.name}</div>
-          <div className="text-mid text-[12px]">
+          <div className="text-body font-semibold">{person.name}</div>
+          <div className="text-mid text-caption">
             {person.emp_code} · {person.skill_level.replace('_', ' ')}
           </div>
         </div>
@@ -270,7 +270,7 @@ function PersonCard({ person, date }: { person: EmployeeDay; date: string }) {
             type="button"
             onClick={() => set(s)}
             disabled={mark.isPending}
-            className={`min-h-11 rounded-[2px] border px-3 text-[13px] font-semibold disabled:opacity-40 sm:min-h-0 sm:py-1.5 sm:text-[12px] ${
+            className={`min-h-11 rounded-[2px] border px-3 text-small font-semibold disabled:opacity-40 sm:min-h-0 sm:py-1.5 sm:text-caption ${
               person.status === s
                 ? 'border-blue text-blue bg-white'
                 : 'border-rule text-mid hover:border-blue'
@@ -294,7 +294,7 @@ function PersonCard({ person, date }: { person: EmployeeDay; date: string }) {
               onBlur={() => Number(ot) !== person.ot_hours && set('present')}
               aria-label={`Overtime hours, ${person.name}`}
             />
-            <span className="text-faint text-[11.5px]">OT hrs</span>
+            <span className="text-faint text-caption">OT hrs</span>
           </label>
         ) : null}
       </div>

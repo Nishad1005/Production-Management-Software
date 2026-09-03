@@ -10,20 +10,17 @@ export function Login() {
   const [busy, setBusy] = useState(false)
 
   return (
-    <div className="gridpaper grid min-h-full place-items-center px-6 py-16">
+    <div className="grid min-h-full place-items-center px-6 py-16">
       <div className="w-full max-w-md">
-        <p className="text-blue text-[11px] tracking-[0.18em] uppercase">
-          Data Brilliance Business Solutions LLP
-        </p>
-        <h1 className="font-sans mt-2 text-[42px] leading-none font-extrabold tracking-[-0.03em]">
-          Kram
-        </h1>
-        <p className="text-mid mt-2 text-[13px]">
-          Production planning &amp; control for U&amp;M Designs.
-        </p>
+        <div className="text-center">
+          <h1 className="text-display font-bold tracking-[-0.03em]">Kram</h1>
+          <p className="text-mid text-small mt-1.5">
+            Production planning &amp; control for U&amp;M Designs.
+          </p>
+        </div>
 
         <form
-          className="border-ink bg-sheet mt-7 border p-6"
+          className="border-rule-soft bg-sheet rounded-card shadow-card mt-6 border p-8"
           onSubmit={async (e) => {
             e.preventDefault()
             setBusy(true)
@@ -62,7 +59,7 @@ export function Login() {
           </div>
 
           {error ? (
-            <p className="border-flag text-flag mt-4 border-l-[3px] py-1 pl-3 text-[12px]">
+            <p className="border-flag bg-flag-wash text-flag rounded-control text-caption mt-4 border-l-[3px] px-3 py-2">
               {error}
             </p>
           ) : null}
@@ -73,7 +70,7 @@ export function Login() {
             </Button>
           </div>
 
-          <p className="text-faint mt-5 text-[11.5px]">
+          <p className="text-faint text-caption mt-5">
             Accounts are created by an administrator. If you cannot sign in, or
             you sign in and see nothing, ask them to check your roles — a new
             account has none until it is given some.
@@ -97,13 +94,13 @@ export function NoAccess({
   onSignOut: () => void
 }) {
   return (
-    <div className="gridpaper grid min-h-full place-items-center px-6 py-16">
-      <div className="border-ink bg-sheet w-full max-w-lg border p-6">
+    <div className="grid min-h-full place-items-center px-6 py-16">
+      <div className="border-rule-soft bg-sheet rounded-card shadow-card w-full max-w-lg border p-8">
         <p className="label">Kram</p>
-        <h1 className="font-sans mt-2 text-2xl font-bold tracking-tight">
+        <h1 className="text-title mt-2 font-semibold tracking-[-0.02em]">
           Your account has no roles yet
         </h1>
-        <p className="text-mid mt-3 text-[13px]">
+        <p className="text-mid text-small mt-3">
           You are signed in as <strong>{email}</strong>, but no roles have been
           assigned, so there is nothing you can see. An administrator can grant
           them from the Users screen.

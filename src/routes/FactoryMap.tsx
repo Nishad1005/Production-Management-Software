@@ -113,9 +113,9 @@ export function FactoryMap() {
     const b = worst.get(code)
     if (!b) return { fill: 'var(--color-sheet)', stroke: 'var(--color-rule)' }
     if (b.peak_utilisation > 1.0001)
-      return { fill: '#fdeceb', stroke: 'var(--color-flag)' }
+      return { fill: 'var(--color-flag-wash)', stroke: 'var(--color-flag)' }
     if (b.avg_utilisation > 0.85)
-      return { fill: '#fdf5e6', stroke: 'var(--color-amber)' }
+      return { fill: 'var(--color-amber-wash)', stroke: 'var(--color-amber)' }
     return { fill: 'var(--color-sheet)', stroke: 'var(--color-clear)' }
   }
 
@@ -125,7 +125,7 @@ export function FactoryMap() {
         title="The factory, as it flows"
         meta={`${model.names.size} departments`}
       >
-        <p className="text-mid mb-4 max-w-[80ch] text-[12px]">
+        <p className="text-mid mb-4 max-w-[80ch] text-caption">
           <strong>This is a flow map, not a floor plan.</strong> Nobody has given
           us a layout of the building, and a drawing that guessed at one would be
           believed on sight. What this shows is what Kram actually knows: which
@@ -187,17 +187,17 @@ export function FactoryMap() {
                     x={x + 10}
                     y={y + 22}
                     className="fill-ink font-sans"
-                    fontSize="13"
+                    fontSize="14"
                     fontWeight="600"
                   >
                     {name.length > 20 ? name.slice(0, 19) + '…' : name}
                   </text>
-                  <text x={x + 10} y={y + 39} fill="var(--color-mid)" fontSize="10.5">
+                  <text x={x + 10} y={y + 39} fill="var(--color-mid)" fontSize="12">
                     {b
                       ? `peak ${formatNumber(b.peak_utilisation * 100, 0)}% · ${b.flagged_days} flagged`
                       : 'no plan yet'}
                   </text>
-                  <text x={x + 10} y={y + 53} fill="var(--color-faint)" fontSize="10">
+                  <text x={x + 10} y={y + 53} fill="var(--color-faint)" fontSize="11">
                     {m ? `${m.available}/${m.machines} machines` : ''}
                     {entry ? (m ? ' · starts on its own' : 'starts on its own') : ''}
                   </text>
@@ -207,7 +207,7 @@ export function FactoryMap() {
           </svg>
         </div>
 
-        <div className="text-faint mt-3 flex flex-wrap gap-x-5 gap-y-1 text-[11.5px]">
+        <div className="text-faint mt-3 flex flex-wrap gap-x-5 gap-y-1 text-caption">
           <span>Red — over capacity on at least one day</span>
           <span>Amber — running above 85%</span>
           <span>Thick border — starts on its own, waits for nothing</span>
