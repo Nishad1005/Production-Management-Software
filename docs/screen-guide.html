@@ -151,7 +151,7 @@
         <tr><td class="term">Quality</td><td class="def">Rejections by department, article and cause</td><td><span class="tag output">Output</span></td><td class="def">Quality, MD</td></tr>
         <tr><td class="term">Forecast</td><td class="def">What the factory really achieves — once it has earned the right to say</td><td><span class="tag output">Output</span></td><td class="def">MD, planner</td></tr>
         <tr><td class="term">Money</td><td class="def">Cash going out, week by week, priced from the plan</td><td><span class="tag setup">Set-up input</span></td><td class="def">Accounts</td></tr>
-        <tr><td class="term">Capacity sheet</td><td class="def">The 994 boxes every other number is arithmetic on</td><td><span class="tag setup">Set-up input</span></td><td class="def">PPC</td></tr>
+        <tr><td class="term">Capacity sheet</td><td class="def">The 980 boxes every other number is arithmetic on</td><td><span class="tag setup">Set-up input</span></td><td class="def">PPC</td></tr>
         <tr><td class="term">Masters</td><td class="def">What the factory is: departments, products, machines, holidays</td><td><span class="tag setup">Set-up input</span></td><td class="def">PPC, planner</td></tr>
         <tr><td class="term">Users</td><td class="def">Who can sign in, and what each role may do</td><td><span class="tag setup">Set-up input</span></td><td class="def">Management</td></tr>
       </tbody>
@@ -173,7 +173,7 @@
     <div class="tablewrap"><table>
       <thead><tr><th>Term</th><th>What it means</th></tr></thead>
       <tbody>
-        <tr><td class="term">Article</td><td class="def">One product in your catalogue — one SKU. There are 71 on the live system, and they are yours.</td></tr>
+        <tr><td class="term">Article</td><td class="def">One product in your catalogue — one SKU. There are 70 on the live system, and they are yours.</td></tr>
         <tr><td class="term">Component</td><td class="def">One department's piece of an article — the stitching work on a chair is one component, the ply-cut parts another. Departments make components; containers ship articles.</td></tr>
         <tr><td class="term">Shipment line</td><td class="def"><strong>The unit everything is planned in.</strong> One quantity of one article going into one container on one date. An order shipping in two containers is two shipment lines — two separate deadlines, planned separately.</td></tr>
         <tr><td class="term">Stuffing date</td><td class="def">The day the container is loaded. Every date in the system is calculated <em>backwards</em> from this one.</td></tr>
@@ -540,10 +540,10 @@
 
   <div class="screen">
     <div class="screen__bar"><span class="screen__nav">Capacity sheet</span>
-      <span class="screen__title">The 994 boxes everything is arithmetic on</span>
+      <span class="screen__title">The 980 boxes everything is arithmetic on</span>
       <span class="tag setup">Set-up input</span></div>
     <div class="screen__body">
-      <p>71 articles × 14 departments. Each box wants three numbers, and they
+      <p>70 articles × 14 departments. Each box wants three numbers, and they
         come from PPC in an Excel workbook that loads back in one step.</p>
       <div class="tablewrap"><table>
         <thead><tr><th>Term</th><th>What it means</th></tr></thead>
@@ -552,7 +552,7 @@
           <tr><td class="term">Manpower</td><td class="def">The crew size the rate was measured with. Without it, attendance cannot scale the day.</td></tr>
           <tr><td class="term">D-minus / Missing D-minus</td><td class="def">The finish-by offset per article per department. A missing one <strong>blocks that article from being planned</strong> — deliberately, because guessing a deadline of zero would look normal and be wrong.</td></tr>
           <tr><td class="term">Articles routed</td><td class="def">How many articles pass through each department — i.e. carry a rate there.</td></tr>
-          <tr><td class="term">A department is due before something that feeds it</td><td class="def">The contradiction check: an offset that finishes a department <em>earlier</em> than one feeding it. The current 71 findings trace to one route link awaiting your answer.</td></tr>
+          <tr><td class="term">A department is due before something that feeds it</td><td class="def">The contradiction check: an offset that finishes a department <em>earlier</em> than one feeding it. The current 70 findings trace to one route link awaiting your answer.</td></tr>
         </tbody>
       </table></div>
       <div class="needs"><div class="needs__t">What U&amp;M provides</div>

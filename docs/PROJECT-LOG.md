@@ -335,13 +335,13 @@ Keep adding to this. Each one was a real dead end.
    runs backwards against `route_position` (20 → 10) and is in neither the seed
    nor the concept deck.
 
-   It is the sole cause of **all 71 route-order conflicts** now showing as
+   It is the sole cause of **all 70 route-order conflicts** now showing as
    critical on the Attention screen — one per article — because the interim
    D-minus puts Ply Cutting at D-60 and Machining at D-56, which is consistent
    with `route_position` and not with that edge. The software is behaving
    correctly: it is reporting that the route and the offsets disagree.
 
-   Untick one cell on Masters → dependency grid and all 71 go. **It has not been
+   Untick one cell on Masters → dependency grid and all 70 go. **It has not been
    changed**, because whether machining feeds ply cutting is a question about
    U&M's factory and not one to answer from a screen. It is also the smallest
    possible version of the KRAM/02 question already outstanding at item 3, so it
@@ -373,9 +373,9 @@ Keep adding to this. Each one was a real dead end.
    also puts the question that decides the whole workflow: does Panipuri hold a
    stuffing date at all, or only a customer delivery date?
 3. **The route is real; the figures are not.** Corrected 17 Aug — the live
-   project carries U&M's fourteen departments and seventy-one SKUs, and has
+   project carries U&M's fourteen departments and seventy SKUs, and has
    since the capacity sheet was imported. What is missing is every number in the
-   994 cells: not one rate is entered, and two D-minus offsets exist in total.
+   980 cells: not one rate is entered, and two D-minus offsets exist in total.
    (The offline demo lays the same fourteen departments over invented figures;
    `seed.sql` keeps its four-department parity fixture, which is separate from
    both and must stay that way.) Needs a working session with PPC, which is also
@@ -483,7 +483,7 @@ subquery, and `machine_availability`, itself a function). Roughly 2.6 ms a cell.
 30 Aug narrowed the grid to the components the plan actually touches, which took
 it from cancelled-at-120s to 56–68s. That was the cheap half. The expensive half
 is untouched: **spec §11 sizes the real workload at 324 orders and ~40,000
-tasks**, where every one of the 994 pairings is in the plan and the grid is six
+tasks**, where every one of the 980 pairings is in the plan and the grid is six
 times today's. Extrapolating the measured per-cell cost puts a real run at
 several minutes, against a 120-second ceiling that exists for a reason.
 
@@ -538,7 +538,7 @@ Unchanged in substance since 17 Aug, which is itself the point worth making: the
 software has moved through six phases in that time and the data has not moved at
 all.
 
-8. **PPC's figures.** The single blocker. 994 cells, a rate and a D-minus each.
+8. **PPC's figures.** The single blocker. 980 cells, a rate and a D-minus each.
    `DBBS/UM/KRAM/04` and the workbook from `scripts/make-capacity-workbook.mjs`.
 9. **The what-feeds-what table**, `DBBS/UM/KRAM/02` — and inside it the one
    concrete question now sitting on the Attention screen as 71 critical
@@ -810,6 +810,42 @@ The document set now reads: KRAM/06 what we need, /07 how to show it, /08 what
 it all means. Static rather than generated, deliberately — definitions do not
 move with the plan, and the one number in it that could drift (994) changes
 only when the article list does.
+
+### 2026-09-03 — The 71st article was ours, and a rehearsal caught it
+
+The demonstration script now threads one order's whole life through the menus —
+check it on *Accept an order*, enter it on the *Order book* as `PROV-DEMO-1`,
+start the re-plan, tour the floor screens during the engine's seventy seconds,
+then come back and let the room find the order on the Schedule, the heatmap and
+WIP, with the task count moved from 168 to 182. Twenty-two beats in six parts.
+
+**Before the script could claim that choreography, it was rehearsed once, end to
+end, against the live project — and the rehearsal was worth the whole day.**
+Entering 250 of the first article in the picker and re-planning produced **184
+tasks, not 182, across 16 departments, not 14**. The article was `AARA-LC` —
+the Aara Lounge Chair, our four-department parity fixture from `seed.sql`,
+sitting **active** in U&M's live article list, in every picker, on the capacity
+sheet, and inside every "71" and "994" quoted in three client documents. The
+extra two tasks were its leftover seed components at Stitching and Assembly.
+
+U&M has **seventy** articles. The seventy-first was ours, and it had been
+counted for a fortnight — the log itself has said "seventy-one SKUs" since 17
+Aug. Nothing referenced it (no orders, no WIP), so it was deactivated through
+`import_masters` — the workbook's own upsert path, not surgery — and every
+figure moved together: 70 active articles, **980** workbook cells, **70** route
+conflicts, 71 criticals. KRAM/06, /07 (regenerates), /08 and the runbook
+artifact were all corrected the same hour, along with §6 and §8 here.
+
+The rehearsal also found `delete_order` takes `p_id`, not the name the script
+assumed, and left the book restored to 12 orders / 168 tasks with the plan
+freshly re-run. The generated script now tells the presenter to pick one of
+U&M's own article codes, and to name the live demo order `PROV-` so the
+standard purge collects it.
+
+Two lessons, both old ones arriving again: **untested choreography is a claim**,
+and the parity fixture must never share a database with client data without
+being marked as ours — the provisional banner covers rates and orders, and said
+nothing about an article.
 
 ## 9. Log
 

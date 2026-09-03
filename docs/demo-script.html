@@ -132,9 +132,9 @@
       <dt>Ref</dt><dd>DBBS/UM/KRAM/07</dd>
       <dt>Client</dt><dd>U&amp;M Designs</dd>
       <dt>Generated</dt><dd>3 September 2026</dd>
-      <dt>Plan shown</dt><dd>Run of 2026-09-02 · 1 day old</dd>
+      <dt>Plan shown</dt><dd>Run of 2026-09-03</dd>
       <dt>Data</dt><dd>Provisional — placeholder figures</dd>
-      <dt>Full run</dt><dd>~40 min · short version ~20 (skip the tagged beats)</dd>
+      <dt>Full run</dt><dd>~45 min · short version ~25 (skip the tagged beats; keep the order scenario)</dd>
     </dl>
   </header>
 
@@ -144,17 +144,17 @@
     <div class="fig"><div class="fig__l">Shipment lines</div><div class="fig__v">12</div><div class="fig__h">ours, marked PROV-</div></div>
     <div class="fig"><div class="fig__l">Scheduled jobs</div><div class="fig__v">168</div><div class="fig__h">line × dept × component</div></div>
     <div class="fig flag"><div class="fig__l">Cannot be made in time</div><div class="fig__v">18</div><div class="fig__h">breaches on the plan</div></div>
-    <div class="fig flag"><div class="fig__l">Red items</div><div class="fig__v">72</div><div class="fig__h">on the Attention screen</div></div>
-    <div class="fig"><div class="fig__l">Re-plan takes</div><div class="fig__v">68s</div><div class="fig__h">run it before they arrive</div></div>
+    <div class="fig flag"><div class="fig__l">Red items</div><div class="fig__v">71</div><div class="fig__h">on the Attention screen</div></div>
+    <div class="fig"><div class="fig__l">Re-plan takes</div><div class="fig__v">70s</div><div class="fig__h">run it before they arrive</div></div>
   </div>
 
   <div class="close">
     <h2 style="margin-top:0">Thirty minutes before they arrive</h2>
     <ol class="preplist">
-      <li><strong>Press <em>Run the schedule</em></strong> on the Command centre (Confirmed + probable) and let its 68 seconds happen with nobody watching. Do not press it twice, and do not open a second tab while it runs.</li>
+      <li><strong>Press <em>Run the schedule</em></strong> on the Command centre (Confirmed + probable) and let its 70 seconds happen with nobody watching. Do not press it twice, and do not open a second tab while it runs.</li>
       <li><strong>Regenerate this script</strong> so its numbers match the fresh plan: <code>npm run demo:script</code>, then <code>npm run pdf docs/demo-script.html</code>.</li>
       <li><strong>Click through</strong> Command centre → Load heatmap → Attention → Forecast once, so the first click in the room is instant.</li>
-      <li><strong>Decide the route question.</strong> 72 of the red items trace back to one route question — decide before the meeting whether to leave it in and open with it, or untick it (Masters → dependency grid) and re-run.</li>
+      <li><strong>Decide the route question.</strong> 71 of the red items trace back to one route question — decide before the meeting whether to leave it in and open with it, or untick it (Masters → dependency grid) and re-run.</li>
       <li><strong>Have the blank capacity workbook</strong> and the printed <strong>KRAM/06</strong> sheet ready to hand over.</li>
     </ol>
     <p class="lede">If anything shows a red banner during the demo: read it aloud
@@ -166,7 +166,7 @@
   <div class="opening">
     <div class="opening__t">Say this first, before any screen</div>
     <p>“Everything you are about to see runs on <strong>your</strong> factory's
-      shape — your 14 departments, your 71 products, the order your
+      shape — your 14 departments, your 70 products, the order your
       work actually flows in. <strong>None of the numbers are yours yet.</strong>
       The speeds, the day-counts, the crew sizes and the 12 orders in it
       are ours, invented so you could see the software working while we wait for
@@ -198,8 +198,8 @@
           </div>
           
           
-          <div class="say">“This is the whole factory on one page. Along the top: how many container loads you have promised, how many jobs that breaks into across your departments, and — in red — how many of those jobs do not fit in the time available.<br /><br />Below, the system names your tightest department. That is where an extra pair of hands or an extra machine helps the whole factory, rather than just one room.<br /><br />And on the right, the days that are overloaded — sorted by how much warning you still have. Something three months away says <em>overtime or subcontract would fix this</em>. Something next week says <em>this needs a phone call to the customer</em>. The label tells you what is still physically possible; the decision stays with you.”</div>
-          <div class="asks"><div class="asks__t">If they ask</div><p class="q">Who decided those labels?</p><p class="a">Arithmetic, not opinion. With 45 days of notice you can hire; with 15 you can run overtime; with less, the only honest option left involves the customer. The thresholds are written down and can be changed.</p><p class="q">How fresh is this?</p><p class="a">It is a snapshot, replanned on demand. Pressing the dark button redoes the whole plan from scratch — it takes about 68 seconds because it genuinely recalculates every job in the factory, and every version is kept, so last month's plan can always be pulled back and compared with what actually happened.</p></div>
+          <div class="say">“This is the whole factory on one page. Along the top: how many container loads you have promised, how many jobs that breaks into across your departments, and — in red — how many of those jobs do not fit in the time available.<br /><br />Below, the system names your tightest department. That is where an extra pair of hands or an extra machine helps the whole factory, rather than just one room.<br /><br />And on the right, the days that are overloaded — sorted by how much warning you still have. Something three months away says <em>overtime or subcontract would fix this</em>. Something next week says <em>this needs a phone call to the customer</em>. The label tells you what is still physically possible; the decision stays with you.<br /><br />Remember these two numbers — 12 shipments, 168 jobs. In a few minutes we are going to take a new order in front of you and you will watch both of them move.”</div>
+          <div class="asks"><div class="asks__t">If they ask</div><p class="q">Who decided those labels?</p><p class="a">Arithmetic, not opinion. With 45 days of notice you can hire; with 15 you can run overtime; with less, the only honest option left involves the customer. The thresholds are written down and can be changed.</p><p class="q">How fresh is this?</p><p class="a">It is a snapshot, replanned on demand. Pressing the dark button redoes the whole plan from scratch — it takes about 70 seconds because it genuinely recalculates every job in the factory, and every version is kept, so last month's plan can always be pulled back and compared with what actually happened.</p></div>
         </div>
       </section>
 
@@ -237,7 +237,7 @@
           
           <div class="doline"><span class="doline__t">Do</span><span>Point at one order's bars and trace them right to left, ending at the ship date. If you drag a bar, that is fine — it goes into the practice data and is removed with it.</span></div>
           <div class="say">“Nobody typed any of these dates in. The software starts from the day the container must be stuffed and works <em>backwards</em>: packing must finish three days before the container, final checking a week before, stitching twenty-six days before, and so on — using the day-counts your own planning team will give us for each product.<br /><br />If a planner knows better — a buyer visit, a material delay — they drag the bar. The plan reshuffles itself around that decision and remembers it. The software never quietly undoes what a person decided.”</div>
-          
+          <div class="asks"><div class="asks__t">If they ask</div><p class="q">Can we push an order to a different date?</p><p class="a">Two honest ways. To move one department's work a few days, drag its bar and pin it — the plan reshuffles around your decision. To move the whole container, change the shipment line's date on the Order book — remove the line, add it back with the new date — and re-plan. Deliberately two different acts, because they are two different promises: one is internal sequencing, the other changes what the customer was told.</p></div>
         </div>
       </section>
 
@@ -251,20 +251,20 @@
         <div class="beat__body">
           <div class="onscreen">
             <div class="onscreen__t">On screen</div>
-            <div><strong>72</strong> red items and <strong>35</strong> amber ones, most urgent first. Each one is a sentence, and clicking it opens the screen where it can be fixed.</div>
+            <div><strong>71</strong> red items and <strong>35</strong> amber ones, most urgent first. Each one is a sentence, and clicking it opens the screen where it can be fixed.</div>
           </div>
           
           
           <div class="say">“Everything the software has noticed, in one list, in plain sentences — this order cannot be made in time, this department is overloaded on this date, this material should have been ordered by now. The red ones need an answer today.<br /><br />Two things are deliberate here. Every line takes you straight to the screen that fixes it. And there is <em>no way to dismiss one</em> — an alert you can silence while it is still true becomes wallpaper within a week, and then nobody reads any of them.”</div>
-          <div class="asks"><div class="asks__t">If they ask</div><p class="q">Why are 71 of them the same complaint?</p><p class="a">Because the software has caught a genuine contradiction, and it is the first question we have for your team today: our records show machining feeding ply cutting, and the day-counts say the opposite. One of them is wrong. Whoever runs production can settle it in a sentence, and 71 red items disappear — this is the software doing exactly its job.</p></div>
+          <div class="asks"><div class="asks__t">If they ask</div><p class="q">Why are 70 of them the same complaint?</p><p class="a">Because the software has caught a genuine contradiction, and it is the first question we have for your team today: our records show machining feeding ply cutting, and the day-counts say the opposite. One of them is wrong. Whoever runs production can settle it in a sentence, and 70 red items disappear — this is the software doing exactly its job.</p></div>
         </div>
       </section>
 
 
       <div class="part">
         <div class="part__n">Part 2</div>
-        <h2>Taking new work in</h2>
-        <p class="lede">What merchandising does with it: see what is promised, test an order before saying yes, and try changes without touching the real plan.</p>
+        <h2>The life of one order</h2>
+        <p class="lede">The scenario the whole demonstration hangs on: a buyer calls with a new order. Check it, take it, and set the factory re-planning — then tour the floor while the engine thinks, and come back to watch the ripple.</p>
       </div>
 
 
@@ -281,7 +281,7 @@
           </div>
           
           
-          <div class="say">“The order book — every promise the plan is built on. These twelve are practice orders we made up so you could see the software working; the moment your real orders go in, ours come out with one command.<br /><br />An order here is not one line: an order shipping in two containers is two separate problems with two separate dates, and the software treats it that way.”</div>
+          <div class="say">“The order book — every promise the plan is built on. These twelve are practice orders we made up so you could see the software working; the moment your real orders go in, ours come out with one command.<br /><br />An order here is not one line: an order shipping in two containers is two separate problems with two separate dates, and the software treats it that way.<br /><br />Now — the scenario. Imagine your buyer has just called: <em>250 more of this chair, shipping mid-December.</em> Watch what taking that order properly looks like.”</div>
           
         </div>
       </section>
@@ -290,17 +290,17 @@
       <section class="beat">
         <div class="beat__bar">
           <span class="beat__nav">Accept an order</span>
-          <span class="beat__title">Can we say yes to this?</span>
-          <span class="beat__meta"><span class="skiptag">skip if short of time</span><span class="mins">~3 min</span></span>
+          <span class="beat__title">First, ask whether we should say yes</span>
+          <span class="beat__meta"><span class="mins">~3 min</span></span>
         </div>
         <div class="beat__body">
           <div class="onscreen">
             <div class="onscreen__t">On screen</div>
             <div>A product, a quantity, a ship date, and a Check button.</div>
           </div>
-          <div class="caution"><strong>This takes about 73 seconds to answer.</strong> It is genuinely re-planning the entire factory with the new order added, which is why. Either start it and keep talking, or skip this screen and describe it — do not stand in silence.</div>
-          <div class="doline"><span class="doline__t">Do</span><span>Only if you have time in hand: pick any product, type 250, pick a date about three months out, press Check, and keep talking while it works.</span></div>
-          <div class="say">“The question merchandising actually has: a buyer wants 250 of this by mid-December — can we say yes?<br /><br />Most systems answer that against an empty factory. This one pretends the order is real, replans the whole factory with it in, and tells you which departments would break and by how much — <em>given everything you have already promised everyone else</em>. Then it throws the pretend order away. Nothing is committed by checking.”</div>
+          <div class="caution"><strong>The answer takes about 75 seconds</strong> — it is genuinely re-planning the entire factory with the trial order added. Start it and keep talking; the paragraph below is written to fill exactly that wait. Never stand in silence.</div>
+          <div class="doline"><span class="doline__t">Do</span><span>Pick the buyer's article, type 250, pick a date about three months out, press <em>Check</em> — and keep talking.</span></div>
+          <div class="say">“Before anything is promised, we ask. Most systems answer this against an empty factory; this one pretends the order is real, replans everything with it in, and reports which departments would break — <em>given everything already promised to everyone else</em>. Then it throws the trial away. Nothing is committed by checking.<br /><br />While it thinks, notice what it is doing: recalculating roughly 182 jobs across 14 departments and every working day to January. It is the same full re-plan the planner runs each morning — which is exactly why the answer can be trusted.<br /><br />— and here is the verdict: department by department, <em>fits</em> or the reason it does not. If a department breaks, you know before the buyer hears yes, not after.”</div>
           
         </div>
       </section>
@@ -308,18 +308,37 @@
 
       <section class="beat">
         <div class="beat__bar">
-          <span class="beat__nav">What if</span>
-          <span class="beat__title">Try a change without committing to it</span>
-          <span class="beat__meta"><span class="skiptag">skip if short of time</span><span class="mins">~2 min</span></span>
+          <span class="beat__nav">Order book</span>
+          <span class="beat__title">The buyer confirms — enter it</span>
+          <span class="beat__meta"><span class="mins">~3 min</span></span>
         </div>
         <div class="beat__body">
           <div class="onscreen">
             <div class="onscreen__t">On screen</div>
-            <div>A department, a date range, and a dial for more or less capacity. The result appears beside the live plan.</div>
+            <div>The <em>Add an order</em> form: ERP order number, customer, article, quantity, confidence. It creates the first shipment line, where the container stuffing date goes.</div>
           </div>
           
+          <div class="doline"><span class="doline__t">Do</span><span>Press <em>Add an order</em>. Order number <strong>PROV-DEMO-1</strong> — the PROV- prefix matters: it marks the order as practice data, so the standard clean-up removes it with everything else. Same article, quantity 250, confidence <em>Confirmed</em>, and the stuffing date you just checked. Save.</span></div>
+          <div class="say">“Taking the order is a minute of typing: the order number from Panipuri, so the two systems always agree which order is which; the product; the quantity; and the date the container must be stuffed. That last date is the anchor — every deadline in the factory for this order will be calculated backwards from it.<br /><br />Once we have a sample of Panipuri's export file, even this minute disappears — orders will come in as a file instead of being typed.”</div>
           
-          <div class="say">“The other daily question: if we put four more people in stitching for a fortnight, what happens to the dates? This tries it on a copy. The real plan is untouched unless you decide to keep the result.”</div>
+        </div>
+      </section>
+
+
+      <section class="beat">
+        <div class="beat__bar">
+          <span class="beat__nav">Command centre</span>
+          <span class="beat__title">Set the factory re-planning — and use the wait</span>
+          <span class="beat__meta"><span class="mins">~1 min</span></span>
+        </div>
+        <div class="beat__body">
+          <div class="onscreen">
+            <div class="onscreen__t">On screen</div>
+            <div>The order book now shows <strong>13</strong> lines — but every planning screen still shows the old plan, and says so. The plan does not change until it is re-run, deliberately.</div>
+          </div>
+          
+          <div class="doline"><span class="doline__t">Do</span><span>Press <strong>Run the schedule</strong> (Confirmed + probable). It will read <em>Scheduling…</em> for about 70 seconds. Do not wait for it — walk straight into Part 3, and it will be finished long before you return.</span></div>
+          <div class="say">“The new order is in the book, but notice — the plan has not moved. A plan that silently rearranged itself every time someone typed would be a plan nobody could trust for five minutes. Re-planning is a deliberate act, one button, and every version is kept.<br /><br />I have set it thinking — it recalculates every job in the factory, about 70 seconds. Rather than watch it, let me show you what the floor sees every day. When we come back, your order will be in the plan, and we will go and find it.”</div>
           
         </div>
       </section>
@@ -327,8 +346,8 @@
 
       <div class="part">
         <div class="part__n">Part 3</div>
-        <h2>The floor</h2>
-        <p class="lede">The screens for supervisors and department heads — where what actually happened gets written down, and why that matters to every date in the plan.</p>
+        <h2>The floor — while the engine thinks</h2>
+        <p class="lede">The screens for supervisors and department heads. You started the re-plan a moment ago; it completes in the background while you show these, which is why this part comes exactly here.</p>
       </div>
 
 
@@ -363,8 +382,8 @@
             <div>Today's expected work for a chosen department, with boxes for good pieces and rejected pieces.</div>
           </div>
           
-          <div class="doline"><span class="doline__t">Do</span><span>Declare a small quantity against any job — say 20 good, 1 rejected. It goes into the practice data.</span></div>
-          <div class="say">“This is the most important screen in the building, and the least glamorous. At the end of the day — or the shift — a supervisor writes down what was actually made: good pieces and rejected pieces, per product.<br /><br />Everything else you have seen today gets smarter because of this screen. The plan compares itself to it. The quality figures come from it. And over time the software learns what each department <em>really</em> achieves in a day, as against what the planning sheet claims. It is built for a phone, thumb-sized, so it can be done standing on the floor.”</div>
+          <div class="doline"><span class="doline__t">Do</span><span>Declare a small quantity against any job — say 20 good, 1 rejected, with a cause. Then flick to <em>WIP</em>: the 20 you typed is already in that order's bar. Flick to <em>Quality</em>: the rejected piece has landed under its cause. One entry, three screens moved.</span></div>
+          <div class="say">“This is the most important screen in the building, and the least glamorous. At the end of the day — or the shift — a supervisor writes down what was actually made: good pieces and rejected pieces, per product.<br /><br />Watch how far one entry travels. The moment I save it, the work-in-progress screen moves, the quality screen moves, and tomorrow's dashboard will compare it against what the plan asked for. Nothing is typed twice, anywhere, ever. It is built for a phone, thumb-sized, so it can be done standing on the floor.”</div>
           <div class="asks"><div class="asks__t">If they ask</div><p class="q">What if the next department disagrees with the count?</p><p class="a">They count it in when they receive it. A handover is not settled until the receiving side has accepted it — right now there are 12 handovers declared and not yet counted in, and the software lists every one rather than assuming.</p></div>
         </div>
       </section>
@@ -379,7 +398,7 @@
         <div class="beat__body">
           <div class="onscreen">
             <div class="onscreen__t">On screen</div>
-            <div>Every order, opened out across all 14 departments: done, busy, waiting, not started.</div>
+            <div>Every order, opened out across all 14 departments: done, busy, waiting, not started — including the pieces you declared a minute ago.</div>
           </div>
           
           
@@ -448,6 +467,51 @@
 
       <div class="part">
         <div class="part__n">Part 4</div>
+        <h2>The ripple — go and find your order</h2>
+        <p class="lede">The re-plan you started in Part 2 finished while you toured the floor. Now walk back through three screens and let them find the order themselves. This is the part of the demonstration people remember.</p>
+      </div>
+
+
+      <section class="beat">
+        <div class="beat__bar">
+          <span class="beat__nav">Command centre</span>
+          <span class="beat__title">The two numbers moved</span>
+          <span class="beat__meta"><span class="mins">~3 min</span></span>
+        </div>
+        <div class="beat__body">
+          <div class="onscreen">
+            <div class="onscreen__t">On screen</div>
+            <div><strong>13</strong> shipment lines where there were 12, and about <strong>182</strong> jobs where there were 168 — fourteen new jobs, one for each department your order passes through. The run panel shows today's time stamp.</div>
+          </div>
+          
+          <div class="doline"><span class="doline__t">Do</span><span>Then take sixty seconds of silence and let <em>them</em> find PROV-DEMO-1: its bars on the <em>Schedule</em> (fourteen of them, ending at the date you typed), its load on the <em>Load heatmap</em> around those dates, and the order itself on <em>WIP</em>, marked still to begin. If the new order overloaded a day or cannot fit somewhere, it is on <em>Attention</em> — in front of everyone, which is the point.</span></div>
+          <div class="say">“Remember the two numbers from the start — 12 shipments, 168 jobs. Now look: 13, and 182. The order you watched me type five minutes ago has been broken into a job for every department, each with its own deadline counted back from the container date, each already weighed against everything else you have promised.<br /><br />That is the whole system in one sentence: <strong>type the promise once, and every screen in the building rearranges itself around it</strong> — the calendar, the daily loads, the department work lists, the buying dates, and the warnings if it does not fit.<br /><br />And if it had <em>not</em> fit, we would not have found out from an angry buyer in December. It would be a red sentence on the Attention screen today, while every option is still open.”</div>
+          <div class="asks"><div class="asks__t">If they ask</div><p class="q">How do we take it out again?</p><p class="a">The × against the order on the Order book removes it, and the next re-plan forgets it. This one is named PROV-, so the standard clean-up that removes all our practice data takes it too. Nothing you saw today needs to be un-done by hand.</p></div>
+        </div>
+      </section>
+
+
+      <section class="beat">
+        <div class="beat__bar">
+          <span class="beat__nav">What if</span>
+          <span class="beat__title">And if it had not fit — try the fix on a copy</span>
+          <span class="beat__meta"><span class="skiptag">skip if short of time</span><span class="mins">~2 min</span></span>
+        </div>
+        <div class="beat__body">
+          <div class="onscreen">
+            <div class="onscreen__t">On screen</div>
+            <div>A department, a date range, and a dial for more or less capacity. The result appears beside the live plan.</div>
+          </div>
+          
+          
+          <div class="say">“Suppose your new order <em>had</em> overloaded stitching in November. This is where the argument happens: put four more people in stitching for a fortnight — on a copy — and see what it does to every date in the factory. Or take a week out for maintenance and see what it costs before committing to it.<br /><br />The real plan is untouched until you decide to keep the result, and every scenario is kept with a label, so next month you can see what was considered and why.”</div>
+          
+        </div>
+      </section>
+
+
+      <div class="part">
+        <div class="part__n">Part 5</div>
         <h2>Money and material</h2>
         <p class="lede">Two screens that are built, tested, and empty — because the data behind them is item 4 on the sheet you are leaving with them. Say that with confidence, not apology.</p>
       </div>
@@ -466,7 +530,7 @@
           </div>
           
           
-          <div class="say">“This screen takes the plan and turns it into purchasing: what the factory is committed to buying, week by week, and — in red — anything already past the date it should have been ordered, counting backwards from when production needs it.<br /><br />It is empty for one reason only: it needs to know what each product is made of — the foam, the fabric, the fittings — and nobody has given us that yet. Give us the parts list for <em>one</em> product and this screen switches on for it the same day.”</div>
+          <div class="say">“This screen takes the plan and turns it into purchasing: what the factory is committed to buying, week by week, and — in red — anything already past the date it should have been ordered, counting backwards from when production needs it. The order you entered ten minutes ago would appear here too, as the foam and fabric and fittings it will consume.<br /><br />It is empty for one reason only: it needs to know what each product is made of, and nobody has given us that yet. Give us the parts list for <em>one</em> product and this screen switches on for it the same day.”</div>
           
         </div>
       </section>
@@ -492,7 +556,7 @@
 
 
       <div class="part">
-        <div class="part__n">Part 5</div>
+        <div class="part__n">Part 6</div>
         <h2>Where the numbers live, and the close</h2>
         <p class="lede">End on the two honest screens: the sheet every other number came from, and the screen that refuses to guess.</p>
       </div>
@@ -507,12 +571,12 @@
         <div class="beat__body">
           <div class="onscreen">
             <div class="onscreen__t">On screen</div>
-            <div><strong>994</strong> boxes — 71 products across 14 departments — every one filled in by us, and labelled as such.</div>
+            <div><strong>980</strong> boxes — 70 products across 14 departments — every one filled in by us, and labelled as such.</div>
           </div>
           
           
-          <div class="say">“This is the honest moment of the day. Every screen you have seen is arithmetic on this sheet: how many of each product each department can make in a day, and how many days before the container each must finish.<br /><br /><strong>Every number in it is ours, not yours.</strong> We invented them so the software had something to chew on — and deliberately crudely: it currently believes a dining chair and an ottoman take the same effort, and anyone who knows your floor spotted that within a minute of sitting down. That is exactly the reaction we want, pointed at every wrong number.<br /><br />Your planning team gets this as an ordinary Excel sheet in a layout they already use. When it comes back, it replaces our numbers box by box — a partly-filled sheet is genuinely useful, and it can come back more than once.”</div>
-          <div class="asks"><div class="asks__t">If they ask</div><p class="q">994 boxes — how long will that take?</p><p class="a">Less than it sounds. A rate that is the same across a whole family of products is filled once and copied down. And the day-count column is one number per department for most products. The session with your planning team is half a day, not a week.</p></div>
+          <div class="say">“This is the honest moment of the day. Every screen you have seen is arithmetic on this sheet: how many of each product each department can make in a day, and how many days before the container each must finish. When your order rippled through the factory just now, these were the numbers it was weighed against.<br /><br /><strong>Every number in it is ours, not yours.</strong> We invented them so the software had something to chew on — and deliberately crudely: it currently believes a dining chair and an ottoman take the same effort, and anyone who knows your floor spotted that within a minute of sitting down. That is exactly the reaction we want, pointed at every wrong number.<br /><br />Your planning team gets this as an ordinary Excel sheet in a layout they already use. When it comes back, it replaces our numbers box by box — a partly-filled sheet is genuinely useful, and it can come back more than once.”</div>
+          <div class="asks"><div class="asks__t">If they ask</div><p class="q">980 boxes — how long will that take?</p><p class="a">Less than it sounds. A rate that is the same across a whole family of products is filled once and copied down. And the day-count column is one number per department for most products. The session with your planning team is half a day, not a week.</p></div>
         </div>
       </section>
 
@@ -530,7 +594,7 @@
           </div>
           
           <div class="doline"><span class="doline__t">Do</span><span>Open the dependency grid and point at the ply cutting / machining cell.</span></div>
-          <div class="say">“Everything the factory <em>is</em> lives here — departments, products, shifts, what feeds what. It is where the question from the Attention screen gets settled: this one tick says machining feeds ply cutting, the day-counts say the reverse, and whichever of you runs production can tell us which is true. Untick it and 71 red items vanish.”</div>
+          <div class="say">“Everything the factory <em>is</em> lives here — departments, products, shifts, what feeds what. It is where the question from the Attention screen gets settled: this one tick says machining feeds ply cutting, the day-counts say the reverse, and whichever of you runs production can tell us which is true. Untick it and 70 red items vanish.”</div>
           
         </div>
       </section>
@@ -578,7 +642,7 @@
     <p>They are set out in full in <strong>DBBS/UM/KRAM/06</strong> — hand the
       sheet over rather than talking through it. Name them and stop:</p>
     <ol class="asklist">
-      <li><strong>The capacity workbook</strong> — 994 boxes, in Excel, from your planning team. Who, and by when?</li>
+      <li><strong>The capacity workbook</strong> — 980 boxes, in Excel, from your planning team. Who, and by when?</li>
       <li><strong>What feeds what</strong> — starting with today's question: does machining feed ply cutting?</li>
       <li><strong>One real export file out of Panipuri</strong> — and does it hold a container stuffing date, or only a delivery date?</li>
       <li><strong>A parts list and a cost</strong>, for one product to begin with.</li>
