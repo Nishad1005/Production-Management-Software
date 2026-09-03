@@ -747,6 +747,40 @@ pattern is not that ceilings get forgotten; it is that *a list of names is the
 wrong shape for this rule*. Every hand-written list in this repository that
 enumerates what should be true of a set is a candidate for the same failure.
 
+### 2026-09-03 — The demonstration script covers all twenty screens, in floor language
+
+Asked for a script thorough enough that every feature is shown and plain enough
+that nobody in the room needs to know software. The generator now writes twenty
+beats in five parts — the promise and whether it can be kept, taking new work
+in, the floor, money and material, and where the numbers live — ending, as
+before, on the Forecast screen refusing to guess, because that refusal is the
+product's actual argument.
+
+Choices worth recording:
+
+- **Every beat says which word to click**, what will be on screen with the live
+  figures in it, a spoken paragraph in the language of the floor — days, crews,
+  containers, rejections, never views or roles or policies — and the questions
+  that screen tends to provoke, with answers.
+- **The empty screens get the most careful lines, not the least.** Material and
+  Money are built, tested and empty, and the script arms the presenter to say
+  so with confidence — "give us the parts list for one product and this screen
+  switches on the same day" — because an unexplained empty screen reads as
+  broken, and an apologised-for one reads worse.
+- **The 73-second screens carry a red box in the script itself.** Accept an
+  order is a full re-plan and the presenter must never stand in silence; the
+  script says either talk over it or skip it.
+- **Skip tags mark the twenty down to eight** for a meeting that turns out to be
+  half as long as promised — the tagged beats drop, the argument survives.
+- The pre-demo checklist and the red-banner line moved into the document proper:
+  run the plan half an hour early, regenerate the script, click the four main
+  screens warm, and if a banner appears, read it aloud calmly and carry on —
+  failing out loud is the philosophy, and it is only a selling point if the
+  presenter does not flinch.
+
+Still generated, never hand-edited: the numbers in it move on their own, and a
+script that contradicts the screen is worse than none.
+
 ## 9. Log
 
 Newest first. One entry per working session — what changed, and anything a
