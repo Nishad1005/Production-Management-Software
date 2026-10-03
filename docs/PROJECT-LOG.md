@@ -343,7 +343,13 @@ Keep adding to this. Each one was a real dead end.
 
    Untick one cell on Masters → dependency grid and all 70 go. **It has not been
    changed**, because whether machining feeds ply cutting is a question about
-   U&M's factory and not one to answer from a screen. It is also the smallest
+   U&M's factory and not one to answer from a screen.
+
+   **3 Oct: the sample planning sheet answers it the other way.** In all six
+   rows Machining's day-count is at or above *Ply cutting and assembly* —
+   machining comes first, the edge is consistent with their practice, and it
+   was the placeholder offsets that were backwards. Left open only until PPC
+   confirm in words; do **not** untick the edge. It is also the smallest
    possible version of the KRAM/02 question already outstanding at item 3, so it
    is worth asking in the same breath.
 
@@ -956,6 +962,66 @@ as flakiness.
 
 340 tests, 49 browser checks, 29 hosted checks. 25 woff2 bundled, no external
 font requests.
+
+### 2026-10-03 — First real data: a sample of U&M's own planning sheet
+
+A month after the last commit, with the live project untouched in between (plan
+30 days old, two of the twelve PROV- orders now past their stuffing dates), the
+first thing from the production management team arrived: **a screenshot of six
+rows of their planning sheet**, described as sample data. Nothing was loaded;
+this entry records what it shows, because it changes several things believed
+until now.
+
+**What the sheet is.** Per SKU: item name, category, a set of *Dispatch Qty*
+columns (one per dispatch date — 3, 10, 17, 17 and 24 Oct 2026), and a
+*Summary* block of eighteen columns holding a day-count per step, non-increasing
+left to right and ending in `EX-FACTORY = 7` and `HOD = 0`. It is a
+time-and-action calendar: U&M's D-minus matrix, in their own layout, anchored on
+HOD. A bold row above the SKUs (44 39 37 37 35 31 29 27 25 23 23 19 17 14 11 8 7
+0) reads as a standard template that individual SKUs depart from.
+
+**What it settles.** Machining carries a larger number than *Ply cutting and
+assembly* in four rows and an equal one in two — machining comes first. §6
+item 0 guessed the `MACHINE → PLYCUT` edge was a stale artefact; the sheet says
+the edge is consistent with how they plan and it was **our invented offsets**
+(Ply Cutting D-60 before Machining D-56) that were backwards. The seventy route
+conflicts go away by loading their numbers, not by unticking the edge.
+
+**What does not fit the model as built** — four things, none of them loadable
+by the existing workbook path without a decision:
+
+1. **Their steps are not our fourteen departments.** Eighteen columns: seven are
+   QC gates Kram has no department for (Wood QC, Sanding QC, Finish QC,
+   Stitching QC, Upholstery QC, plus Final QC and Packing + OCA QC which map);
+   three are *pairs* of ours planned as one step with one number (Ply cutting
+   and assembly; Wood finishing and metal finishing; Foam cutting-pasting and
+   fibre cutting-filling); two are milestones (Ex-factory, HOD).
+2. **The anchor is HOD, not the stuffing date.** Ex-factory sits seven days
+   before it in five rows and twenty-one in one. Which of the three dates the
+   *Dispatch* columns carry — and which of them is container stuffing — is not
+   answerable from the sheet.
+3. **Consecutive steps share a number** (Wood QC 37 / Sanding 37; Stitching QC
+   23 / Foam 23; and every merged pair by construction). `route_order_conflicts`
+   flags `e.dminus_days >= feeder.dminus_days`, so equality is a contradiction
+   in Kram and normal practice in their sheet. Whether their numbers mean
+   start-by or finish-by decides which side is right.
+4. **There are no rates in it.** It is a deadline sheet; nothing says how many
+   of anything a department makes in a day. The capacity half of ask #1 —
+   the half every heatmap cell and flagged day depends on — is still missing,
+   and this sheet is a hint that PPC may plan without one.
+
+**Against the live masters:** four of the six SKUs exist (125043138, 288042,
+455597, 676313); the two Betsy chairs (`JD354…`, `JT263…`) do not, so the
+seventy-article list is not the whole range. One name, *455597 NS IMOGENE CHR
+HAIR ON HIDE*, sits under two codes (`455597` and `160076`). The sheet carries a
+category per SKU; no live article has one.
+
+**Not yet done, deliberately:** nothing is imported from a screenshot. The ask
+back is the actual workbook (formulas, hidden columns and other sheets may hold
+the rates), and seven questions for PPC recorded in the session reply — HOD,
+start-by versus finish-by, the template row, the one SKU with ex-factory at 21,
+the green *Contractor* legend, whether QC gates carry capacity, and whether
+rates exist anywhere.
 
 ## 9. Log
 
