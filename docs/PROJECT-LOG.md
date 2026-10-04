@@ -627,6 +627,23 @@ all.
    only.** It is loaded (4 Oct entry). What is owed back is the **workbook
    itself** and answers to six questions listed in that entry; and **rates**,
    which the sheet does not contain at all.
+
+   **Do not run `scripts/import-capacity-sheet.mjs` against the live project as
+   it stands** (noticed 4 Oct, reading it to answer "how do the real figures get
+   in"). It predates the sample load and hard-codes the fourteen-department
+   route, Ply Cutting first. Given a workbook in the old fourteen-column layout
+   — **which is the layout of the blank one already sent out with KRAM/04** — it
+   would re-lay `route_position` in its own order and *retire* the six
+   checkpoint departments as "not in the real route". Given a workbook freshly
+   generated from the live project, it stops before writing, because it does
+   not know the six new names; safe, but it loads nothing. Either way it needs
+   bringing in line with whatever route PPC confirm before the next real load:
+   take the department list and order from the database instead of from a
+   constant, and never retire anything. The generator,
+   `make-capacity-workbook.mjs`, already reads the live departments and is
+   fine. There is also **no in-app upload for the workbook** — `Load from a
+   file` on Masters takes Kram's own JSON, not Excel — so today the bulk load
+   is a terminal command only we can run.
 9. **The what-feeds-what table**, `DBBS/UM/KRAM/02` — and inside it the one
    concrete question: **does Machining feed Ply Cutting?** (§6 item 0.) No
    longer shouting from the Attention screen, and not answered either.
