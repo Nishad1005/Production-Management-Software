@@ -2,12 +2,7 @@
 import { describe, expect, it } from 'vitest'
 import type pg from 'pg'
 import { withRollback } from './helpers/db'
-import {
-  applyDemoSeed,
-  applySeed,
-  createOrder,
-  runSchedule,
-} from './helpers/fixtures'
+import { applyDemoSeed, applySeed, createOrder, inDays, runSchedule } from './helpers/fixtures'
 
 /**
  * Phase 9 — attention.
@@ -54,11 +49,15 @@ describe('a quiet factory says nothing', () => {
 })
 
 describe('material findings appear and clear', () => {
-  async function shortOfOak(c: pg.Client) {
+  // `shipsIn` decides which side of its ordering date the oak is on. Far out,
+  // there is still time to order; close in, the date has already gone. It was a
+  // fixed 1 December until that date came near enough for the ordering day to
+  // pass, at which point two tests here changed their answers on their own.
+  async function shortOfOak(c: pg.Client, shipsIn = 200) {
     await applySeed(c)
     await c.query(`select set_supplier('SUP-1', 'Sharma Timber', 21)`)
     await c.query(`select set_material('WD-OAK', 'Oak, 25mm', 'Wood', 'CFT', 'SUP-1')`)
-    await createOrder(c, { qty: 100, stuffingDate: '2026-12-01' })
+    await createOrder(c, { qty: 100, stuffingDate: inDays(shipsIn) })
     await runSchedule(c)
     await c.query(`select set_article_material('AARA-LC', 'WD-OAK', 'WOOD', 2)`)
   }
@@ -88,6 +87,55 @@ describe('material findings appear and clear', () => {
       expect(
         (await findings(c)).filter((r) => r.kind === 'material-short'),
       ).toEqual([])
+    })
+  })
+
+  it('does not ask anyone to order what the store already holds', async () => {
+    await withRollback(async (c) => {
+      // Shipping so soon that the day to order the oak is long gone.
+      await shortOfOak(c, 20)
+      await c.query(`select set_material_stock('WD-OAK', 1000000)`)
+
+      // `order_now` used to be the date alone. A store holding a million cubic
+      // feet against a need for two hundred raised the most urgent alert the
+      // system has — and nothing showed it until a fixture's ordering date
+      // drifted into the past by itself.
+      const rows = await findings(c)
+      expect(rows.filter((r) => r.kind.startsWith('material'))).toEqual([])
+    })
+  })
+
+  it('says the date has passed when it has and the store is short', async () => {
+    await withRollback(async (c) => {
+      await shortOfOak(c, 20)
+      await c.query(`select set_material_stock('WD-OAK', 1)`)
+
+      const material = (await findings(c)).filter((r) => r.kind.startsWith('material'))
+      // One finding, not two: past its ordering date outranks merely short.
+      expect(material).toHaveLength(1)
+      expect(material[0].kind).toBe('material-late')
+      expect(material[0].severity).toBe('critical')
+    })
+  })
+
+  it('still says the date has passed when nobody has counted the store', async () => {
+    await withRollback(async (c) => {
+      // No count at all. The first fix for the test above required a count
+      // that fell short, and so went quiet here too — past the ordering date,
+      // stock unknown, and nothing on screen. Not knowing is not having enough.
+      await shortOfOak(c, 20)
+
+      const material = (await findings(c)).filter((r) => r.kind.startsWith('material'))
+      expect(material).toHaveLength(1)
+      expect(material[0].kind).toBe('material-late')
+      expect(material[0].severity).toBe('critical')
+
+      // And the screen must not be able to say "everything can still be
+      // ordered in time" while that is true.
+      const { rows } = await c.query<{ status: string; order_now: boolean }>(
+        `select status, order_now from material_shortage where material_code = 'WD-OAK'`,
+      )
+      expect(rows).toEqual([{ status: 'not counted', order_now: true }])
     })
   })
 

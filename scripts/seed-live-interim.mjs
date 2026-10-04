@@ -67,10 +67,17 @@ if (!email || !password) {
  *
  * dminus is days before the container that department must finish; larger means
  * earlier, and the order below respects what feeds what.
+ *
+ * Machining is before Ply Cutting because the hosted route has machining
+ * feeding it. Until 3 Oct these two were the other way round — Ply Cutting 60,
+ * Machining 56 — and that one inversion in figures we invented was the whole of
+ * the seventy "route conflicts" on the Attention screen. Whether machining
+ * really feeds ply cutting is still PPC's to say (log §6 item 0); what is fixed
+ * here is only that our placeholders no longer contradict our own route.
  */
 const DEPARTMENTS = [
-  { code: 'PLYCUT', units: 120, manpower: 8, dminus: 60 },
-  { code: 'MACHINE', units: 90, manpower: 10, dminus: 56 },
+  { code: 'MACHINE', units: 90, manpower: 10, dminus: 60 },
+  { code: 'PLYCUT', units: 120, manpower: 8, dminus: 56 },
   { code: 'ASSY', units: 70, manpower: 14, dminus: 48 },
   { code: 'SAND', units: 85, manpower: 6, dminus: 44 },
   { code: 'WOODFIN', units: 65, manpower: 9, dminus: 38 },

@@ -1,0 +1,117 @@
+{
+  "source": "Screenshot of U&M's planning sheet, received 3 Oct 2026 and described as sample data. Transcribed by hand from an image 1600px wide: every figure here should be checked against the workbook when it arrives.",
+  "anchor": "HOD is the dispatch day and day 0, which is Kram's stuffing date. Each figure is the number of days before it by which that step must be made.",
+  "rate_per_day": 40,
+  "checkpoint_rate_per_day": 10000,
+  "steps": [
+    { "column": "MACHINING", "departments": ["MACHINE"], "kind": "process" },
+    { "column": "PLY CUTTING AND ASSEMBLY", "departments": ["PLYCUT", "ASSY"], "kind": "process" },
+    { "column": "WOOD QC", "departments": ["WOODQC"], "kind": "checkpoint" },
+    { "column": "SANDING", "departments": ["SAND"], "kind": "process" },
+    { "column": "SANDING QC", "departments": ["SANDQC"], "kind": "checkpoint" },
+    { "column": "WOOD FINISHING AND METAL FINISHING", "departments": ["WOODFIN", "METALFIN"], "kind": "process" },
+    { "column": "FINISH QC", "departments": ["FINISHQC"], "kind": "checkpoint" },
+    { "column": "CUTTING", "departments": ["CUT"], "kind": "process" },
+    { "column": "STITCHING", "departments": ["STITCH"], "kind": "process" },
+    { "column": "STITCHING QC", "departments": ["STITCHQC"], "kind": "checkpoint" },
+    { "column": "FOAM CUTTING-PASTING AND FIBER CUTTING-FILLING", "departments": ["FOAM", "FIBER"], "kind": "process" },
+    { "column": "STAPLING", "departments": ["STAPLE"], "kind": "process" },
+    { "column": "UPHOLSTERY QC", "departments": ["UPHQC"], "kind": "checkpoint" },
+    { "column": "FITTING", "departments": ["FIT"], "kind": "process" },
+    { "column": "FINAL QC", "departments": ["QC"], "kind": "checkpoint" },
+    { "column": "PACKING + OCA QC", "departments": ["PACK"], "kind": "process" },
+    { "column": "EX-FACTORY", "departments": ["EXFACT"], "kind": "checkpoint" }
+  ],
+  "departments": [
+    { "code": "MACHINE", "name": "Machining", "position": 10 },
+    { "code": "PLYCUT", "name": "Ply Cutting", "position": 20 },
+    { "code": "ASSY", "name": "Assembly", "position": 30 },
+    { "code": "WOODQC", "name": "Wood QC", "position": 40, "checkpoint": true },
+    { "code": "SAND", "name": "Sanding", "position": 50 },
+    { "code": "SANDQC", "name": "Sanding QC", "position": 60, "checkpoint": true },
+    { "code": "WOODFIN", "name": "Wood Finishing", "position": 70 },
+    { "code": "METALFIN", "name": "Metal Finishing", "position": 80 },
+    { "code": "FINISHQC", "name": "Finish QC", "position": 90, "checkpoint": true },
+    { "code": "CUT", "name": "Cutting", "position": 100 },
+    { "code": "STITCH", "name": "Stitching", "position": 110 },
+    { "code": "STITCHQC", "name": "Stitching QC", "position": 120, "checkpoint": true },
+    { "code": "FOAM", "name": "Foam Pasting", "position": 130 },
+    { "code": "FIBER", "name": "Fiber Processing", "position": 140 },
+    { "code": "STAPLE", "name": "Stapling", "position": 150 },
+    { "code": "UPHQC", "name": "Upholstery QC", "position": 160, "checkpoint": true },
+    { "code": "FIT", "name": "Fitting", "position": 170 },
+    { "code": "QC", "name": "Final QC inspection", "position": 180, "checkpoint": true },
+    { "code": "PACK", "name": "Final Packing", "position": 190 },
+    { "code": "EXFACT", "name": "Ex-factory", "position": 200, "checkpoint": true }
+  ],
+  "feeds": [
+    ["MACHINE", "PLYCUT"],
+    ["MACHINE", "ASSY"],
+    ["PLYCUT", "WOODQC"],
+    ["ASSY", "WOODQC"],
+    ["ASSY", "SAND"],
+    ["SAND", "SANDQC"],
+    ["SAND", "WOODFIN"],
+    ["MACHINE", "METALFIN"],
+    ["WOODFIN", "FINISHQC"],
+    ["METALFIN", "FINISHQC"],
+    ["WOODFIN", "FOAM"],
+    ["CUT", "STITCH"],
+    ["STITCH", "STITCHQC"],
+    ["FOAM", "STAPLE"],
+    ["FIBER", "STAPLE"],
+    ["STITCH", "STAPLE"],
+    ["STAPLE", "UPHQC"],
+    ["STAPLE", "FIT"],
+    ["METALFIN", "FIT"],
+    ["FIT", "QC"],
+    ["QC", "PACK"],
+    ["PACK", "EXFACT"]
+  ],
+  "template_days": [44, 39, 37, 37, 35, 31, 29, 27, 25, 23, 23, 19, 17, 14, 11, 8, 7],
+  "dispatches": ["2026-10-03", "2026-10-10", "2026-10-17", "2026-10-17", "2026-10-24"],
+  "rows": [
+    {
+      "sku": "125043138",
+      "name": "125043138 Edison Counter Stool - Sapphir",
+      "category": "Counter Stool/Chair",
+      "qty": [152, null, 152, 152, 152],
+      "days": [40, 32, 30, 30, 28, 25, 23, 23, 20, 18, 18, 16, 14, 12, 10, 8, 7]
+    },
+    {
+      "sku": "JD354 SPSK WAL",
+      "name": "JD354 SPSK WAL Betsy Chair - Powder Blue",
+      "category": "Wooden Dining Chair",
+      "qty": [null, 98, null, null, null],
+      "days": [34, 34, 32, 32, 30, 27, 25, 23, 20, 18, 18, 16, 14, 12, 10, 8, 7]
+    },
+    {
+      "sku": "JT263 SSWL COU",
+      "name": "JT263 SSWL COU Betsy Counter Stool",
+      "category": "Counter Stool/Chair",
+      "qty": [null, null, 125, 125, 125],
+      "days": [56, 46, 44, 41, 39, 36, 34, 31, 25, 23, 23, 18, 16, 13, 11, 8, 7]
+    },
+    {
+      "sku": "288042",
+      "name": "288042 NS ATHENA RODIN DINING CHAIR",
+      "category": "Metal Dining Chair",
+      "qty": [null, 76, null, null, null],
+      "days": [57, 45, 43, 40, 38, 35, 33, 30, 24, 22, 22, 17, 15, 12, 10, 8, 7]
+    },
+    {
+      "sku": "455597",
+      "name": "455597 NS IMOGENE CHR HAIR ON HIDE",
+      "category": "Accent/Lounge Chair",
+      "qty": [null, 4, null, null, null],
+      "days": [38, 38, 36, 36, 34, 34, 32, 31, 31, 29, 29, 26, 24, 24, 23, 22, 21]
+    },
+    {
+      "sku": "676313",
+      "name": "676313 RODIN BENCH",
+      "category": "Bench",
+      "qty": [52, null, null, null, null],
+      "days": [42, 34, 32, 32, 30, 27, 25, 23, 20, 18, 18, 16, 14, 12, 10, 8, 7]
+    }
+  ]
+}

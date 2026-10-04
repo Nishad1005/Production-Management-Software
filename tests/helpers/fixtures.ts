@@ -80,3 +80,70 @@ export async function runSchedule(
   )
   return rows[0].id
 }
+
+/**
+ * U&M's department codes, in the order `seed_demo.sql` inserts them.
+ *
+ * Every test runs inside its own transaction against one shared database, and
+ * a row inserted under a unique key holds that key until the transaction ends.
+ * Two tests inserting the same department codes therefore queue behind each
+ * other — which is fine — unless they take the codes in *different orders*, in
+ * which case each ends up waiting on a key the other holds and Postgres kills
+ * one of them. The first fixtures built from U&M's planning sheet inserted
+ * Assembly before Stitching, the seed inserts Stitching before Assembly, and
+ * seven unrelated tests timed out behind the resulting deadlocks.
+ *
+ * So anything that loads these departments does it through here: the seed
+ * first, which takes its keys in the order every other test does, and then the
+ * rest in the order the demonstration seed uses.
+ */
+const DEMO_DEPARTMENT_ORDER = [
+  'PLYCUT', 'MACHINE', 'ASSY', 'SAND', 'WOODFIN', 'METALFIN', 'FOAM', 'FIBER',
+  'CUT', 'STITCH', 'STAPLE', 'FIT', 'QC', 'PACK',
+]
+
+type MastersFile = {
+  kram_masters: number
+  tables: { departments?: { code: string }[]; [table: string]: unknown }
+}
+
+/** Applies the seed, then a masters file, taking shared keys in seed order. */
+export async function importMastersOnSeed(
+  client: pg.Client,
+  masters: MastersFile,
+): Promise<void> {
+  await applySeed(client)
+  const rank = (code: string) => {
+    const i = DEMO_DEPARTMENT_ORDER.indexOf(code)
+    return i === -1 ? DEMO_DEPARTMENT_ORDER.length : i
+  }
+  const ordered = {
+    ...masters,
+    tables: {
+      ...masters.tables,
+      departments: [...(masters.tables.departments ?? [])].sort(
+        (a, b) => rank(a.code) - rank(b.code),
+      ),
+    },
+  }
+  await client.query(`select import_masters($1::jsonb)`, [JSON.stringify(ordered)])
+}
+
+/**
+ * A date a number of days from today, as the database will see it.
+ *
+ * For anything read through a view that compares against `current_date` —
+ * alerts, ordering dates, shipment risk. Those tests were first written with
+ * fixed dates that were comfortably in the future in August; by October the
+ * calendar had walked past them and three tests failed without a line of code
+ * having changed. A fixed date in such a test is a timer, not a fixture.
+ *
+ * (Engine tests are different and keep their fixed dates: the engine never
+ * looks at today, and its expectations are exact calendar arithmetic.)
+ */
+export function inDays(days: number): string {
+  const d = new Date()
+  d.setDate(d.getDate() + days)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}

@@ -411,8 +411,12 @@ What the plan will eat, when it is needed, and the last day it can be ordered.
 **Order now, or it will be late** is the panel that matters. Each material is
 counted back from the day the department that uses it starts — leather when
 cutting begins, not when the container sails — less the supplier's lead time.
-Anything already past that date is listed here. Lead times are **calendar days**:
-a supplier does not observe our factory holidays.
+Anything already past that date is listed here — **unless the store has been
+counted and holds enough**, in which case there is nothing to order and it is
+left off. A material nobody has counted stays on the list, with a line saying
+so: not knowing what is on the shelf is a reason to go and look, not a reason
+to stay quiet. Lead times are **calendar days**: a supplier does not observe
+our factory holidays.
 
 **Against the store** is every material the plan needs, beside what is on hand.
 Click **On hand** to type a count; it saves as you press Enter, and counting the

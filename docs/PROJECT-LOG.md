@@ -77,7 +77,16 @@ unmodified in the browser, so the demo runs the real engine with no backend.
 `npm run build` produces a static folder.
 
 **Online.** Supabase project `fiqfbbnmksppbpxmhnbv` — *kram*, Mumbai
-(ap-south-1), Postgres 17.6. All fifty-eight migrations applied, the last on 30 Aug (§9).
+(ap-south-1), Postgres 17.6. All sixty-three migrations applied, the last on 4 Oct (§9).
+
+**What the live project holds, as of 4 Oct: sample data, and it says so.** U&M's
+six-row sample planning sheet, loaded by `scripts/load-um-sample.mjs` — 72
+active articles, **twenty** departments (the fourteen plus six checkpoints),
+eleven `SAMPLE-` dispatches, a plan of 220 tasks. The day-counts on six
+articles are U&M's own; **every rate is a stand-in of 40 a day**, and the other
+sixty-six articles still carry our placeholders. The provisional banner is up
+and worded accordingly. Any figure quoted from the live project in KRAM/06,
+KRAM/07 or KRAM/08 (70 articles, 14 departments, 980 cells) predates this.
 
 > **Migrations are append-only from here.** Editing one now means the file and
 > the live database disagree, silently, until something breaks in a way that
@@ -208,6 +217,40 @@ which joins six tables to return twenty columns, where four were wanted.
 many. (30 Aug)
 
 
+**A policy that calls a function calls it for every row — wrap it in a
+`select`.** `using (auth_has_a_role())` is evaluated per row a scan considers;
+`using ((select public.auth_has_a_role()))` is an InitPlan, evaluated once. It
+grants exactly the same access. Written bare, as all eighty were, it cost about
+half a millisecond a row on Supabase, and that tax sat under **every**
+measurement taken on the live project from August to October — each time
+diagnosed as something particular to the view in hand (the paragraph above and
+the one below are both examples: real improvements, wrong root cause). It is
+the first item in Supabase's own RLS performance guidance.
+`tests/policies-once-per-statement.test.ts` reads `pg_policies` and fails on a
+bare call, so a new table cannot bring it back. (3 Oct)
+
+**To see what a view costs, run it as a signed-in user and read the plan.**
+`becomeUser` in a test, then `explain (analyze)`. As table owner
+`article_handover` took 5 ms; as a planner 592 ms locally and over eight
+seconds live. The plan showed both problems in one screen: the policy filter on
+every scan, and — because a filter the planner cannot see through collapses its
+row estimates — a nested-loop anti-join comparing 7.8 million row pairs. Two
+months of tuning by inference had not found what one `explain` did. (3 Oct)
+
+**`not exists` over a CTE can go quadratic; `except` cannot.** The planner is
+free to run a correlated `not exists` as a nested loop when its estimates are
+bad, and under RLS they are always bad. A set difference is planned as a hashed
+set operation whatever the estimates say. Rewriting to a left-join anti form
+did **not** fix it — same nested loop, 7.9 s. Where the question is "these rows
+minus those rows", write it that way. (3 Oct)
+
+**A migration pushed before it was measured where it would fail is a guess.**
+`20261003090000` was pushed on the strength of a local run, as the table owner,
+where the old and new forms both take 4 ms. It did not fix the timeout, and it
+is in the append-only history for ever. Worse, the push was chained after the
+test run with `;` rather than `&&`, so it went regardless of two failing tests.
+Measure under RLS first; join the push to the tests with `&&`. (3 Oct)
+
 **The tests bypass row-level security, so a policy's cost is invisible to all of
 them.** `article_master` matched a *constructed* component code —
 `c.code = a.code || '::' || d.code` — which is not indexable. Measured locally at
@@ -302,6 +345,11 @@ Keep adding to this. Each one was a real dead end.
 | Gantt bar refuses to drag | The 1px deadline marker sat on top of it. All decorations are now `pointer-events-none`. Took three wrong guesses; `document.elementFromPoint` gave the answer in one. |
 | Dragging selects the row text | Use `select-none` on the row. **Not** `preventDefault` on pointerdown — that also suppresses the `pointermove` stream the drag depends on. |
 | Tests deadlock | Files ran in parallel against one database, contending on the same master rows. `fileParallelism: false`. |
+| Tests deadlock again, seven timeouts in files that were not touched | A new fixture inserted departments in a different **order** from the seed (Assembly before Stitching). Rollback isolation means every test holds its unique keys until it ends, and two transactions taking the same keys in opposite orders deadlock. Fixtures take keys in seed order — `importMastersOnSeed` in `tests/helpers/fixtures.ts` does it. |
+| Seven unrelated tests time out, intermittently | One test's own query had no statistics, took the nested-loop plan and ran for 67 s holding every key the seed inserts; the rest queued behind it. Found with a lock-wait poller on `pg_stat_activity`, which named the blocker in one run after an afternoon of guessing. `analyze` after loading a large fixture, and `set local statement_timeout` so a runaway is cancelled inside the test that started it. |
+| A test that passed for six weeks starts failing with no code change | A fixed date (`'2026-12-01'`) in a test that reads a view using `current_date`. The ordering date slid into the past and the answer changed. Use `inDays(n)`. And read the failure before fixing the date: this one was **right**, and had found a real defect (`order_now` ignored the store). |
+| The rehearsal passed and the live load differed | The local dry run *created* Final QC at 100% yield; the live load *updated* an existing row and kept its placeholder 98%. That 2% moved Fitting from 3.96 days to 4.04 and produced four breaches the rehearsal never showed. A dry run on an empty database rehearses the inserts, not the updates — decide each field explicitly rather than "keep what is there". |
+| Overlapping test runs | A retry loop was backgrounded when it outran the foreground limit, and kept running under the next foreground run. Both reported timeouts that looked like defects. One run at a time, in the foreground; never loop the suite in the background. |
 | Anon can call your functions on Supabase | Postgres grants `EXECUTE` to `PUBLIC` on every new function, *and* Supabase's default privileges grant it to `anon` explicitly. Revoking from `PUBLIC` alone leaves the explicit grant standing. Revoke from both. Tell the two apart by the error: "permission denied for **function**" means blocked at the door, "for **table**" means it ran until it hit RLS. |
 | A browser check breaks when a panel appears | An unanchored locator — `table` first match, `getByRole` by substring — silently retargets when the page gains an element. Anchor grids and controls by `data-testid`, and use `exact: true` on names. Twice now. |
 | A Playwright check passes when the feature is broken | `getByRole(role, { name })` matches the accessible name by **substring** by default, so `name: 'Running'` also matches every `'Not running'`. Pass `exact: true` whenever one label is a substring of another. Cost a full diagnosis of a feature that was working. |
@@ -345,13 +393,21 @@ Keep adding to this. Each one was a real dead end.
    changed**, because whether machining feeds ply cutting is a question about
    U&M's factory and not one to answer from a screen.
 
-   **3 Oct: the sample planning sheet answers it the other way.** In all six
-   rows Machining's day-count is at or above *Ply cutting and assembly* —
-   machining comes first, the edge is consistent with their practice, and it
-   was the placeholder offsets that were backwards. Left open only until PPC
-   confirm in words; do **not** untick the edge. It is also the smallest
-   possible version of the KRAM/02 question already outstanding at item 3, so it
-   is worth asking in the same breath.
+   **4 Oct: the seventy conflicts are gone; the question is not answered.** The
+   sample load swapped our placeholder offsets (Machining D-60, Ply Cutting
+   D-56) so they agree with the edge, and the conflicts went with them. That
+   was a correction to figures we invented, nothing more.
+
+   **A claim made here on 3 Oct was too strong and is withdrawn:** that the
+   sample sheet "answers it" and shows machining feeding ply cutting. What the
+   sheet shows is Machining's day-count at or above a *combined* column, *Ply
+   cutting and assembly*. Machining preceding **assembly** explains that
+   completely; whether **ply cutting itself** waits for machining cannot be
+   read from a merged column. The edge is kept because it was already there
+   and the sheet does not contradict it — and it has a visible cost: one of the
+   eighteen breaches in the sample plan (Ply Cutting on the Betsy chair, where
+   both columns read 34) exists only if the edge is real. Still PPC's to
+   answer, and still the smallest version of the KRAM/02 question at item 3.
 
    Likely provenance, not verified: the linear backfill in
    `20260812120000_route_graph.sql` derives edges from `route_position` at
@@ -412,6 +468,18 @@ Keep adding to this. Each one was a real dead end.
 7. **Predictive features cannot come first** (spec §17). Cycle-time, lead-time and
    rejection models need roughly six months of accumulated actuals that do not
    exist. Worth putting to the client in writing now rather than at Phase 10.
+8. **The GitHub repository is public, and it holds U&M's documents.** Found
+   4 Oct, by asking GitHub for the repository without signing in and getting it.
+   `docs/source/` carries their costing sheet, item master and concept deck,
+   and has since August; anyone with the URL can read them. Nothing in the
+   history suggests this was ever decided — it looks like a default nobody
+   revisited. **The 4 Oct commit, which adds six rows of their planning sheet,
+   is committed locally and deliberately not pushed** until Nishad chooses:
+   make the repository private (Netlify deploys from a private repository
+   exactly as it does from a public one) and then push, or push as it is.
+   Making it private does not un-publish what was already cloned or cached, but
+   it stops it being found. Nothing deployed depends on the push — the commit
+   touches no file under `src/`, and its migrations are already applied.
 
 ---
 
@@ -430,7 +498,7 @@ Since 15 Aug it covers **both** of the prototype's modules: the capacity and
 load arithmetic, and the person-hour conversion that turns a shortfall into
 overtime hours and people.
 
-**318 unit and integration tests** against a real native Postgres, booted per run
+**353 unit and integration tests** against a real native Postgres, booted per run
 from an embedded binary. Covers schema shape, RLS (as the `authenticated` role —
 table owners bypass RLS, so a policy test run as superuser proves nothing), the
 working-day calendar, engine correctness, breaches, pins, overrides, the route
@@ -504,16 +572,25 @@ defect hid behind.
 **This is the largest remaining piece of work in the project.** It is not
 urgent for a demonstration and it is a hard blocker on U&M's real order book.
 
+**Measured again on 4 Oct: 37 seconds for eleven orders and 220 tasks**, after
+every policy was rewritten to be evaluated once per statement (§5). That
+rewrite took the views from about a second to about 400 ms and did almost
+nothing for the engine, which is itself the finding: `resolve_capacity` is
+thousands of *separate small statements*, and each one pays its own InitPlan.
+Once per statement is no saving when the statements are the problem. The
+diagnosis above stands, with the cause now stated correctly — it is the number
+of statements, not the cost of each lookup.
+
 ### 8.2 Ours, and small
 
 1. **The Panipuri import module.** Unbuilt, and the only unbuilt *feature* left.
    Blocked on a sample file (§6 item 2) because writing it against a guessed
    column layout would mean writing it twice.
-2. **`capacity_sheet` at ~1,020 ms.** The slowest view on the live project. It
-   joins on a constructed string — `c.code = a.code || '::' || d.code` — which
-   is the same pattern that made `article_master` unusable and was fixed there
-   on 30 Aug. Left deliberately: it is under the ceiling and the fix is the same
-   rewrite through `article_bom`.
+2. ~~**`capacity_sheet` at ~1,020 ms.**~~ **408 ms on 4 Oct, without being
+   touched.** The second was the per-row policy tax (§5), not the join. The
+   constructed-string join — `c.code = a.code || '::' || d.code` — is still
+   there and still the wrong shape, but it is no longer what makes the view
+   slow and is not worth a migration on its own.
 3. **The loading-versus-empty sweep.** `data ?? []` and `!data ||` render "still
    loading" and "nothing to show" identically. Harmless where the empty state is
    a shrug, dangerous where it is a claim — and **about a dozen of them are
@@ -546,9 +623,13 @@ all.
 
 8. **PPC's figures.** The single blocker. 980 cells, a rate and a D-minus each.
    `DBBS/UM/KRAM/04` and the workbook from `scripts/make-capacity-workbook.mjs`.
+   **3 Oct: a first sample arrived — six rows, as a screenshot, day-counts
+   only.** It is loaded (4 Oct entry). What is owed back is the **workbook
+   itself** and answers to six questions listed in that entry; and **rates**,
+   which the sheet does not contain at all.
 9. **The what-feeds-what table**, `DBBS/UM/KRAM/02` — and inside it the one
-   concrete question now sitting on the Attention screen as 71 critical
-   findings: **does Machining feed Ply Cutting?** (§6 item 0.)
+   concrete question: **does Machining feed Ply Cutting?** (§6 item 0.) No
+   longer shouting from the Attention screen, and not answered either.
 10. **A real Panipuri export sample** (`DBBS/UM/KRAM/05`), with the question that
     decides the workflow: does Panipuri hold a stuffing date, or only a customer
     delivery date?
@@ -987,6 +1068,13 @@ the edge is consistent with how they plan and it was **our invented offsets**
 (Ply Cutting D-60 before Machining D-56) that were backwards. The seventy route
 conflicts go away by loading their numbers, not by unticking the edge.
 
+> **Corrected 4 Oct — the paragraph above over-reads the sheet.** The column is
+> *Ply cutting and assembly*, one figure for two departments. Machining coming
+> before it is explained by assembly alone; it says nothing about whether ply
+> cutting waits for machining. "Consistent with" is true and "settles" is not.
+> Left standing so the correction has something to point at; §6 item 0 carries
+> the accurate version.
+
 **What does not fit the model as built** — four things, none of them loadable
 by the existing workbook path without a decision:
 
@@ -1022,6 +1110,125 @@ the rates), and seven questions for PPC recorded in the session reply — HOD,
 start-by versus finish-by, the template row, the one SKU with ex-factory at 21,
 the green *Contractor* legend, whether QC gates carry capacity, and whether
 rates exist anywhere.
+
+### 2026-10-04 — The sample sheet runs in Kram, and what it took to get it there
+
+The instruction, after the entry above, was to stop waiting for the workbook and
+**run the sample**. Nishad supplied the reading: HOD is the dispatch day and
+day 0; each column is the day, counted back from it, by which that section must
+be made; the QC columns are deadlines; ignore the *Contractor* legend; take the
+rate as **40 a day for everything**. So HOD is Kram's stuffing date, and the
+sheet is a D-minus matrix with no capacity in it.
+
+**How it was translated** — `scripts/data/um-sample-sheet.json` (the figures,
+transcribed by hand from a screenshot), `scripts/lib/um-sample.mjs` (the
+mapping, shared by the test and the loader so there is one translation),
+`scripts/load-um-sample.mjs` (carries it to the hosted project through a single
+`import_masters` call):
+
+- **Merged columns give both departments the same figure.** *Ply cutting and
+  assembly*, *Wood and metal finishing*, *Foam and fibre* are each two Kram
+  departments with one deadline.
+- **QC steps became six checkpoint departments** — Wood QC, Sanding QC, Finish
+  QC, Stitching QC, Upholstery QC, Ex-factory; Final QC already existed. Each
+  has a rate so large the work always fits in a day, loses nothing (100%
+  yield), and hangs **beside** the flow: it depends on the step it inspects and
+  nothing depends on it. In the line, Wood QC at 37 would leave Sanding at 37
+  no days at all.
+- **The graph was replaced by the one the sheet implies.** Two links changed
+  besides the checkpoints: *Ply Cutting → Assembly* went, because the sheet
+  plans the pair as one step; *Fiber → Stitching* became *Fiber → Stapling*,
+  because the sheet puts fibre filling after stitching.
+- **One order per quantity cell**, eleven in all, numbered `SAMPLE-R<row>-D<column>`
+  so any figure on screen traces to a cell. The sheet does not say which
+  dispatches are one customer order, and nothing pretends to know.
+- **Equal figures between production steps were left exactly as given.**
+
+**What came out, on the live project:**
+
+| | |
+|---|---|
+| Tasks | 220 — eleven dispatches through twenty departments |
+| Cannot be made in the days given | **18** |
+| — the Edison stool's four dispatches of 152 | 16: Sanding, Stitching, Stapling, Packing, four each |
+| — the Betsy chair | 2: Ply Cutting and Assembly, same day as Machining |
+| Equal-day findings | 5, every one of them in the sheet itself |
+| Department-days over capacity | 145 of 1,340 |
+
+The eighteen are arithmetic, not defects. 152 units at 40 a day is just under
+four working days, and the sheet gives Sanding, Stapling and Packing two days
+each and Stitching three. The five equal days are Imogene (Machining = Ply
+cutting and assembly at 38; Cutting = Stitching at 31) and the Betsy chair
+(Machining = Ply cutting and assembly at 34). **All of it follows from a rate
+of 40 that nobody at U&M has stated**, which is why the banner is still up: at
+a real rate most of this may vanish, or more may appear.
+
+Two things a person looking at the live site should be told before they see
+them. Every dispatch is in October 2026, so the plan puts most of the work in
+**August and September — in the past — with nothing declared against it**;
+Attention reads accordingly (33 critical). And at 40 a day any two jobs sharing
+a department overload it, so the heatmap is redder than a real one would be.
+
+**What is assumed and not known**, each of which the workbook or PPC can
+overturn: that the figures are finish-by days; that a merged column means both
+departments share one deadline; that fibre filling follows stitching; that
+machining feeds ply cutting (§6 item 0 — an over-claim about this is corrected
+there); that the Imogene row's Ex-factory of 21 is real and not a slip for 7;
+and every digit of the transcription.
+
+**What broke on the way, in the order it broke:**
+
+1. **The live load gave 22 breaches where the rehearsal gave 18.** Final QC
+   already existed on live at a placeholder 98% yield; the dry run created it at
+   100%. Checkpoints are now 100% whether new or not (§5).
+2. **Attention stopped loading** the moment the route went to twenty
+   departments: `attention_handover` cancelled at eight seconds. The cost was
+   `article_handover`, and behind it the thing that has been under every slow
+   view since August — **all eighty access policies called their identity
+   function once per row**. Three migrations: a first rewrite that was pushed
+   unmeasured and did not help (`…090000`), the `except` form that did
+   (`…100000`), and every policy wrapped in a scalar subselect (`…110000`).
+   Every view on the live project now answers in 335–565 ms, the `attention`
+   union included. The engine did not get faster (§8.1).
+3. **The test suite deadlocked**, then failed on a holiday, then timed out
+   intermittently — a fixture taking keys out of seed order, a tolerance where
+   a rule was wanted, and a query with no statistics. All three are in §5.
+4. **Time found a real defect.** A test with a fixed date began failing on
+   3 Oct and was right to: `order_now` was the ordering date alone, so a store
+   holding a million cubic feet of oak raised *Order oak now*. Fixed in
+   `…120000` — **and over-fixed**: requiring a count that fell short also
+   silenced a material nobody had counted, and the Material screen would then
+   have said *every material can still be ordered in time* when it could not.
+   A false alarm traded for a false all-clear. `20261004090000` restores it:
+   the date has passed and the store is **not known** to cover the need. A
+   test now pins each of the three cases, and the new one was run against the
+   old view first to see it fail.
+
+**The lesson that is not in §5 because it is not technical.** The 3 Oct entry
+said the sheet *settles* a question it only bears on, and that sentence went
+into a commit message and a reply before anyone re-read the column heading. A
+merged column was read as two facts. The check is the one this log keeps
+arriving at from other directions: say what the evidence shows, then say
+separately what was concluded from it.
+
+**To ask U&M, with the workbook itself:** start-by or finish-by; what the bold
+template row is; the Imogene Ex-factory 21; whether Machining and *Ply cutting
+and assembly* on the same day is deliberate; whether fibre filling follows
+stitching; and whether rates exist anywhere, in any form.
+
+**To take the sample out again:**
+`node scripts/seed-live-interim.mjs <email> <password> --purge`. That removes
+the eleven `SAMPLE-` orders and **takes the banner down** — and leaves every
+master where it is: the six checkpoint departments, the changed graph, and the
+stand-in rate of 40. So do not purge and walk away. Purge only when real
+figures are about to be imported over them, or the stand-ins are left on
+screen with nothing saying so.
+
+**Left stale, knowingly:** KRAM/06, KRAM/07 and KRAM/08 quote the live project
+as it was on 3 Sept. Regenerate the demonstration script (`npm run demo:script`,
+then `npm run pdf docs/demo-script.html`) before anything is shown from it.
+
+353 tests, 63 migrations, `verify:live` and all 29 hosted checks green.
 
 ## 9. Log
 

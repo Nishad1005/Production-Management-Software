@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest'
 import type pg from 'pg'
 import { withRollback } from './helpers/db'
-import { applySeed, createOrder, runSchedule } from './helpers/fixtures'
+import { applySeed, createOrder, inDays, runSchedule } from './helpers/fixtures'
 
 /**
  * The attention screen must read the current plan, not every plan ever made.
@@ -19,7 +19,9 @@ import { applySeed, createOrder, runSchedule } from './helpers/fixtures'
 /** Four departments, one order, and five plans of it — one of them current. */
 async function fiveRuns(c: pg.Client) {
   await applySeed(c)
-  await createOrder(c, { qty: 400, stuffingDate: '2026-12-01' })
+  // Relative, not fixed: the overload alert only reports days still to come,
+  // and a fixed stuffing date eventually leaves every flagged day behind it.
+  await createOrder(c, { qty: 400, stuffingDate: inDays(150) })
   for (let i = 0; i < 5; i++) await runSchedule(c)
   await c.query('analyze')
 }
