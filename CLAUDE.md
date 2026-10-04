@@ -53,13 +53,17 @@ for the hosted system. Both use the same views and functions.
 - `npm run typecheck` — **not** `tsc --noEmit`. The root tsconfig is
   `"files": []` with project references, so `tsc --noEmit` type-checks *nothing*
   and exits 0. It hid a real error for several sessions.
-- `npm test` — 353 tests against a real native Postgres, booted per run. Run it
+- `npm test` — 358 tests against a real native Postgres, booted per run. Run it
   **once, in the foreground, and never two at a time**: overlapping runs
   produce timeouts that look exactly like defects in the code (log §5).
 - `npm run screenshot` — drives every screen and interaction in headless
   Chromium and fails on any console error.
 - `npm run verify:live [email password]` — access control against the live
   Supabase project, as real requests.
+- `npm run walkthrough -- <email> <password>`, then
+  `npm run pdf docs/sample-walkthrough.html` — the illustrated guide (KRAM/09),
+  pictures and figures taken from the live system in one visit. **Look at the
+  pages before sending it**: `scripts/pdf-pages.swift` renders them to PNG.
 
 **Run `verify:live` after any migration touching privileges, policies or
 functions.** The local suite cannot catch what it catches, twice over now:

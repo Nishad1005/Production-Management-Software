@@ -28,7 +28,7 @@
  * root, which the notes' own CSS honours over any media query.
  */
 import { readFile, writeFile } from 'node:fs/promises'
-import { basename } from 'node:path'
+import { basename, dirname, extname, resolve } from 'node:path'
 import { chromium } from 'playwright'
 
 const [input, output] = process.argv.slice(2)
@@ -38,7 +38,39 @@ if (!input) {
 }
 const out = output ?? input.replace(/\.html$/, '.pdf')
 
-const fragment = await readFile(input, 'utf8')
+let fragment = await readFile(input, 'utf8')
+
+/*
+ * Pictures beside the note are folded into it.
+ *
+ * The page below is handed to the browser as a string, so it has no address
+ * and a relative `src` points nowhere — the image is simply absent, with no
+ * error, and the PDF goes out with a row of empty frames. So every local image
+ * is read here and inlined, which also makes the PDF self-contained. One that
+ * cannot be found stops the build: a guide whose screenshot is missing is
+ * worse than no guide, because the text still says "see 3 above".
+ */
+const TYPES = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.svg': 'image/svg+xml' }
+const sources = [...new Set([...fragment.matchAll(/<img[^>]+src="([^"]+)"/g)].map((m) => m[1]))]
+const absent = []
+let inlined = 0
+for (const src of sources) {
+  if (/^(data:|https?:)/.test(src)) continue
+  const type = TYPES[extname(src).toLowerCase()]
+  const bytes = type ? await readFile(resolve(dirname(input), src)).catch(() => null) : null
+  if (!bytes) {
+    absent.push(src)
+    continue
+  }
+  fragment = fragment.replaceAll(`src="${src}"`, `src="data:${type};base64,${bytes.toString('base64')}"`)
+  inlined += 1
+}
+if (absent.length) {
+  console.error(`Cannot find ${absent.length} image(s) the note refers to:`)
+  for (const a of absent) console.error(`  ${a}`)
+  console.error('Regenerate them first — for the walkthrough, `npm run walkthrough`.')
+  process.exit(1)
+}
 
 /*
  * The Artifact host's skeleton, reproduced: charset, viewport, and a small
@@ -78,7 +110,7 @@ ${fragment}
 
     /* Nothing splits mid-thought. Each of these is a unit somebody reads as a
        unit — a request, a warning, a row of a checklist. */
-    .ask, .note, .tablewrap, .head, .checklist li, tr, .figure {
+    .ask, .note, .tablewrap, .head, .checklist li, tr, .figure, figure {
       break-inside: avoid;
       page-break-inside: avoid;
     }
@@ -126,7 +158,8 @@ await browser.close()
 
 const pages = (pdf.toString('latin1').match(/\/Type\s*\/Page[^s]/g) ?? []).length
 console.log(
-  `${basename(out)} — ${pages || '?'} pages, ${(pdf.length / 1024).toFixed(0)} KB, set in ${loaded}`,
+  `${basename(out)} — ${pages || '?'} pages, ${(pdf.length / 1024).toFixed(0)} KB, set in ${loaded}` +
+    (inlined ? `, ${inlined} pictures` : ''),
 )
 if (problems.length) {
   console.log(`\n${problems.length} console problem(s) while rendering:`)

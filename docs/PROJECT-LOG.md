@@ -349,6 +349,12 @@ Keep adding to this. Each one was a real dead end.
 | Seven unrelated tests time out, intermittently | One test's own query had no statistics, took the nested-loop plan and ran for 67 s holding every key the seed inserts; the rest queued behind it. Found with a lock-wait poller on `pg_stat_activity`, which named the blocker in one run after an afternoon of guessing. `analyze` after loading a large fixture, and `set local statement_timeout` so a runaway is cancelled inside the test that started it. |
 | A test that passed for six weeks starts failing with no code change | A fixed date (`'2026-12-01'`) in a test that reads a view using `current_date`. The ordering date slid into the past and the answer changed. Use `inDays(n)`. And read the failure before fixing the date: this one was **right**, and had found a real defect (`order_now` ignored the store). |
 | The rehearsal passed and the live load differed | The local dry run *created* Final QC at 100% yield; the live load *updated* an existing row and kept its placeholder 98%. That 2% moved Fitting from 3.96 days to 4.04 and produced four breaches the rehearsal never showed. A dry run on an empty database rehearses the inserts, not the updates — decide each field explicitly rather than "keep what is there". |
+| A screenshot of a screen that has not loaded | Waiting for a heading waits for the frame, not the figures. The picture shows dashes and "No run yet" and looks, to anyone who was not there, like a screen with nothing on it. Wait on the data: a count that is a number, a `data-state="ready"`, a row that exists. |
+| Playwright `filter({ has })` finds nothing | The inner locator is matched **relative to each candidate**. `locator('section').filter({ has: locator('section > header > b') })` looks for a section inside a section. Start the inner one from the child: `header > b`. |
+| A PDF with half-empty pages | Not flexbox, though it looked like it. Every table is `break-inside: avoid` and every heading keeps with what follows, so a block that misses the space left by a few millimetres moves whole — and a forced `break-before: page` after it leaves the gap for good. Count what fits; drop forced breaks that are not about meaning; shorten the block above. And a spacing rule like `section > * + *` loses to every `p { margin: 0 }` declared after it. |
+| "14 pages, 2 MB" is not a layout | No `pdftoppm` without Homebrew. `swiftc -O scripts/pdf-pages.swift -o /tmp/pdf-pages`, then `/tmp/pdf-pages file.pdf /tmp/pages` writes a PNG per page via PDFKit. |
+| A password pushed to a public repository by the test that forbids it | `expect(page).not.toMatch(/<the real password>/)`. The value is now in the file. Forbid the **shape** of a secret (an address, a JWT, `key=`), never the value, and keep the value out of every tracked file — tests, fixtures, comments, the log. |
+| A secret scan that printed its finding and committed anyway | `git diff --cached \| grep -c secret ; true) && git commit && git push` — the count scrolled past and the push had already gone. Make the scan the gate: `! git diff --cached \| grep -qiE '…' && git commit …`. And **commit and push in separate commands**, with the diff read in between; an outward-facing step chained behind anything is the mistake from 3 Oct's migration push, made again a day later. |
 | Overlapping test runs | A retry loop was backgrounded when it outran the foreground limit, and kept running under the next foreground run. Both reported timeouts that looked like defects. One run at a time, in the foreground; never loop the suite in the background. |
 | Anon can call your functions on Supabase | Postgres grants `EXECUTE` to `PUBLIC` on every new function, *and* Supabase's default privileges grant it to `anon` explicitly. Revoking from `PUBLIC` alone leaves the explicit grant standing. Revoke from both. Tell the two apart by the error: "permission denied for **function**" means blocked at the door, "for **table**" means it ran until it hit RLS. |
 | A browser check breaks when a panel appears | An unanchored locator — `table` first match, `getByRole` by substring — silently retargets when the page gains an element. Anchor grids and controls by `data-testid`, and use `exact: true` on names. Twice now. |
@@ -481,6 +487,14 @@ Keep adding to this. Each one was a real dead end.
    it stops it being found. Nothing deployed depends on the push — the commit
    touches no file under `src/`, and its migrations are already applied.
 
+   **Decided 4 Oct, by Nishad: it stays public** ("let it be public — I want to
+   showcase this to the team"). Pushed the same day. So this is now a choice
+   and not an oversight, and pushes carry on as before. What it does not change:
+   no password, key or login goes into the repository or into any document in
+   it, and U&M have not themselves been asked whether they mind their costing
+   sheet being readable by anyone. That last one is worth a sentence to them
+   before the repository is shown to anybody outside the two firms.
+
 ---
 
 ## 7. Verification
@@ -498,7 +512,7 @@ Since 15 Aug it covers **both** of the prototype's modules: the capacity and
 load arithmetic, and the person-hour conversion that turns a shortfall into
 overtime hours and people.
 
-**353 unit and integration tests** against a real native Postgres, booted per run
+**358 unit and integration tests** against a real native Postgres, booted per run
 from an embedded binary. Covers schema shape, RLS (as the `authenticated` role —
 table owners bypass RLS, so a policy test run as superuser proves nothing), the
 working-day calendar, engine correctness, breaches, pins, overrides, the route
@@ -599,6 +613,9 @@ of statements, not the cost of each lookup.
    has been started and left unfinished*. The two worst (Attention, Forecast)
    were fixed on 30 Aug. `DepartmentBoard` is the next one worth doing, because
    a HOD reads it daily and it currently says nothing is late before it knows.
+   **And the Command centre (seen 4 Oct):** while its queries are in flight it
+   shows four dashes, *No run yet* and *No day is over capacity. Nothing to
+   triage* — on the landing screen, to a client, on every slow connection.
 4. **Confirm what Supabase's own backups cover** on the project's plan. *Save
    everything to a file* is a copy U&M control, not a replacement for the
    platform's.
@@ -612,8 +629,12 @@ of statements, not the cost of each lookup.
    else.
 6. **Accounts.** Created in the Supabase dashboard, because creating one needs
    the service role key; roles are then assigned in-app on the Users screen.
-7. **Rotate the demonstration password.** `userkram@test.com` holds admin and its
-   password has been typed into a transcript.
+7. **Rotate the demonstration account's password — now urgent.** The account
+   holds admin. Its password had been typed into a transcript; on 4 Oct it was
+   also, briefly, **pushed to this public repository** (4 Oct entry, and §5).
+   The commit was replaced within minutes, but a public push must be assumed
+   read. Until the password is changed in the Supabase dashboard
+   (Authentication → Users), treat the live project as open to anyone.
 
 ### 8.4 Blocked on U&M
 
@@ -1190,8 +1211,10 @@ a department overload it, so the heatmap is redder than a real one would be.
 overturn: that the figures are finish-by days; that a merged column means both
 departments share one deadline; that fibre filling follows stitching; that
 machining feeds ply cutting (§6 item 0 — an over-claim about this is corrected
-there); that the Imogene row's Ex-factory of 21 is real and not a slip for 7;
-and every digit of the transcription.
+there); and every digit of the transcription. *(One was wrong, and was
+answered the same day: Imogene's Ex-factory is 7, not the 21 first transcribed.
+Corrected in the data file and reloaded; the counts did not move, because a
+checkpoint never breaches.)*
 
 **What broke on the way, in the order it broke:**
 
@@ -1229,9 +1252,10 @@ arriving at from other directions: say what the evidence shows, then say
 separately what was concluded from it.
 
 **To ask U&M, with the workbook itself:** start-by or finish-by; what the bold
-template row is; the Imogene Ex-factory 21; whether Machining and *Ply cutting
-and assembly* on the same day is deliberate; whether fibre filling follows
-stitching; and whether rates exist anywhere, in any form.
+template row is; ~~the Imogene Ex-factory 21~~ (answered: 7); whether Machining
+and *Ply cutting and assembly* on the same day is deliberate; whether fibre
+filling follows stitching; and whether rates exist anywhere, in any form. All
+of these are now printed, with room to answer, in KRAM/09 (next entry).
 
 **To take the sample out again:**
 `node scripts/seed-live-interim.mjs <email> <password> --purge`. That removes
@@ -1246,6 +1270,99 @@ as it was on 3 Sept. Regenerate the demonstration script (`npm run demo:script`,
 then `npm run pdf docs/demo-script.html`) before anything is shown from it.
 
 353 tests, 63 migrations, `verify:live` and all 29 hosted checks green.
+
+### 2026-10-04 — The sample as a guide with pictures (KRAM/09)
+
+Asked, the same afternoon: *can this be shown to the team now, how do real
+figures get in at once, and give me a PDF with screenshots so that showing it
+is a no-brainer.*
+
+**The answers given.** Yes, show it now — with each tester on their own login,
+test orders prefixed `SAMPLE-` so the purge takes them, and a *Save everything*
+copy taken first. Real figures go in by the capacity workbook
+(`make-capacity-workbook.mjs` out, `import-capacity-sheet.mjs` back), with two
+caveats recorded at §8.4 item 8: the importer predates the twenty-department
+route and must not be run as it stands, and there is no upload button — the
+bulk load is a terminal command only we can run. **An in-app workbook upload
+on the Capacity sheet is the obvious next small feature**, and the thing that
+makes U&M independent of us for their own masters.
+
+**The document: `docs/sample-walkthrough.html`, DBBS/UM/KRAM/09.** Fourteen
+pages. One page of what is theirs and what is a stand-in; the sheet-to-Kram
+translation as a table; one order worked by hand (152 pieces, 40 a day, two
+days given: does not fit); nine stops through the live system, each a numbered
+screenshot, what the numbers point at, what *their* sample shows there, and
+one question for them; what is safe to try; which screens are waiting on which
+data; nine questions with room to answer on paper; our transcription of their
+sheet to tick or correct; and what happens next.
+
+```
+npm run walkthrough -- <email> <password>     # pictures + the page, ~3 min
+npm run pdf docs/sample-walkthrough.html
+```
+
+**Pictures and figures come out of one visit.** `scripts/make-walkthrough.mjs`
+drives the hosted client, draws the numbered markers into the page itself,
+clips each screenshot, and reads every figure the text quotes off the same
+screen at the same moment; `scripts/lib/walkthrough-page.mjs` is the wording.
+The worked example is computed from the sheet, not typed. So the guide cannot
+say 18 beside a picture that says 21, and regenerating it after real rates
+arrive rewrites the sums. `tests/walkthrough-page.test.ts` builds the page
+without a browser and fails on a missing figure (`undefined`, `NaN`), on a
+picture the capture does not take, and on a password.
+
+**It runs two things on the hosted project that are not reads**, both of them
+what a planner would do in their first five minutes: one acceptance check
+(leaves nothing) and one what-if scenario (leaves a row in the Runs list;
+`--no-scenario` reopens the last one instead of planning another). The result
+is the best page in the document: *a second shift in Sanding takes 18 breaches
+to 14 and clears every Sanding one* — the software answering a question,
+rather than displaying a table.
+
+**The address in the guide was checked, not assumed.** One stop was captured
+from `kraam.netlify.app` itself: it signs in and shows the sample.
+
+**What went wrong on the way** (all in §5):
+
+- The first set of pictures would have been of half-loaded screens.
+  `verify-hosted-ui` photographs a screen when its heading appears; its
+  Command centre image from that morning reads *No run yet* over four empty
+  tiles. Every stop here waits on the data.
+- Which is a real defect seen from a new angle: **the Command centre says "No
+  run yet" and "0 flagged days" while it is still loading.** Added to the
+  loading-versus-empty sweep (§8.2 item 3). On a slow connection it is the
+  first thing a client sees.
+- Eighteen pages with three half empty, a marker cut off the edge, a section
+  carried whole to the next sheet. None of it visible in "18 pages, 2 MB".
+  There is no `pdftoppm` here, so `scripts/pdf-pages.swift` renders pages to
+  PNG with the system's own PDFKit. **Look at the PDF before sending it.**
+
+**Small things a client will notice that are ours.** The Runs list on *What
+if* shows eight rows named `verify:live probe` — every `verify:live` run plans
+the factory once and leaves its row. Harmless, kept by design, and odd to
+explain in a meeting. The banner's headline still reads *These figures are
+placeholders, not U&M's* above a sentence saying the day-counts are theirs.
+
+**And one thing that went badly wrong: the demonstration account's password
+was pushed to the public repository.** `tests/walkthrough-page.test.ts` was
+written to make sure the guide never carries a password — and did it by naming
+the real one in a regular expression. The staged diff was scanned for exactly
+that string before committing; the scan found it and printed `1`; and the
+commit and the push were chained in the same command behind a scan that could
+not stop them. It was public for a few minutes, in the same repository as the
+account's address and the site's.
+
+What was done: the literal removed (the test now forbids the *shape* of a
+login, any address at all), the commit replaced and force-pushed, and the
+account's address taken out of the tracked log. **What that does not do** is
+un-publish it — a public push has to be assumed read, and the replaced commit
+stays reachable by its hash for a time. **The only real fix is changing the
+password**, which is Nishad's to do in the Supabase dashboard and is now the
+first item in §8.3. Three rules out of it, all in §5: a check for a secret
+never contains the secret; a scan that cannot stop the commit is a comment;
+and a commit and a push are two commands.
+
+358 tests. No migration, nothing under `src/` changed.
 
 ## 9. Log
 

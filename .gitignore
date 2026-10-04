@@ -54,3 +54,7 @@ screenshots/
 # Rendered from the notes in docs/ by scripts/make-pdf.mjs, so the HTML is the
 # source and the PDF is a build. Regenerate rather than edit.
 docs/*.pdf
+
+# The walkthrough's numbered screenshots, taken by scripts/make-walkthrough.mjs.
+# Renderings of the hosted project at one moment; the script is the source.
+docs/walkthrough/

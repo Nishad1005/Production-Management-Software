@@ -22,7 +22,8 @@
     "verify:live": "node scripts/verify-live.mjs",
     "verify:hosted-ui": "node scripts/verify-hosted-ui.mjs",
     "demo:script": "node scripts/make-demo-script.mjs",
-    "pdf": "node scripts/make-pdf.mjs"
+    "pdf": "node scripts/make-pdf.mjs",
+    "walkthrough": "node scripts/make-walkthrough.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
