@@ -1364,6 +1364,33 @@ and a commit and a push are two commands.
 
 358 tests. No migration, nothing under `src/` changed.
 
+### 2026-10-05 — Every screen, clean, for a designer
+
+Nishad is taking the interface to a designer and asked for the screenshots of
+every page in a folder. `scripts/capture-screens.mjs` (`npm run screens --
+<out-dir> [email password]`) photographs all twenty screens, the sign-in page
+and the floor display at 1440 wide and 2x, with nothing drawn on them, and
+writes a short note beside them listing the files and the current colours,
+type and radii — read out of `src/index.css`, not typed.
+
+**Two sets, on purpose.** The demonstration build has data on every screen and
+is where the design can actually be seen; the hosted project is what the
+client looks at, twenty departments wide and with several screens still
+empty. A designer needs the empty states as much as the full ones.
+
+**Masters on the hosted project is 101,260 pixels tall.** Seventy-two articles
+by twenty departments, twice over, printed in full. That is a finding about
+the screen before it is a problem for a camera: nobody scrolls a hundred
+screens. Worth saying to the designer first — the long matrices want a
+filter, paging or a collapsed state. The script photographs a screen that
+tall down to 6,000 pixels and then each panel on its own.
+
+It waits for the data, as the walkthrough does, and starts its own server on
+its own port for each build so it can never photograph the wrong one.
+
+The demonstration account still signed in with the old password on 5 Oct:
+**it has not been rotated** (§8.3 item 7).
+
 ## 9. Log
 
 Newest first. One entry per working session — what changed, and anything a

@@ -23,7 +23,8 @@
     "verify:hosted-ui": "node scripts/verify-hosted-ui.mjs",
     "demo:script": "node scripts/make-demo-script.mjs",
     "pdf": "node scripts/make-pdf.mjs",
-    "walkthrough": "node scripts/make-walkthrough.mjs"
+    "walkthrough": "node scripts/make-walkthrough.mjs",
+    "screens": "node scripts/capture-screens.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

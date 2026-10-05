@@ -64,6 +64,9 @@ for the hosted system. Both use the same views and functions.
   `npm run pdf docs/sample-walkthrough.html` — the illustrated guide (KRAM/09),
   pictures and figures taken from the live system in one visit. **Look at the
   pages before sending it**: `scripts/pdf-pages.swift` renders them to PNG.
+- `npm run screens -- <out-dir> [email password]` — every screen, clean and
+  fully loaded, for a designer: the demonstration build, and the live project
+  when a login is given.
 
 **Run `verify:live` after any migration touching privileges, policies or
 functions.** The local suite cannot catch what it catches, twice over now:
