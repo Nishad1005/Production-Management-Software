@@ -1391,6 +1391,21 @@ its own port for each build so it can never photograph the wrong one.
 The demonstration account still signed in with the old password on 5 Oct:
 **it has not been rotated** (§8.3 item 7).
 
+### 2026-10-06 — KRAM/10: what their numbers did, and how everything works
+
+Asked for fast: one PDF with what happened when the sample went in and what it
+did to the system, a detailed way to present it, and how each function works.
+`scripts/make-sample-report.mjs` (`npm run report`, then `npm run pdf
+docs/sample-report.html`) writes it from the walkthrough's `facts.json`, so it
+quotes the same plan as KRAM/09 and takes no browser. Thirteen pages: a
+before-and-after table (14 → 20 departments, 168 → 220 jobs, 70 → 5 same-day
+findings, 71 → 33 critical, 68 s → 37 s); the load step by step, including the
+two defects it surfaced and the five things it left to do; what the eighteen,
+the five and the 145 mean; a forty-five-minute running order with lines to say
+and things to click, and ten questions with answers; the engine in eight
+steps; and every screen as purpose, mechanism, needs, and what the sample
+shows there. Nothing under `src/` changed.
+
 ## 9. Log
 
 Newest first. One entry per working session — what changed, and anything a
