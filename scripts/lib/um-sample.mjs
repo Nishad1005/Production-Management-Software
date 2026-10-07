@@ -158,25 +158,44 @@ export function buildMasters(sheet, existing = {}) {
   }
 }
 
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec']
+
+/** The product as the sheet names it, without the SKU it already prints beside it. */
+export const productName = (row) => row.name.replace(row.sku, '').trim()
+
 /**
- * One order per quantity on the sheet.
+ * One order per quantity on the sheet, named the way its owners read it.
  *
  * The sheet does not say which dispatches belong to one customer order, so
  * nothing here pretends to know: each cell is its own order with a single
- * shipment line, numbered by the row and column it came from so any figure on
- * screen can be traced straight back to a cell.
+ * shipment line. The first load named them by row and column (SAMPLE-R1-D3),
+ * which traced to the sheet and meant nothing to anyone looking at a screen.
+ * They are now the product and the HOD date — "Edison Counter Stool - Sapphir
+ * · 17 Oct (2)" — with a count only where one product ships twice on one day,
+ * as the Edison stool and the Betsy stool do. The prefix stays, because it is
+ * what the purge removes by.
  */
 export function buildOrders(sheet, prefix = 'SAMPLE-') {
   const orders = []
-  sheet.rows.forEach((row, r) => {
+  sheet.rows.forEach((row) => {
+    const onDay = new Map()
+    sheet.dispatches.forEach((d, c) => {
+      if (row.qty[c]) onDay.set(d, (onDay.get(d) ?? 0) + 1)
+    })
+    const seen = new Map()
     row.qty.forEach((qty, c) => {
       if (!qty) return
+      const d = sheet.dispatches[c]
+      const nth = (seen.get(d) ?? 0) + 1
+      seen.set(d, nth)
+      const date = `${Number(d.slice(8))} ${MONTHS[Number(d.slice(5, 7)) - 1]}`
+      const twice = onDay.get(d) > 1 ? ` (${nth})` : ''
       orders.push({
-        erp_order_no: `${prefix}R${r + 1}-D${c + 1}`,
+        erp_order_no: `${prefix}${productName(row)} · ${date}${twice}`,
         sku: row.sku,
         qty,
-        stuffing_date: sheet.dispatches[c],
-        container_ref: `Dispatch column ${c + 1}`,
+        stuffing_date: d,
+        container_ref: `Sheet column ${c + 1}`,
       })
     })
   })

@@ -324,7 +324,7 @@ if (wants('schedule')) {
   // Each order is one block: a heading line, then a row per department.
   const groups = page.locator('div.space-y-5 > div')
   const heading = groups.first().locator('span.font-semibold').first()
-  facts.scheduleOrder = (await heading.innerText()).trim().split(/\s+/)[0]
+  facts.scheduleOrder = (await heading.innerText()).trim().replace(/\s+line \d+$/, '')
   const label = page.locator('text=/^Runway$/i').first()
   // The department labels down the left are plain text; the fifth row of the
   // first order is Sanding, the first production step the sample cannot fit.
@@ -378,7 +378,7 @@ if (wants('heatmap')) {
 // --- 5 · order book ----------------------------------------------------------
 if (wants('order-book')) {
   console.log('order book')
-  await go('#/orders', 'text=/^SAMPLE-R1-D1$/')
+  await go('#/orders', 'tbody tr:has-text("SAMPLE-")')
   facts.orders = await page.locator('tbody tr').count()
   facts.orderBreaches = await page.evaluate(() =>
     [...document.querySelectorAll('tbody tr')].map((r) => ({

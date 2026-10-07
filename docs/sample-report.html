@@ -231,7 +231,7 @@
     </div>
     <dl class="stamp">
       <dt>Ref</dt><dd>DBBS/UM/KRAM/10 &middot; Rev A &middot; internal, and for U&amp;M's planning team</dd>
-      <dt>Figures</dt><dd>From the live plan of 4 Oct 2026, the same plan KRAM/09 pictures</dd>
+      <dt>Figures</dt><dd>From the live plan of 7 Oct 2026, the same plan KRAM/09 pictures</dd>
       <dt>Companions</dt><dd>KRAM/09 (the illustrated walkthrough) &middot; KRAM/08 (every term)</dd>
     </dl>
   </header>
@@ -253,7 +253,7 @@
         <tr><td class="term">Jobs that do not fit</td><td class="num">18</td><td class="num">18</td><td class="def">The same count by coincidence; a different eighteen, for a different reason (section 3).</td></tr>
         <tr><td class="term">Days over capacity</td><td class="num">&mdash;</td><td class="num">145 of 1,340</td><td class="def">At 40 a day for everything, any two jobs on one day overload the department.</td></tr>
         <tr><td class="term">Same-day findings</td><td class="num">70</td><td class="num">5</td><td class="def">Seventy were one mistake in our placeholders. Five are on their sheet itself.</td></tr>
-        <tr><td class="term">Needs an answer today</td><td class="num">71</td><td class="num">33</td><td class="def">The seventy false findings went; the eighteen misfits and five same-day cases came.</td></tr>
+        <tr><td class="term">Needs an answer today</td><td class="num">71</td><td class="num">29</td><td class="def">The seventy false findings went; the eighteen misfits and five same-day cases came.</td></tr>
         <tr><td class="term">Time to plan</td><td class="num">about 68 s</td><td class="num">about 37 s</td><td class="def">A database fix made on the way (section 2), not the data.</td></tr>
         <tr><td class="term">Slowest screen</td><td class="num">about 1 s</td><td class="num">about 0.5 s</td><td class="def">The same fix.</td></tr>
       </tbody>
@@ -267,7 +267,7 @@
       <li><span><strong>We read the sheet the way Nishad told us to.</strong> The HOD date is the dispatch day and day 0. Each number under a step is the day, counted back from dispatch, by which that step must be finished. QC columns are deadlines. The green contractor legend is ignored. Every speed is 40 pieces a day, because the sheet has no speeds.</span></li>
       <li><span><strong>We typed the figures into a file and ran them on a test copy first.</strong> Six products, seventeen columns, eleven quantities. The test copy planned them exactly as the live system then did, with one difference we found and fixed: an existing QC department was still carrying a 2% loss, which turned four jobs red that should not have been.</span></li>
       <li><span><strong>Six departments were added and the links between departments redrawn.</strong> Wood QC, Sanding QC, Finish QC, Stitching QC, Upholstery QC and Ex-factory, each hung beside the line so that it checks a step without holding the next one up. Two links changed: Ply Cutting no longer feeds Assembly directly, because the sheet plans them as one step; Fibre now feeds Stapling instead of Stitching, because the sheet puts fibre filling after stitching.</span></li>
-      <li><span><strong>Our twelve practice orders were removed and their eleven dispatches entered.</strong> Named SAMPLE-R1-D1 and so on, after the row and column of the sheet they came from. The yellow banner was reworded to say so.</span></li>
+      <li><span><strong>Our twelve practice orders were removed and their eleven dispatches entered.</strong> Each named by its product and HOD date &mdash; &ldquo;Edison Counter Stool &middot; 17 Oct (2)&rdquo; &mdash; so a line on screen reads like a line on their sheet. The yellow banner was reworded to say so.</span></li>
       <li><span><strong>The schedule ran.</strong> 220 jobs, 18 that do not fit, 145 overloaded department-days, 5 same-day findings.</span></li>
       <li><span><strong>The Attention screen stopped loading.</strong> With twenty departments one of its checks took longer than the eight seconds the database allows a screen. The cause turned out to be old and general: every access rule in the database was being evaluated once per row instead of once per query. All eighty rules were rewritten. Every screen is now about twice as fast as before the sample, and Attention loads in half a second.</span></li>
       <li><span><strong>A second, unrelated defect surfaced.</strong> A test that had passed for six weeks began failing because a date in it had slid into the past. It was right to fail: the Material screen was raising "order now" for a material the store already held enough of. Fixed, and the fix itself over-corrected and was fixed again the next day.</span></li>
@@ -371,7 +371,7 @@
       <div class="do"><span class="do__t">Do</span><p>Load heatmap. Click the darkest red square in the Sanding row.</p></div>
       <div class="say"><span class="say__t">Say</span><p>One row per department, one square per day. Red means more than a day's work. This day has three dispatches each wanting the whole of Sanding. With one speed for everything, any two jobs on one day do this. Do you really run several products through one department on the same day, and who decides which goes first?</p></div>
       <div class="do"><span class="do__t">Do</span><p>Order book.</p></div>
-      <div class="say"><span class="say__t">Say</span><p>One line per quantity on your sheet, named by its row and column. The last column is how many steps of that order do not fit. Six of eleven fit completely. We made each quantity its own order; tell us if several belong to one customer order.</p></div>
+      <div class="say"><span class="say__t">Say</span><p>One line per quantity on your sheet, named by product and HOD date. The last column is how many steps of that order do not fit. Six of eleven fit completely. We made each quantity its own order; tell us if several belong to one customer order.</p></div>
       <div class="do"><span class="do__t">Do</span><p>Capacity sheet. Press D-minus, then type 125043138 in the search box.</p></div>
       <div class="say"><span class="say__t">Say</span><p>This row is your sheet's row. Now press Units per day. Every box says 40. These are the boxes we need from you: how many pieces a day, working on nothing else, and how many people. The QC boxes say 10,000; that is just how we tell it QC takes no time.</p></div>
       <div class="do"><span class="do__t">Do</span><p>Factory map.</p></div>
@@ -498,7 +498,7 @@
       <dt>What it is for</dt><dd>Everything needing an answer, most urgent first.</dd>
       <dt>How it works</dt><dd>Nine checks run as one list: breaches, overloaded days, material past its ordering date, material short, same-day contradictions, machines down, products that cannot be planned, handover mismatches, departments with no shift. Critical when the deadline is within a fortnight. There is deliberately no way to dismiss one.</dd>
       
-      <dt>With the sample</dt><dd>33 critical, 4 warnings.</dd>
+      <dt>With the sample</dt><dd>29 critical, 4 warnings.</dd>
     </dl>
   </article>
       
@@ -528,7 +528,7 @@
       <dt>What it is for</dt><dd>Every promise, and where new orders are entered.</dd>
       <dt>How it works</dt><dd>An order has shipment lines, each with its own stuffing date; the line is the unit planned. Adding an order re-plans immediately. The breaches column counts the steps of that order that do not fit.</dd>
       <dt>What it needs</dt><dd>Orders typed in until the Panipuri import exists.</dd>
-      <dt>With the sample</dt><dd>11 SAMPLE- orders, one per quantity cell.</dd>
+      <dt>With the sample</dt><dd>11 orders, one per quantity cell, named by product and HOD date.</dd>
     </dl>
   </article>
     </div>
@@ -667,7 +667,7 @@
   </section>
 
   <footer>
-    <span>DBBS/UM/KRAM/10 &middot; Rev A &middot; figures from the live plan of 4 Oct 2026</span>
+    <span>DBBS/UM/KRAM/10 &middot; Rev A &middot; figures from the live plan of 7 Oct 2026</span>
     <span>Sample data. Not a production plan.</span>
   </footer>
 </div>

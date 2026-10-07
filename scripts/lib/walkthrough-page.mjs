@@ -163,14 +163,23 @@ export function walkthroughPage({ facts: f, sheet, site }) {
   const shortName = (r) => r.name.replace(r.sku, '').trim().replace(/\s+-\s*.*$/, '')
   const product = shortName(row)
   const deptName = new Map(sheet.departments.map((d) => [d.code, d.name]))
-  /** SAMPLE-R2-D3 → the sheet row and dispatch column it was made from. */
+  /**
+   * "SAMPLE-Edison Counter Stool - Sapphir · 17 Oct (2)" → the sheet row and
+   * dispatch it was made from. The order is named by product and HOD date,
+   * so the name is read back the same way.
+   */
   const cellOf = (order) => {
-    const m = /R(\d+)-D(\d+)$/.exec(order ?? '')
-    return m ? { row: sheet.rows[Number(m[1]) - 1], date: sheet.dispatches[Number(m[2]) - 1] } : null
+    const m = /^SAMPLE-(.+) · (\d+) ([A-Za-z]+)(?: \((\d+)\))?$/.exec(order ?? '')
+    if (!m) return null
+    const row = sheet.rows.find((r) => r.name.replace(r.sku, '').trim() === m[1])
+    const date = sheet.dispatches.find(
+      (d) => Number(d.slice(8)) === Number(m[2]) && MONTHS[Number(d.slice(5, 7)) - 1] === m[3],
+    )
+    return row && date ? { row, date } : null
   }
 
   // --- the first card on Attention, said in plain words ----------------------
-  const card = /^(\w+) cannot make (\S+) as planned/.exec(f.firstFinding ?? '')
+  const card = /^(\w+) cannot make (.+) as planned/.exec(f.firstFinding ?? '')
   const cardFrom = card ? cellOf(card[2]) : null
   const cardMeans = cardFrom
     ? `&ldquo;${esc(f.firstFinding)}&rdquo; means ${esc(deptName.get(card[1]) ?? card[1])} cannot finish the ${esc(shortName(cardFrom.row))} dispatch of ${day(cardFrom.date)} in the days it has.`
@@ -266,7 +275,7 @@ export function walkthroughPage({ facts: f, sheet, site }) {
       title: 'Every promise, in one list',
       shots: [{ file: 'order-book', alt: 'The Order book screen' }],
       items: [
-        `<strong>One line per quantity on your sheet.</strong> R1 is the first row of the sheet, D1 the first dispatch column &mdash; so any line here can be traced back to a cell.`,
+        `<strong>One line per quantity on your sheet</strong>, named by the product and its HOD date. Where a product ships twice on one day, as the Edison stool does on 17 October, the two are numbered.`,
         `<strong>First stuffing</strong> is your HOD date: the day everything is counted back from.`,
         `<strong>Breaches</strong> is how many steps of that order do not fit. A dash means every step fits.`,
         `<strong>Add an order</strong> plans the new order straight away, which takes about 40 seconds. If you try it, start the order number with <span class="k">SAMPLE-</span> so it is cleared out with the rest.`,
@@ -609,7 +618,7 @@ export function walkthroughPage({ facts: f, sheet, site }) {
         <tr><td class="term">The number under each step</td><td class="def">That step must be <strong>finished</strong> that many days before dispatch. The software calls this <em>D-minus</em>: Sanding at D-30 finishes 30 days before.</td></tr>
         <tr><td class="term">QC columns and Ex-factory</td><td class="def">A <strong>date to pass</strong>, not a job that takes a crew&rsquo;s time. They sit beside the line and never hold anything up.</td></tr>
         <tr><td class="term">A column naming two steps</td><td class="def">Two departments with <strong>the same deadline</strong> &mdash; ply cutting and assembly, wood and metal finishing, foam and fibre.</td></tr>
-        <tr><td class="term">Each quantity under a date</td><td class="def"><strong>One order</strong>, named by where it sits on the sheet: SAMPLE-R1-D3 is row 1, dispatch column 3.</td></tr>
+        <tr><td class="term">Each quantity under a date</td><td class="def"><strong>One order</strong>, named by the product and the HOD date: &ldquo;Edison Counter Stool &middot; 17 Oct (2)&rdquo; is the second Edison container of that day.</td></tr>
         <tr><td class="term">Speeds</td><td class="def"><strong>Not on the sheet.</strong> Set to ${rate} a day everywhere, as a stand-in.</td></tr>
       </tbody>
     </table></div>

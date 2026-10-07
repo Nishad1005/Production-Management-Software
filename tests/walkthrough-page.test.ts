@@ -33,8 +33,8 @@ const facts = {
   critical: 33,
   warnings: 4,
   sameDay: 5,
-  firstFinding: 'PACK cannot make SAMPLE-R1-D1 as planned',
-  scheduleOrder: 'SAMPLE-R1-D1',
+  firstFinding: 'PACK cannot make SAMPLE-Edison Counter Stool - Sapphir · 3 Oct as planned',
+  scheduleOrder: 'SAMPLE-Edison Counter Stool - Sapphir · 3 Oct',
   heatDepartments: 20,
   heatDays: 67,
   heatOver: 145,
@@ -42,9 +42,9 @@ const facts = {
   heatCellJobs: 3,
   orders: 11,
   orderBreaches: [
-    { order: 'SAMPLE-R1-D1', breaches: 4 },
-    { order: 'SAMPLE-R2-D2', breaches: 2 },
-    { order: 'SAMPLE-R3-D3', breaches: 0 },
+    { order: 'SAMPLE-Edison Counter Stool - Sapphir · 3 Oct', breaches: 4 },
+    { order: 'SAMPLE-Betsy Chair - Powder Blue · 10 Oct', breaches: 2 },
+    { order: 'SAMPLE-Betsy Counter Stool · 17 Oct (1)', breaches: 0 },
   ],
   accept: {
     sku: '125043138',

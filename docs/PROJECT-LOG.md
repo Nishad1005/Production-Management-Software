@@ -1406,6 +1406,31 @@ and things to click, and ten questions with answers; the engine in eight
 steps; and every screen as purpose, mechanism, needs, and what the sample
 shows there. Nothing under `src/` changed.
 
+### 2026-10-07 — The names were ours, and the orders are now theirs
+
+The team found the sample confusing because the names on screen were not the
+names on their sheet: short codes (PLYCUT, WOODFIN, EXFACT) for their column
+headings, two departments for each merged column, "stuffing date" for HOD,
+"D-minus" for their day-counts, and orders called SAMPLE-R1-D3. Four remedies
+were put to Nishad, in order of effort: rename departments to their headings
+(a reload); show names rather than codes on the screens that read them (a day,
+one migration for the Attention wording); name the orders by product and HOD
+date (ten minutes); and use their words for the terms (a day, plus every
+document). Plus one question that is theirs: whether the merged columns are
+one crew or two.
+
+**Done the same hour, the ten-minute one.** `buildOrders` now names each order
+*product · HOD date*, numbered only where one product ships twice on one day
+("Edison Counter Stool - Sapphir · 17 Oct (2)"). The prefix stays for the
+purge. Purged and reloaded on the hosted project: the same 220 / 18 / 145 / 5.
+Both documents regenerated. One thing to know when reloading: a what-if
+scenario kept from before a purge compares against orders that no longer
+exist and reads as zero breaches; the walkthrough's `--no-scenario` shortcut
+must not be used across a reload.
+
+The rest wait on Nishad's go-ahead and on U&M's answer about the merged
+columns, so the departments are renamed once.
+
 ## 9. Log
 
 Newest first. One entry per working session — what changed, and anything a
