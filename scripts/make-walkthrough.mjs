@@ -305,10 +305,13 @@ if (wants('heatmap')) {
   facts.heatCell = worst
   const cell = page.locator(`[data-testid="heatmap-grid"] button[data-department="SAND"][data-date="${worst.date}"]`)
   await cell.click()
-  await titleHas('SAND —').first().waitFor({ timeout: 30_000 })
+  // The detail panel is titled with the department's name since 9 Oct; the
+  // cell's hover text carries that name before its first separator.
+  const deptName = worst.title.split(' · ')[0]
+  await titleHas(`${deptName} —`).first().waitFor({ timeout: 30_000 })
   await settle(500)
-  const detail = titleHas('SAND —')
-  facts.heatCellJobs = await panelWith('SAND —').locator('tbody tr').count()
+  const detail = titleHas(`${deptName} —`)
+  facts.heatCellJobs = await panelWith(`${deptName} —`).locator('tbody tr').count()
 
   await mark([
     { n: 1, at: grid.locator('text=SAND').first(), where: 'left', dx: 2 },
@@ -317,7 +320,7 @@ if (wants('heatmap')) {
     { n: 4, at: detail, where: 'left', dx: 0 },
   ])
   const top = await topOf(title('Load heatmap'), 30)
-  await shot('heatmap', top, await bottomOf(panelWith('SAND —'), 16))
+  await shot('heatmap', top, await bottomOf(panelWith(`${deptName} —`), 16))
 }
 
 // --- 5 · order book ----------------------------------------------------------

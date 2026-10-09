@@ -1709,9 +1709,17 @@ the label existed. Seven weeks green, never once able to fail — the pattern
 order and tests for the word as rendered. Two capture scripts and the browser
 check learned that orders open collapsed.
 
-GUIDE updated for both screens. 49 browser checks green. The walkthrough and
-click-guide pictures of the Schedule are now stale and are regenerated after
-the push.
+GUIDE updated for both screens. 49 browser checks green.
+
+**Pushed on Nishad's go at 16:43 IST**, live on the site thirty seconds later.
+One invisible follow-up push the same hour: heatmap cells now carry
+`data-department`, `data-date` and `data-utilisation`, because both capture
+scripts had parsed the cell's hover text and the hover text changed wording —
+§5's rule about prose, broken by the person who wrote it. The schedule
+captures also learned that two actions on one hash share the screen's state,
+so a blind click on a toggle closes the line the next action needs; they now
+open a line only when it is closed. KRAM/09 and KRAM/11 regenerated against
+the new screens (the walkthrough from `kraam.netlify.app` itself) and pushed.
 
 ## 9. Log
 

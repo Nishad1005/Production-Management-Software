@@ -271,7 +271,7 @@ await action('heatmap-cell', 'Load heatmap', 'Open one day of one department', a
   const before = await shot('heatmap-cell', 'before', {
     around: [title('Load heatmap'), grid],
     marks: [{ n: 1, at: cell, where: 'above', ring: true }],
-    notes: [`The fullest square on the map: ${worst.title.split(' · ')[0]}, ${worst.date}, asked for ${Math.round(worst.value * 100)}% of a day`],
+    notes: [`The fullest square on the map: ${worst.title.split(' · ')[0]}, ${worst.title.split(' · ')[1]}, asked for ${Math.round(worst.value * 100)}% of a day`],
   })
   await cell.click()
   // The detail panel is titled with the department's name, which the cell
