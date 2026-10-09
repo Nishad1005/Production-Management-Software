@@ -255,24 +255,31 @@ await action('attention-link', 'Attention', 'Follow a finding to the screen that
 await action('heatmap-cell', 'Load heatmap', 'Open one day of one department', async () => {
   await go('#/heatmap', '[data-testid="heatmap-grid"]')
   const grid = page.locator('[data-testid="heatmap-grid"]')
+  // By attribute, not by parsing the hover text: the text is for people.
   const worst = await page.evaluate(() => {
     let best = null
-    for (const b of document.querySelectorAll('[data-testid="heatmap-grid"] button[title]')) {
-      const m = b.title.match(/^(\w+) · (\d{4}-\d{2}-\d{2}) · ([\d.]+) of capacity/)
-      if (m && (!best || Number(m[3]) > best.value)) best = { code: m[1], date: m[2], value: Number(m[3]), title: b.title }
+    for (const b of document.querySelectorAll('[data-testid="heatmap-grid"] button[data-utilisation]')) {
+      const value = Number(b.getAttribute('data-utilisation'))
+      if (!best || value > best.value) {
+        best = { code: b.getAttribute('data-department'), date: b.getAttribute('data-date'), value, title: b.title }
+      }
     }
     return best
   })
-  const cell = grid.locator(`button[title="${worst.title}"]`)
+  if (!worst) throw new Error('no cell with a figure on the heatmap')
+  const cell = grid.locator(`button[data-department="${worst.code}"][data-date="${worst.date}"]`)
   const before = await shot('heatmap-cell', 'before', {
     around: [title('Load heatmap'), grid],
     marks: [{ n: 1, at: cell, where: 'above', ring: true }],
-    notes: [`The fullest square on the map: ${worst.code}, ${worst.date}, asked for ${Math.round(worst.value * 100)}% of a day`],
+    notes: [`The fullest square on the map: ${worst.title.split(' · ')[0]}, ${worst.date}, asked for ${Math.round(worst.value * 100)}% of a day`],
   })
   await cell.click()
-  await page.locator('section > header > b', { hasText: `${worst.code} —` }).first().waitFor({ timeout: 30_000 })
+  // The detail panel is titled with the department's name, which the cell
+  // also carries in its hover text before the first separator.
+  const deptName = worst.title.split(' · ')[0]
+  await page.locator('section > header > b', { hasText: `${deptName} —` }).first().waitFor({ timeout: 30_000 })
   await settle(400)
-  const detail = panelWith(`${worst.code} —`)
+  const detail = panelWith(`${deptName} —`)
   const rows = await detail.locator('tbody tr').count()
   const after = await shot('heatmap-cell', 'after', {
     around: [detail],
@@ -282,7 +289,7 @@ await action('heatmap-cell', 'Load heatmap', 'Open one day of one department', a
   return {
     steps: ['Find the square: one row per department, one square per working day, red when the day is over-full.', 'Click it.'],
     images: [before, after],
-    changed: `A panel opened below the map listing the ${rows} jobs on ${worst.code} that day, with the share of the day each one takes. Together they come to ${Math.round(worst.value * 100)}%.`,
+    changed: `A panel opened below the map listing the ${rows} jobs on ${deptName} that day, with the share of the day each one takes. Together they come to ${Math.round(worst.value * 100)}%.`,
     why: 'The heatmap shows which days hurt; this shows what is on them. A department can be making several things at once, and the shares add even when the pieces do not.',
   }
 })
@@ -290,6 +297,20 @@ await action('heatmap-cell', 'Load heatmap', 'Open one day of one department', a
 // =============================================================================
 // SCHEDULE
 // =============================================================================
+/*
+ * Opens a shipment line's bars, unless they are already open. Moving between
+ * two actions on the same screen is not a navigation — the URL does not
+ * change — so the previous action's open lines stay open, and a blind click
+ * on the toggle would close the one this action needs.
+ */
+async function openOrder(order) {
+  if ((await order.getAttribute('data-expanded')) !== 'yes') {
+    await order.locator('button').first().click()
+  }
+  await page.waitForSelector('[data-testid="gantt-bar"]', { timeout: 30_000 })
+  await settle(400)
+}
+
 await action('schedule-filter', 'Schedule', 'Show one department, and only the problems', async () => {
   await go('#/gantt', '[data-testid="gantt-order"]')
   const orders = page.locator('[data-testid="gantt-order"]')
@@ -336,9 +357,7 @@ await action('schedule-filter', 'Schedule', 'Show one department, and only the p
 await action('schedule-pin', 'Schedule', 'Drag a bar to pin a job to a date', async () => {
   await go('#/gantt', '[data-testid="gantt-order"]')
   const row = page.locator('[data-testid="gantt-order"]').first()
-  await row.locator('button').first().click()
-  await page.waitForSelector('[data-testid="gantt-bar"]', { timeout: 30_000 })
-  await settle(400)
+  await openOrder(row)
   const bar = page.locator('[data-testid="gantt-bar"]').first()
   const before = await shot('schedule-pin', 'before', {
     around: [row],
@@ -402,9 +421,7 @@ await action('schedule-release', 'Schedule', 'Release a pin', async () => {
   await settle()
   const stillThere = await page.locator('section > header > b:text-is("Manual pins")').count()
   const first = page.locator('[data-testid="gantt-order"]').first()
-  await first.locator('button').first().click()
-  await page.waitForSelector('[data-testid="gantt-bar"]', { timeout: 30_000 })
-  await settle(400)
+  await openOrder(first)
   const after = await shot('schedule-release', 'after', {
     around: [title('Schedule'), first],
     maxHeight: 700,

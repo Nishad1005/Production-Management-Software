@@ -348,6 +348,12 @@ function Row({
                   ? `${name} · ${formatDateLong(day)} · ${Math.round(cell.utilisation * 100)}% of capacity`
                   : `${formatDateLong(day)} — closed`
               }
+              // For the checks and the capture scripts, which read these
+              // rather than parse the title: the title is for people, and
+              // the day it changed wording, every script parsing it broke.
+              data-department={dept.code}
+              data-date={day}
+              data-utilisation={cell ? cell.utilisation.toFixed(2) : undefined}
               className={`m-[1px] flex-1 rounded-[2px] ${className} ${
                 isSelected ? 'outline-ink outline-2 outline-offset-1' : ''
               } ${cell ? 'cursor-pointer' : 'cursor-default'}`}

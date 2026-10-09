@@ -270,7 +270,12 @@ await step('bring a shift on', async () => {
 await step('drag to reschedule', async () => {
   await go('#/gantt', 'text=Manual pins')
   // Orders open collapsed since 9 Oct: a summary strip each, bars inside.
-  await page.locator('[data-testid="gantt-order"] button').first().click()
+  // Only click the toggle if the line is closed — a same-hash visit keeps
+  // the previous state, and the toggle would close an open line.
+  const firstOrder = page.locator('[data-testid="gantt-order"]').first()
+  if ((await firstOrder.getAttribute('data-expanded')) !== 'yes') {
+    await firstOrder.locator('button').first().click()
+  }
   await page.waitForSelector('[data-testid="gantt-bar"]', { timeout: 30_000 })
   const bar = page.locator('[data-testid="gantt-bar"]').first()
   const box = await bar.boundingBox()

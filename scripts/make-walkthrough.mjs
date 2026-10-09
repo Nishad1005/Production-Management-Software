@@ -256,9 +256,12 @@ if (wants('attention')) {
 if (wants('schedule')) {
   console.log('schedule')
   await go('#/gantt', '[data-testid="gantt-order"]')
-  // Orders open collapsed: one strip each. Open the first for its bars.
+  // Orders open collapsed: one strip each. Open the first for its bars —
+  // unless it is already open, since the toggle would then close it.
   const groups = page.locator('[data-testid="gantt-order"]')
-  await groups.first().locator('button').first().click()
+  if ((await groups.first().getAttribute('data-expanded')) !== 'yes') {
+    await groups.first().locator('button').first().click()
+  }
   await page.waitForSelector('[data-testid="gantt-bar"]', { timeout: 30_000 })
   await settle(400)
   const bars = page.locator('[data-testid="gantt-bar"]')
@@ -288,16 +291,19 @@ if (wants('heatmap')) {
   facts.heatOver = Number(await grid.getAttribute('data-over'))
 
   // The fullest day Sanding has: the cell that makes the point of the screen.
+  // Read from the cell's data attributes, not its hover text — the text is
+  // for people and changed wording on 9 Oct, which broke this capture.
   const worst = await page.evaluate(() => {
     let best = null
-    for (const b of document.querySelectorAll('[data-testid="heatmap-grid"] button[title]')) {
-      const m = b.title.match(/^SAND · (\d{4}-\d{2}-\d{2}) · ([\d.]+) of capacity/)
-      if (m && (!best || Number(m[2]) > best.value)) best = { date: m[1], value: Number(m[2]), title: b.title }
+    for (const b of document.querySelectorAll('[data-testid="heatmap-grid"] button[data-department="SAND"][data-utilisation]')) {
+      const value = Number(b.getAttribute('data-utilisation'))
+      if (!best || value > best.value) best = { date: b.getAttribute('data-date'), value, title: b.title }
     }
     return best
   })
+  if (!worst) throw new Error('no Sanding cell with a figure on the heatmap')
   facts.heatCell = worst
-  const cell = page.locator(`[data-testid="heatmap-grid"] button[title="${worst.title}"]`)
+  const cell = page.locator(`[data-testid="heatmap-grid"] button[data-department="SAND"][data-date="${worst.date}"]`)
   await cell.click()
   await titleHas('SAND —').first().waitFor({ timeout: 30_000 })
   await settle(500)
