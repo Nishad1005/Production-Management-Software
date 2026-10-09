@@ -10,6 +10,24 @@ dead end in §5 so nobody pays for it twice. If a screen or a control changes, t
 guide changes with it. A stale document is worse than none, because it is
 believed.
 
+## How changes are agreed
+
+Decided 9 Oct 2026 with Nishad, after a week in which small changes kept
+surfacing new problems and one decision (the department names) was made
+without asking. **Before any change, three lines, then wait for a go:**
+
+1. what changes;
+2. what it touches on the live site (`kraam.netlify.app`, the Supabase project);
+3. what Nishad will see.
+
+Nothing touches the hosted project without a go. Scripts, documents and the
+demonstration build may be prepared ahead, but are presented, not applied.
+Pushing committed work is the standing expectation and needs no go; a
+password or key in a commit is never acceptable, go or no go. **The proposal
+given to U&M is the plan of record** (log §8, "What was promised", once it
+arrives); where it and the log disagree, the proposal wins and the log is
+corrected.
+
 ## The short version
 
 Production planning for U&M Designs, against specification `DBBS/UM/KRAM/01`

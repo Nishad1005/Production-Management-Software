@@ -179,6 +179,15 @@ made a decision the engine cannot see the reasons for. The reason is mandatory �
 a pin without one is indistinguishable from a mistake six weeks later. Releasing
 sets `is_active = false`; it never deletes.
 
+**Three lines, then go.** Decided 9 Oct with Nishad. Before any change: what
+changes, what it touches on the live site, what he will see — and nothing on
+the hosted project until he says go. Scripts, documents and the demonstration
+build may be prepared ahead but are presented, not applied. The reason is a
+week in which each small change surfaced something new and one decision (the
+department names) was made without asking; a plan fixes that kind, and the
+proposal given to U&M is the plan of record from the day it arrives (§6 item
+9). The rule is also in `CLAUDE.md` and memory, so it outlives any session.
+
 **A blank D-minus blocks scheduling.** `article_dept_dminus.is_complete` is false
 until a value is entered, and adding a department auto-seeds blank rows by
 trigger. A silent zero would produce an impossible schedule that looks entirely
@@ -494,6 +503,14 @@ Keep adding to this. Each one was a real dead end.
    it, and U&M have not themselves been asked whether they mind their costing
    sheet being readable by anyone. That last one is worth a sentence to them
    before the repository is shown to anybody outside the two firms.
+9. **The proposal given to U&M is owed, and becomes the plan of record.**
+   Agreed 9 Oct. Until it arrives, §8 is a list of ours and not a plan of
+   theirs. When it arrives: read whole first; commercial terms stay out of
+   this public repository (kept at a local path, recorded here); the promised
+   deliverables go into §8 as "What was promised", one row each with built /
+   partly / not built and what it waits on; every item here and in §8 is
+   mapped onto it or retired; and any term the proposal uses that the
+   software names differently is decided against the proposal.
 
 ---
 
@@ -1492,6 +1509,28 @@ Users) are the next pass. And the Production screen's "Entered" tag renders
 twice, once per layout, which is why one locator needs `visible=true`.
 
 363 tests. Nothing under `src/` changed.
+
+### 2026-10-09 — One plan, and three lines before any change
+
+Nishad: *every time there is a new problem arising when we do a minor change,
+do I need to send you the actual plan so that we are on the same page?* The
+week's problems, sorted honestly: one real defect their data exposed
+(Attention at twenty departments — the software doing its job); two mistakes
+of mine (the material-alert over-fix, the password in a test file); one
+decision made without asking (department codes and split departments against
+their sheet); and several the capture scripts caught before anyone saw them.
+A plan fixes the third kind. Checks fix the second, and were added at the
+time. The first is what the system is for.
+
+**Agreed.** The proposal given to U&M becomes the plan of record (§6 item 9),
+and from now on **three lines, then go** (§4): before any change, what
+changes, what it touches on the live site, and what Nishad will see; nothing
+on the hosted project without a go. Written into `CLAUDE.md`, §4 and memory
+so the rule outlives this session. Nothing else changed. The queue — renaming
+departments to the sheet's headings, names instead of codes on screens,
+their terms, the six click-guide actions not yet photographed, the workbook
+importer and an upload button, the demonstration account's password — waits
+for its three lines, each in turn.
 
 ## 9. Log
 
