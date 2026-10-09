@@ -23,10 +23,9 @@ without asking. **Before any change, three lines, then wait for a go:**
 Nothing touches the hosted project without a go. Scripts, documents and the
 demonstration build may be prepared ahead, but are presented, not applied.
 Pushing committed work is the standing expectation and needs no go; a
-password or key in a commit is never acceptable, go or no go. **The proposal
-given to U&M is the plan of record** (log §8, "What was promised", once it
-arrives); where it and the log disagree, the proposal wins and the log is
-corrected.
+password or key in a commit is never acceptable, go or no go. **The plan of record is log §8.0, "What was promised"**, built
+from the concept deck in `docs/source/concept-deck.pptx` (the proposal given
+to U&M); where it and the rest of the log disagree, §8.0 wins.
 
 ## The short version
 
