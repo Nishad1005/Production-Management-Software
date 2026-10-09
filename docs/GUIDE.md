@@ -166,6 +166,11 @@ work consumes.
 | Outline | Idle — capacity available, nothing planned |
 | Dashed | Closed — Sunday or a declared holiday |
 
+**Reading the dates.** The strip above the grid names the months. The number
+above a column is the date: every Monday is marked, and so is the first of
+each month. A thin line runs down the grid at every Monday, and **today is in
+blue**. Hover any cell for its full date and figure.
+
 **Click any cell** to see exactly which orders and components are on that day and
 what share of the day each takes.
 
@@ -173,19 +178,26 @@ Idle days matter as much as flagged ones. Backward scheduling places work as lat
 as it can, so empty days often sit immediately before a breach — and a floor with
 no idle days has no absorption left for the next rush order.
 
-The horizon is usually wider than the screen; scroll sideways.
+When the horizon is short the columns widen to fill the panel; when it is
+long, scroll sideways.
 
 ---
 
 ### Schedule
 
-Every task as a bar, from its start date to the day it must be finished. The
-vertical marker is that department's own deadline. Tasks are grouped by shipment
-line, in route order.
+**One strip per shipment line.** Each shows the order's whole span as a grey
+bar, the container day as a black marker, and a red mark wherever a department
+cannot make its part in time, with a count beside the order number. The dates
+run along a ruler at the top — months above, every Monday below, today as a
+blue line — and the ruler stays in view as you scroll.
+
+**Click a line to open it.** Each department is then a bar, from its start
+date to the day it must be finished, with that department's own deadline as a
+thin black marker. **Expand all** and **Collapse all** do every line at once.
 
 - **Blue** — pinned by a planner
-- **Green** — scheduled and feasible
-- **Red** — breached, with the reason on the right
+- **Green** — fits in its days
+- **Red** — cannot be made in time, with the reason at the end of the row
 
 **Drag a bar to reschedule it.** You will be asked why, and the reason is
 required: a pin without one is indistinguishable from a mistake six weeks later.

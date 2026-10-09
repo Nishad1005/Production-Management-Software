@@ -7,18 +7,14 @@ import {
 } from '@/data/planning'
 import { Empty, Panel, Table, Td, Th } from '@/components/ui'
 import { formatDateLong, formatNumber } from '@/components/format'
-
-const MS_PER_DAY = 86_400_000
-
-function eachDay(from: string, to: string): string[] {
-  const start = Date.parse(`${from}T00:00:00Z`)
-  const end = Date.parse(`${to}T00:00:00Z`)
-  const out: string[] = []
-  for (let t = start; t <= end; t += MS_PER_DAY) {
-    out.push(new Date(t).toISOString().slice(0, 10))
-  }
-  return out
-}
+import {
+  eachDay,
+  isFirstOfMonth,
+  isMonday,
+  monthBands,
+  todayIso,
+} from '@/components/timeline'
+import { useDepartmentNames } from '@/components/names'
 
 /*
  * Five steps of green rather than a continuous fade.
@@ -49,9 +45,23 @@ function cellStyle(cell: HeatmapCell | undefined) {
   }
 }
 
+/*
+ * The week and today, drawn as inset shadows rather than borders.
+ *
+ * A border changes a cell's width, and the header above would then drift out
+ * of line with the cells below it. An inset shadow draws inside the box and
+ * moves nothing, so the Monday line in the header and the Monday line in the
+ * row are the same line.
+ */
+const WEEK_LINE = 'shadow-[inset_1px_0_0_var(--color-rule)]'
+const TODAY_LINE = 'shadow-[inset_2px_0_0_var(--color-blue)]'
+const columnLine = (day: string, today: string) =>
+  day === today ? TODAY_LINE : isMonday(day) ? WEEK_LINE : ''
+
 export function Heatmap() {
   const run = useCurrentRun()
   const heatmap = useHeatmap(run.data?.id)
+  const names = useDepartmentNames()
   const [selected, setSelected] = useState<{
     departmentId: string
     departmentCode: string
@@ -88,20 +98,8 @@ export function Heatmap() {
       rows.map((r) => [`${r.department_id}|${r.load_date}`, r]),
     )
 
-    // Month boundaries, for the strip above the grid.
-    const months: { label: string; span: number }[] = []
-    for (const day of days) {
-      const label = new Date(`${day}T00:00:00Z`).toLocaleDateString('en-GB', {
-        month: 'short',
-        year: '2-digit',
-        timeZone: 'UTC',
-      })
-      const last = months[months.length - 1]
-      if (last?.label === label) last.span += 1
-      else months.push({ label, span: 1 })
-    }
-
-    return { days, departments, byKey, months }
+    const today = todayIso()
+    return { days, departments, byKey, months: monthBands(days), today }
   }, [heatmap.data])
 
   const totals = useMemo(() => {
@@ -112,6 +110,8 @@ export function Heatmap() {
       idle: rows.filter((r) => r.status === 'idle').length,
     }
   }, [heatmap.data])
+
+  const nameOf = (code: string) => names.get(code) ?? code
 
   return (
     <div className="space-y-6">
@@ -135,12 +135,13 @@ export function Heatmap() {
           <Empty>No schedule run yet. Run one from the command centre.</Empty>
         ) : (
           <>
-            {/* Declared dense, not accidentally so. Every cell here is 14px
-                wide because the point of a heatmap is the shape of a month at
-                once; thumb-sized cells would show a week. The browser check
-                reads this attribute and skips what is inside it, so the
-                exception is visible in the source rather than hidden in a
-                selector. */}
+            {/* Declared dense, not accidentally so. Every cell here is at
+                least 14px wide because the point of a heatmap is the shape of
+                a month at once; thumb-sized cells would show a week. The
+                browser check reads this attribute and skips what is inside
+                it, so the exception is visible in the source rather than
+                hidden in a selector. The columns grow to fill the panel when
+                the horizon is short, and the grid scrolls when it is long. */}
             <div
               data-dense-grid="a heatmap is an overview; 44px cells would show a week"
               data-testid="heatmap-grid"
@@ -153,41 +154,76 @@ export function Heatmap() {
               data-over={totals.over}
               className="border-rule overflow-x-auto border"
             >
-              <div className="min-w-max">
-                <div
-                  className="grid"
-                  style={{
-                    gridTemplateColumns: `140px repeat(${model.days.length}, 14px)`,
-                  }}
-                >
-                  <div className="bg-sheet border-rule-soft sticky left-0 z-10 border-r border-b" />
-                  {model.months.map((m, i) => (
-                    <div
-                      key={`${m.label}-${i}`}
-                      style={{ gridColumn: `span ${m.span}` }}
-                      className="label border-rule-soft border-r border-b py-1 pl-1.5 text-caption"
-                    >
-                      {m.span > 3 ? m.label : ''}
-                    </div>
-                  ))}
+              <div
+                className="grid"
+                style={{
+                  gridTemplateColumns: `160px repeat(${model.days.length}, minmax(14px, 1fr))`,
+                }}
+              >
+                {/* Months. */}
+                <div className="bg-sheet border-rule-soft sticky left-0 z-10 border-r border-b" />
+                {model.months.map((m) => (
+                  <div
+                    key={`${m.label}-${m.start}`}
+                    style={{ gridColumn: `span ${m.span}` }}
+                    className="label border-rule border-b border-l py-1 pl-1.5 whitespace-nowrap"
+                  >
+                    {m.span >= 4 ? m.label : ''}
+                  </div>
+                ))}
 
-                  {model.departments.map((dept) => (
-                    <Row
-                      key={dept.id}
-                      dept={dept}
-                      days={model.days}
-                      byKey={model.byKey}
-                      selected={selected}
-                      onSelect={setSelected}
-                    />
-                  ))}
+                {/* Days: the date on each Monday and on the first of the
+                    month, today in blue. The rest stay blank so the eye can
+                    count weeks rather than read sixty-seven numbers. */}
+                <div className="label bg-sheet border-rule-soft sticky left-0 z-10 border-r border-b px-2 py-1">
+                  Department
                 </div>
+                {model.days.map((day, i) => {
+                  // The first of the month is labelled unless a Monday label
+                  // sits in the column beside it, where "31 1" reads as one
+                  // number.
+                  const besideMonday =
+                    (i > 0 && isMonday(model.days[i - 1])) ||
+                    (i + 1 < model.days.length && isMonday(model.days[i + 1]))
+                  const show =
+                    day === model.today ||
+                    isMonday(day) ||
+                    (isFirstOfMonth(day) && !besideMonday)
+                  return (
+                    <div
+                      key={day}
+                      title={formatDateLong(day)}
+                      className={`border-rule-soft border-b text-center font-mono text-[10px] leading-5 ${
+                        day === model.today
+                          ? 'text-blue font-semibold'
+                          : 'text-faint'
+                      } ${columnLine(day, model.today)}`}
+                    >
+                      {show ? Number(day.slice(8)) : ''}
+                    </div>
+                  )
+                })}
+
+                {model.departments.map((dept) => (
+                  <Row
+                    key={dept.id}
+                    dept={dept}
+                    name={nameOf(dept.code)}
+                    days={model.days}
+                    today={model.today}
+                    byKey={model.byKey}
+                    selected={selected}
+                    onSelect={setSelected}
+                  />
+                ))}
               </div>
             </div>
 
             <p className="text-faint mt-2 text-caption">
-              {model.days.length} days across the horizon — scroll sideways for
-              the rest. Tap or hover any cell for its figure.
+              {model.days.length} days across the horizon
+              {model.days.length > 60 ? ' — scroll sideways for the rest' : ''}.
+              The number above a column is the date; every Monday is marked, and
+              today is in blue. Tap or hover any cell for its figure.
             </p>
 
             <div className="text-mid mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-caption">
@@ -215,7 +251,7 @@ export function Heatmap() {
 
       {selected ? (
         <Panel
-          title={`${selected.departmentCode} — ${formatDateLong(selected.date)}`}
+          title={`${nameOf(selected.departmentCode)} — ${formatDateLong(selected.date)}`}
           meta="What is on this day"
         >
           <Table>
@@ -263,13 +299,17 @@ export function Heatmap() {
 
 function Row({
   dept,
+  name,
   days,
+  today,
   byKey,
   selected,
   onSelect,
 }: {
   dept: { id: string; code: string; position: number }
+  name: string
   days: string[]
+  today: string
   byKey: Map<string, HeatmapCell>
   selected: { departmentId: string; date: string } | null
   onSelect: (s: {
@@ -280,8 +320,11 @@ function Row({
 }) {
   return (
     <>
-      <div className="bg-sheet border-rule-soft sticky left-0 z-10 border-r border-b px-2 py-1.5">
-        <div className="text-caption font-semibold">{dept.code}</div>
+      <div
+        className="bg-sheet border-rule-soft sticky left-0 z-10 border-r border-b px-2 py-1.5"
+        title={dept.code}
+      >
+        <div className="truncate text-caption font-semibold">{name}</div>
       </div>
       {days.map((day) => {
         const cell = byKey.get(`${dept.id}|${day}`)
@@ -289,27 +332,28 @@ function Row({
         const isSelected =
           selected?.departmentId === dept.id && selected?.date === day
         return (
-          <button
-            key={day}
-            type="button"
-            disabled={!cell}
-            onClick={() =>
-              onSelect({
-                departmentId: dept.id,
-                departmentCode: dept.code,
-                date: day,
-              })
-            }
-            title={
-              cell
-                ? `${dept.code} · ${day} · ${cell.utilisation.toFixed(2)} of capacity`
-                : `${day} — closed`
-            }
-            className={`m-[1px] h-[18px] rounded-[2px] ${className} ${
-              isSelected ? 'outline-ink outline-2 outline-offset-1' : ''
-            } ${cell ? 'cursor-pointer' : 'cursor-default'}`}
-            style={style}
-          />
+          <div key={day} className={`flex h-[20px] ${columnLine(day, today)}`}>
+            <button
+              type="button"
+              disabled={!cell}
+              onClick={() =>
+                onSelect({
+                  departmentId: dept.id,
+                  departmentCode: dept.code,
+                  date: day,
+                })
+              }
+              title={
+                cell
+                  ? `${name} · ${formatDateLong(day)} · ${Math.round(cell.utilisation * 100)}% of capacity`
+                  : `${formatDateLong(day)} — closed`
+              }
+              className={`m-[1px] flex-1 rounded-[2px] ${className} ${
+                isSelected ? 'outline-ink outline-2 outline-offset-1' : ''
+              } ${cell ? 'cursor-pointer' : 'cursor-default'}`}
+              style={style}
+            />
+          </div>
         )
       })}
     </>

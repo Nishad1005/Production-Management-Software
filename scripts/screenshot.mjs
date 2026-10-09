@@ -269,6 +269,9 @@ await step('bring a shift on', async () => {
 
 await step('drag to reschedule', async () => {
   await go('#/gantt', 'text=Manual pins')
+  // Orders open collapsed since 9 Oct: a summary strip each, bars inside.
+  await page.locator('[data-testid="gantt-order"] button').first().click()
+  await page.waitForSelector('[data-testid="gantt-bar"]', { timeout: 30_000 })
   const bar = page.locator('[data-testid="gantt-bar"]').first()
   const box = await bar.boundingBox()
   if (!box) throw new Error('no schedule bar to drag')
@@ -460,10 +463,18 @@ await step('parallel feeders', async () => {
   )
 
   // And so does the runway breach it was predicting.
+  //
+  // Read from the summary strips' attribute, not from the page text. The text
+  // version of this check looked for lowercase "runway" and the screen has
+  // always rendered "Runway" — so it passed for seven weeks without once being
+  // able to fail. Each order now carries its breach count as data.
   await go('#/gantt', 'text=Schedule')
+  await page.waitForSelector('[data-testid="gantt-order"]', { timeout: 60_000 })
   await page.waitForTimeout(1500)
+  await page.click('[data-testid="gantt-expand-all"]')
+  await page.waitForSelector('[data-testid="gantt-bar"]', { timeout: 30_000 })
   const runway = await page.evaluate(() =>
-    document.body.textContent?.includes('runway'),
+    /\bRunway\b/.test(document.body.textContent ?? ''),
   )
   if (runway) throw new Error('runway breach survived the parallel declaration')
 

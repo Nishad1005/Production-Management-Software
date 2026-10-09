@@ -291,50 +291,60 @@ await action('heatmap-cell', 'Load heatmap', 'Open one day of one department', a
 // SCHEDULE
 // =============================================================================
 await action('schedule-filter', 'Schedule', 'Show one department, and only the problems', async () => {
-  await go('#/gantt', '[data-testid="gantt-bar"]')
-  const all = await page.locator('[data-testid="gantt-bar"]').count()
+  await go('#/gantt', '[data-testid="gantt-order"]')
+  const orders = page.locator('[data-testid="gantt-order"]')
+  const all = await orders.count()
   const dept = page.locator('select').first()
   const breachesOnly = page.locator('label:has-text("Breaches only")')
   const before = await shot('schedule-filter', 'before', {
-    around: [title('Schedule'), page.locator('div.space-y-5 > div').first()],
+    around: [title('Schedule'), orders.nth(3)],
     maxHeight: 900,
     marks: [
       { n: 1, at: dept, where: 'above', dy: 2 },
       { n: 2, at: breachesOnly, where: 'right' },
+      { n: 3, at: orders.first(), where: 'inside', dx: -40, dy: 4 },
     ],
-    notes: ['Department: show one department’s bars only', 'Breaches only: hide everything that fits'],
+    notes: ['Department: show one department\u2019s work only', 'Breaches only: hide everything that fits', 'One strip per shipment line: its span, the container day, red where a step cannot be made in time'],
   })
   await dept.selectOption('STITCH')
   await settle(500)
-  const stitch = await page.locator('[data-testid="gantt-bar"]').count()
+  const stitch = await orders.count()
   await breachesOnly.locator('input').check()
   await settle(500)
-  const red = await page.locator('[data-testid="gantt-bar"]').count()
+  const red = await orders.count()
+  await page.click('[data-testid="gantt-expand-all"]')
+  await page.waitForSelector('[data-testid="gantt-bar"]', { timeout: 30_000 })
+  await settle(400)
+  const redBars = await page.locator('[data-testid="gantt-bar"]').count()
   const after = await shot('schedule-filter', 'after', {
     around: [title('Schedule'), page.locator('main')],
     maxHeight: 900,
     marks: [{ n: 1, at: page.locator('[data-testid="gantt-bar"]').first(), where: 'left', ring: true }],
-    notes: ['What is left: only stitching, and only the bars that cannot be done in time'],
+    notes: ['What is left, opened: only stitching, and only the bars that cannot be done in time'],
   })
+  await page.click('[data-testid="gantt-collapse-all"]')
   await breachesOnly.locator('input').uncheck()
   await dept.selectOption('')
   return {
-    steps: ['Pick a department from the first list.', 'Tick "Breaches only".'],
+    steps: ['Pick a department from the first list.', 'Tick "Breaches only".', 'Press Expand all to see the bars.'],
     images: [before, after],
-    changed: `${all} bars became ${stitch} for Stitching alone, then ${red} once only the breaches were shown.`,
+    changed: `${all} shipment lines became ${stitch} with stitching work, then ${red} with a stitching breach: ${redBars} red ${redBars === 1 ? 'bar' : 'bars'} once opened.`,
     why: 'With hundreds of live orders the full schedule is unreadable. A department head wants their own rows; a planner wants the red ones.',
   }
 })
 
 await action('schedule-pin', 'Schedule', 'Drag a bar to pin a job to a date', async () => {
-  await go('#/gantt', '[data-testid="gantt-bar"]')
+  await go('#/gantt', '[data-testid="gantt-order"]')
+  const row = page.locator('[data-testid="gantt-order"]').first()
+  await row.locator('button').first().click()
+  await page.waitForSelector('[data-testid="gantt-bar"]', { timeout: 30_000 })
+  await settle(400)
   const bar = page.locator('[data-testid="gantt-bar"]').first()
-  const row = page.locator('div.space-y-5 > div').first()
   const before = await shot('schedule-pin', 'before', {
     around: [row],
     maxHeight: 700,
     marks: [{ n: 1, at: bar, where: 'left', ring: true }],
-    notes: ['The bar to drag: one department’s work on one order'],
+    notes: ['The bar to drag: one department\u2019s work on one order'],
   })
   const b = await bar.boundingBox()
   const track = await bar.evaluateHandle((el) => el.parentElement)
@@ -368,7 +378,7 @@ await action('schedule-pin', 'Schedule', 'Drag a bar to pin a job to a date', as
     notes: ['The pin, listed with its reason and dates', 'Release: let the next run place the job itself again'],
   })
   return {
-    steps: ['Press on a bar and drag it left or right. The days move as you drag.', 'Let go. A dialog asks why.', 'Type the reason and press Pin it.'],
+    steps: ['Open a shipment line, then press on a bar and drag it left or right. The days move as you drag.', 'Let go. A dialog asks why.', 'Type the reason and press Pin it.'],
     images: [before, during, after],
     changed: `The job was fixed to the date it was dropped on, the plan re-ran around it, and a "Manual pins" panel now lists it with the reason "${reason}". Every later run will honour the pin until it is released.`,
     why: 'The engine does not know about a customer visit or a machine arriving on Tuesday. A pin is how a planner overrules it, and the reason is what stops that becoming a mystery in six weeks.',
@@ -391,8 +401,12 @@ await action('schedule-release', 'Schedule', 'Release a pin', async () => {
   }, countBefore)
   await settle()
   const stillThere = await page.locator('section > header > b:text-is("Manual pins")').count()
+  const first = page.locator('[data-testid="gantt-order"]').first()
+  await first.locator('button').first().click()
+  await page.waitForSelector('[data-testid="gantt-bar"]', { timeout: 30_000 })
+  await settle(400)
   const after = await shot('schedule-release', 'after', {
-    around: [title('Schedule'), page.locator('div.space-y-5 > div').first()],
+    around: [title('Schedule'), first],
     maxHeight: 700,
     marks: [{ n: 1, at: page.locator('[data-testid="gantt-bar"]').first(), where: 'left', ring: true }],
     notes: ['The bar, back where the engine puts it'],

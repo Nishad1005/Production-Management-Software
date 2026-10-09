@@ -1665,6 +1665,54 @@ Asked in the same breath: the dates on the Load heatmap and the Schedule are
 not readable, and the interface generally does not read as a finished product.
 Reviewed separately (next entry, once agreed).
 
+### 2026-10-09 — Batch 1 of the readability work: dates, names, and a schedule that folds
+
+The review (reply of 9 Oct) found the two screens Nishad named were the worst
+of a general problem: pages that did not say where they were in time, and
+spoke in codes. Four batches were proposed; this is the first, done on his go
+and built against the demonstration build first, as the three-lines rule has
+it. **Nothing under `src/` was pushed until he said so** — the pictures went
+to `~/Desktop/Kram batch 1 preview` for him to look at first.
+
+**Load heatmap.** A date ruler: month bands, the date on every Monday and on
+the first of the month, a thin line down the grid at each Monday, today in
+blue with a line down its column. Department names instead of codes. Columns
+grow to fill the panel when the horizon is short (`minmax(14px, 1fr)`) and the
+grid scrolls when it is long. Hover text says "Sanding · 3 Sept 2026 · 300% of
+capacity" instead of a code, an ISO date and 3.00.
+
+**Schedule.** The same ruler, sticky at the top so it stays in view while
+scrolling. **One strip per shipment line**, collapsed by default: the order's
+whole span, the container day as a black marker, red wherever a department
+cannot make its part in time, and a count beside the order number. Open a line
+for the bars, with department names; *Expand all* and *Collapse all*. A legend
+under the filters. The track now includes every stuffing date, which could
+fall off the right edge before. Eleven sample orders are eleven rows instead
+of 12,000 pixels.
+
+**Attention.** Cards are the database's sentences — one rule has to say the
+same thing in the browser and on Supabase — so `humanise()` in
+`src/components/names.ts` swaps the department code for its name, the ISO
+date for a written one, and the reason code for words, on the way to the
+screen. "PACK cannot make … · runway · ships 2026-10-03" reads "Final Packing
+cannot make … · not enough working days · ships 3 Oct 2026". Codes are
+matched whole and longest first, so CUT leaves PLYCUT alone.
+
+`src/components/timeline.ts` holds the shared date arithmetic, so a date
+learned on one screen reads the same on the other.
+
+**A check that could not fail, found on the way.** The browser check's
+"parallel feeders" step proved a runway breach had gone by testing the page
+text for lowercase `runway`. The screen has rendered `Runway` since the day
+the label existed. Seven weeks green, never once able to fail — the pattern
+§5 keeps recording, in the one place meant to catch it. It now expands every
+order and tests for the word as rendered. Two capture scripts and the browser
+check learned that orders open collapsed.
+
+GUIDE updated for both screens. 49 browser checks green. The walkthrough and
+click-guide pictures of the Schedule are now stale and are regenerated after
+the push.
+
 ## 9. Log
 
 Newest first. One entry per working session — what changed, and anything a

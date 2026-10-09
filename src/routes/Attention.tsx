@@ -1,6 +1,7 @@
 import { Link } from 'react-router'
 import { useAttention, type Finding } from '@/data/attention'
 import { Empty, Panel, Tag } from '@/components/ui'
+import { humanise, useDepartmentNames } from '@/components/names'
 
 /**
  * Everything the software has noticed, in one place.
@@ -17,6 +18,7 @@ import { Empty, Panel, Tag } from '@/components/ui'
  */
 export function Attention() {
   const attention = useAttention()
+  const names = useDepartmentNames()
   const rows = attention.data ?? []
 
   /*
@@ -69,7 +71,7 @@ export function Attention() {
           ) : (
             <div className="space-y-2.5">
               {critical.map((r) => (
-                <FindingCard key={r.key} row={r} />
+                <FindingCard key={r.key} row={r} names={names} />
               ))}
             </div>
           )}
@@ -98,7 +100,7 @@ export function Attention() {
           ) : (
             <div className="space-y-2.5">
               {warning.map((r) => (
-                <FindingCard key={r.key} row={r} />
+                <FindingCard key={r.key} row={r} names={names} />
               ))}
             </div>
           )}
@@ -109,7 +111,7 @@ export function Attention() {
         <Panel title="For the record" meta={`${info.length}`}>
           <div data-testid="attention-info" className="space-y-2.5">
             {info.map((r) => (
-              <FindingCard key={r.key} row={r} />
+              <FindingCard key={r.key} row={r} names={names} />
             ))}
           </div>
         </Panel>
@@ -141,7 +143,14 @@ const ACCENT: Record<Finding['severity'], string> = {
   info: 'border-l-rule',
 }
 
-function FindingCard({ row }: { row: Finding }) {
+/*
+ * The sentence is the database's; the words are the reader's. Titles arrive as
+ * `PACK cannot make SO/… as planned` and details as `runway · ships
+ * 2026-10-03`, because one rule has to say the same thing in the browser and
+ * on Supabase. `humanise` swaps the code for the department's name and the
+ * ISO date for a written one on the way to the screen.
+ */
+function FindingCard({ row, names }: { row: Finding; names: Map<string, string> }) {
   return (
     <div
       className={`border-rule bg-sheet rounded-card shadow-card border border-l-[3px] p-4 ${ACCENT[row.severity]}`}
@@ -150,8 +159,8 @@ function FindingCard({ row }: { row: Finding }) {
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="text-body font-semibold">{row.title}</div>
-          <div className="text-mid text-small mt-1">{row.detail}</div>
+          <div className="text-body font-semibold">{humanise(row.title, names)}</div>
+          <div className="text-mid text-small mt-1">{humanise(row.detail, names)}</div>
         </div>
         <div className="flex shrink-0 items-center gap-2">
           {row.days_out > 0 ? (

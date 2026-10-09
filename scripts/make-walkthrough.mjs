@@ -255,10 +255,13 @@ if (wants('attention')) {
 // --- 3 · schedule ------------------------------------------------------------
 if (wants('schedule')) {
   console.log('schedule')
-  await go('#/gantt', '[data-testid="gantt-bar"]')
+  await go('#/gantt', '[data-testid="gantt-order"]')
+  // Orders open collapsed: one strip each. Open the first for its bars.
+  const groups = page.locator('[data-testid="gantt-order"]')
+  await groups.first().locator('button').first().click()
+  await page.waitForSelector('[data-testid="gantt-bar"]', { timeout: 30_000 })
+  await settle(400)
   const bars = page.locator('[data-testid="gantt-bar"]')
-  // Each order is one block: a heading line, then a row per department.
-  const groups = page.locator('div.space-y-5 > div')
   const heading = groups.first().locator('span.font-semibold').first()
   facts.scheduleOrder = (await heading.innerText()).trim().replace(/\s+line \d+$/, '')
   const label = page.locator('text=/^Runway$/i').first()
