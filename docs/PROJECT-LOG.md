@@ -79,6 +79,9 @@ unmodified in the browser, so the demo runs the real engine with no backend.
 **Online.** Supabase project `fiqfbbnmksppbpxmhnbv` — *kram*, Mumbai
 (ap-south-1), Postgres 17.6. All sixty-three migrations applied, the last on 4 Oct (§9).
 
+**The plan of record is §8.0** — the concept deck's promises, each marked
+built, partly or not built, and what it waits on. Written 9 Oct.
+
 **What the live project holds, as of 4 Oct: sample data, and it says so.** U&M's
 six-row sample planning sheet, loaded by `scripts/load-um-sample.mjs` — 72
 active articles, **twenty** departments (the fourteen plus six checkpoints),
@@ -364,6 +367,7 @@ Keep adding to this. Each one was a real dead end.
 | "14 pages, 2 MB" is not a layout | No `pdftoppm` without Homebrew. `swiftc -O scripts/pdf-pages.swift -o /tmp/pdf-pages`, then `/tmp/pdf-pages file.pdf /tmp/pages` writes a PNG per page via PDFKit. |
 | A password pushed to a public repository by the test that forbids it | `expect(page).not.toMatch(/<the real password>/)`. The value is now in the file. Forbid the **shape** of a secret (an address, a JWT, `key=`), never the value, and keep the value out of every tracked file — tests, fixtures, comments, the log. |
 | A secret scan that printed its finding and committed anyway | `git diff --cached \| grep -c secret ; true) && git commit && git push` — the count scrolled past and the push had already gone. Make the scan the gate: `! git diff --cached \| grep -qiE '…' && git commit …`. And **commit and push in separate commands**, with the diff read in between; an outward-facing step chained behind anything is the mistake from 3 Oct's migration push, made again a day later. |
+| "The plan" existed only as a deck in `docs/source` | A requirements deck that was audited once and then only ever cited sentence by sentence is not a plan of record: nobody could say what was promised against what was built, and a month later the vendor was asked whether he should send "the actual plan" — which was the same deck. The promised-versus-built table (§8.0) is the plan; the deck is its source. Write that table the day the deck arrives, not two months in. |
 | Overlapping test runs | A retry loop was backgrounded when it outran the foreground limit, and kept running under the next foreground run. Both reported timeouts that looked like defects. One run at a time, in the foreground; never loop the suite in the background. |
 | Anon can call your functions on Supabase | Postgres grants `EXECUTE` to `PUBLIC` on every new function, *and* Supabase's default privileges grant it to `anon` explicitly. Revoking from `PUBLIC` alone leaves the explicit grant standing. Revoke from both. Tell the two apart by the error: "permission denied for **function**" means blocked at the door, "for **table**" means it ran until it hit RLS. |
 | A browser check breaks when a panel appears | An unanchored locator — `table` first match, `getByRole` by substring — silently retargets when the page gains an element. Anchor grids and controls by `data-testid`, and use `exact: true` on names. Twice now. |
@@ -503,14 +507,17 @@ Keep adding to this. Each one was a real dead end.
    it, and U&M have not themselves been asked whether they mind their costing
    sheet being readable by anyone. That last one is worth a sentence to them
    before the repository is shown to anybody outside the two firms.
-9. **The proposal given to U&M is owed, and becomes the plan of record.**
-   Agreed 9 Oct. Until it arrives, §8 is a list of ours and not a plan of
-   theirs. When it arrives: read whole first; commercial terms stay out of
-   this public repository (kept at a local path, recorded here); the promised
-   deliverables go into §8 as "What was promised", one row each with built /
-   partly / not built and what it waits on; every item here and in §8 is
-   mapped onto it or retired; and any term the proposal uses that the
-   software names differently is decided against the proposal.
+9. ~~**The proposal given to U&M is owed, and becomes the plan of record.**~~
+   **Arrived 9 Oct, and it was the concept deck** already in `docs/source/`
+   (byte-identical; the PDF is an export). No commercial terms in it. The plan
+   of record is now §8.0. **Decisions it raised, still open:** changing
+   priorities in what-if; per-machine scheduling or per-department; purchase
+   status and payment schedule in Kram or in the ERP; the alerts channel
+   (WhatsApp, email, both); "stuffing date" versus the deck's "delivery
+   deadline" versus the sheet's "HOD" — one date or two; and what "CRM only
+   for 1st order" on slide 4 means. Two were decided the same day: mock-up
+   charts are illustration, figures are scope; Kram's screens replace the
+   Google Sheets.
 
 ---
 
@@ -576,6 +583,111 @@ out of it. **Nothing on this list is a phase.** Phases 0–10 are built, all
 twenty screens run against Supabase, and the hosted client is driven end to end
 by `verify:hosted-ui`. What remains is one substantial piece of engineering,
 some housekeeping, and a great deal of data that is not ours to produce.
+
+### 8.0 What was promised — the plan of record
+
+Written 9 Oct from the concept deck, `docs/source/concept-deck.pptx` — nineteen
+slides, the proposal given to U&M. The PDF Nishad sent on 9 Oct is an export of
+the same file (the PowerPoint in his Downloads is byte-identical). It has been
+in the repository since 10 Aug and was audited slide by slide on 15 Aug (§9);
+what never existed until now is this table. In the deck's own words. **Where
+this table and the rest of §8 disagree, this table wins.**
+
+Two decisions taken by Nishad on 9 Oct: the mock-up slides (8–19) are
+**figures are scope, charts are illustration**; and **Kram's screens replace
+the Google Sheets** the deck expected for daily production and manpower.
+
+**Objectives (slide 2)**
+
+| Promised | Status | Waits on |
+|---|---|---|
+| Automate the entire production planning process | **Built.** One run plans every order back from its date through every department. | Real rates, to mean anything |
+| Resolve the time taken by multiple department managers to plan each PO | **Built in principle**, proven on six sample products | Rates; then their own logins |
+| Integrate the ERP and the new software | **Not built** | One sample Panipuri export (KRAM/05, asked 17 Aug) |
+| Dashboard visibility for the leadership, day-to-day decisions per customer order | **Built**: MD dashboard, Command centre, Attention, Order book. Look differs from the mock-ups. | Costs and production entries to fill the tiles |
+| Alerts for timely response | **Partly**: in-app on every screen, critical inside a fortnight. No mobile or push. | A channel decision (WhatsApp / email), then ~1 week |
+
+**World-class dashboard features (slide 3)**
+
+| Promised | Status | Waits on |
+|---|---|---|
+| Digital factory map, live status and WIP counts | **Partly**: flow map with live load per department; no WIP count on the node; no floor plan | WIP counts: ~1 day, ours. Floor plan: U&M |
+| Interactive Gantt, drag-and-drop, immediate capacity impact | **Built** | — |
+| Heat map of overloaded departments | **Built** | — |
+| Heat map of overdue work orders | **Partly**: listed on Attention and My department, not drawn as a map | A decision whether a map is wanted |
+| Heat map of critical inventory shortages | **Partly**: Material screen, three states, not a map | BOMs and stock counts |
+| What-if: adding overtime | **Built** | — |
+| What-if: machine downtime | **Built** (department down; booked downtime) | — |
+| What-if: changing priorities | **Not built** — the engine has no notion of priority | A decision, then 1–2 weeks |
+| AI: predicting shipment risks | **Partly**: Forecast bands each line by risk and refuses on thin history | Months of recorded production |
+| AI: identifying likely bottlenecks | **Built** (constraint, heatmap, flagged days) | — |
+| AI: optimal production sequence | **Not built** | ~6 months of actuals (§6 item 7) |
+| Barcode / QR so WIP updates itself (marked *Ideal*) | **Not built**, deliberately (§8.5) | A decision |
+| LED screen in each department | **Built** (Floor display) | A television |
+| Real-time mobile alerts for department heads | **Not built** | Same as alerts above |
+
+**Scope of work (slide 4)**
+
+| Row | Status | Waits on |
+|---|---|---|
+| 1 Customer order execution planning (customer PO, sales order, delivery deadline; merchandising) | **Built**: Order book, shipment lines, Accept an order, Schedule. Orders typed until the ERP import. "CRM only for 1st order" not understood. | Panipuri export; the CRM question |
+| 2 Material planning (MRP, BOM, supplier; PPC/purchase) | **Built** as planning: BOM × plan → need dates and order-by dates per lead time, stock in three states. No purchase orders or receipts. | BOMs, lead times, stock counts (KRAM/04, /06) |
+| 3 Manpower planning (deployment chart, man-hours, overtime; HR) | **Built**: attendance per person, head count derived, overtime in hours and people | Daily entry |
+| 4 Machinery scheduling (flow chart, capacity plan; maintenance) | **Partly**: machine master, downtime moves capacity, flow map, capacity heatmap. Planned per department, not per machine. | A decision whether per-machine is wanted; 3–4 weeks if so |
+| 5 Money (payment schedule, cash flow; purchase/accounts) | **Partly**: cash out by week from plan × cost, supplier commitments. No payment schedule or terms. | Article costs; a decision whether POs and terms live in Kram or the ERP |
+
+**What the MD's dashboard should contain (slide 5)**
+
+| Item | Status |
+|---|---|
+| Order schedule | **Built** (Schedule, Order book) |
+| WIP status | **Built** (WIP in units on the dashboard; WIP screen) |
+| Delayed jobs | **Built** (Delayed orders KPI; breaches) |
+| Machine status | **Partly**: on Masters and Attention, not a dashboard tile |
+| Labour availability | **Partly**: on Manpower, not a dashboard tile |
+| Material shortage | **Built** (KPI) |
+| Purchase status | **Not built** — Kram holds no purchase orders |
+| Quality status | **Built** (Rejections KPI; Quality screen) |
+| Dispatch status | **Partly**: "Containers ready" only; nothing records what left |
+| Customer commitments | **Partly**: OTIF, shipment risk, order book; no commitment list as such |
+
+**MD's dashboard KPI table (slide 6)** — **Built exactly**: the nine KPIs with
+targets, and WIP value says what it is waiting for rather than inventing a
+figure. One slip: the containers-ready target is seeded 0, the deck says 30
+(a later change with its own three lines).
+
+**Immediate follow-ups (slide 18)** — all five roles have their screen and
+master; **the data is what is missing**, and it is the list sent in KRAM/04
+and KRAM/06:
+
+| Role · item | Software | Data on the live project |
+|---|---|---|
+| Merchandiser · date-commitment logic | **Built** (Accept an order) | — |
+| Merchandiser · D-minus article-wise | **Built** (matrix) | 6 of 72 articles real |
+| PPC · material ordering date | **Built** (order-by per lead time) | none |
+| PPC · D-minus for raw material, fabric, metal | **Built** as lead time per material/supplier | none |
+| Purchase · timelines per supplier | **Built** (master) | none |
+| Production · capacity per day with manpower | **Built** (Capacity sheet) | none real — 40 a day stand-in |
+| Production · daily production; HR · manpower and overtime | **Built** as the Production and Manpower screens; the Google Sheets are retired (decided 9 Oct) | none |
+
+**Mock-ups (slides 8–19)** — figures are scope, charts are illustration
+(decided 9 Oct). The figures on the tiles are the KPI table above plus
+shipment risk (Forecast), machines down and workers absent (Masters, Manpower).
+**Shown in the deck, not scoped unless U&M ask:** production and attendance
+trend charts, order ageing, absenteeism and overtime analysis, skill mix,
+inventory value by category, PO status, goods receipts, supplier performance,
+FPY, NCR and CAPA, customer complaints, quality cost, calibration, audit. The
+department names on the mock-ups are illustrative; the sheet's headings are
+the authority.
+
+**Tally, excluding the mock-ups: 50 promises — 33 built, 11 partly, 6 not
+built.** The six not built: ERP integration, mobile alerts, priorities in
+what-if, optimal sequence, barcode/QR, purchase status.
+
+**Vocabulary, decided against the deck.** "D minus" is U&M's own term (slide
+18) and stays. The KPI names are the deck's and are already on the dashboard.
+The one open mismatch is "stuffing date" (ours) against "delivery deadline"
+(deck) and "HOD" (their sheet), which may be two different dates — §6 item 9.
 
 ### 8.1 The one thing that will stop this working at U&M's real scale
 
@@ -1531,6 +1643,27 @@ departments to the sheet's headings, names instead of codes on screens,
 their terms, the six click-guide actions not yet photographed, the workbook
 importer and an upload button, the demonstration account's password — waits
 for its three lines, each in turn.
+
+### 2026-10-09 — The proposal was the concept deck; the plan of record is §8.0
+
+Nishad sent "the actual plan" the same afternoon: a 19-page PDF, which turned
+out to be an export of `docs/source/concept-deck.pptx` — the file in the
+repository since 10 Aug, audited slide by slide on 15 Aug, and the source of
+spec KRAM/01. So the plan had been followed from the first day; what had never
+been written was *what was promised against what was built*. §8.0 is that
+table, in the deck's words: **50 promises, 33 built, 11 partly, 6 not built**
+(ERP integration, mobile alerts, priorities in what-if, optimal sequence,
+barcode/QR, purchase status), and the data close to nil. Two decisions taken
+by Nishad on the spot — mock-up charts are illustration, figures are scope;
+Kram's screens replace the Google Sheets — and six left open (§6 item 9).
+
+The lesson is in §5: a deck that is cited sentence by sentence is not a plan
+of record. Had this table existed on 15 Aug, the question of 9 Oct would not
+have needed asking.
+
+Asked in the same breath: the dates on the Load heatmap and the Schedule are
+not readable, and the interface generally does not read as a finished product.
+Reviewed separately (next entry, once agreed).
 
 ## 9. Log
 
