@@ -512,7 +512,7 @@ Since 15 Aug it covers **both** of the prototype's modules: the capacity and
 load arithmetic, and the person-hour conversion that turns a shortfall into
 overtime hours and people.
 
-**358 unit and integration tests** against a real native Postgres, booted per run
+**363 unit and integration tests** against a real native Postgres, booted per run
 from an embedded binary. Covers schema shape, RLS (as the `authenticated` role —
 table owners bypass RLS, so a policy test run as superuser proves nothing), the
 working-day calendar, engine correctness, breaches, pins, overrides, the route
@@ -1430,6 +1430,68 @@ must not be used across a reload.
 
 The rest wait on Nishad's go-ahead and on U&M's answer about the merged
 columns, so the departments are renamed once.
+
+### 2026-10-09 — Every click (KRAM/11)
+
+Asked on 8 Oct whether there was a detailed demo of "how each component and
+button and click works and how it affects the software". There was not: the
+demo script says what to click, the guide describes every control, KRAM/09
+pictures nine screens, but nothing showed a control *before and after*. So:
+`docs/click-guide.html`, DBBS/UM/KRAM/11, forty-two pages, thirty-three
+actions across seventeen screens, seventy-five pictures.
+
+```
+npm run clicks                      # ~6 min on the demonstration build
+npm run pdf docs/click-guide.html
+```
+
+**How it is made.** `scripts/make-click-guide.mjs` starts the demonstration
+build on its own port, performs each action, and photographs the screen
+before with the control numbered, the dialog if there is one, and the screen
+after with what changed numbered — the markers drawn into the page by
+`scripts/lib/marks.mjs`, now shared with the walkthrough. Every sentence that
+quotes a figure ("102 bars became 8", "pairings went from 76 to 77", "11 in
+became 10") reads it off the screen in the same visit, which is why the words
+live in the capture and not in the page module. `scripts/lib/doc-style.mjs`
+is the one stylesheet the three generated documents share. `--only=id,id`
+re-takes named actions and keeps the rest from the last manifest, so a fix
+to one picture does not cost a six-minute run. `tests/click-guide-page.test.ts`
+builds the page from a manifest and fails on a missing figure, an action that
+vanished instead of saying it failed, or a login.
+
+**It runs on the demonstration build, deliberately.** It adds an order,
+declares production, pins a bar, books a machine down and promotes a
+scenario; none of that belongs on the client's database, and the demo seed
+gives the same pictures every run. The guide says so on its first page.
+
+**What cost time, all now in the capture's comments or §5:**
+
+- Four actions failed on the first run for one cause: the Capacity sheet's
+  view and filter persist across hash navigation, so an action that left it
+  on *D-minus* filtered to one article broke the next one's "first blank
+  cell". Each capacity action now starts from the default.
+- A helper declared after its first use in a module that runs top to bottom:
+  `Cannot access before initialization`. Obvious in hindsight, invisible in
+  a 1,200-line script.
+- The first card was pushed whole to a new page when it did not fit, leaving
+  a blank sheet — the same lesson as KRAM/09, from the other side: a card
+  with three pictures must be allowed to break *between* its pictures.
+- A panel that shares its row with another (Holidays beside Component rates)
+  photographs both; `clipTo` narrows to one element's columns and the page
+  shows a narrow picture at its own width.
+- The demo seed already holds Diwali on two days, and the first draft added a
+  third. A guide that makes the reader ask "why three Diwalis?" has failed
+  at the one thing it is for.
+
+**Two things the pictures say about the software.** Opening an order on the
+Order book offers "Add a shipment line" but the dialog is not photographed —
+the guide covers thirty-three actions and the application has more; the
+remaining ones (delete an order, add a shipment line, override a day's
+capacity with a reason, add a department, add a machine, give a role on
+Users) are the next pass. And the Production screen's "Entered" tag renders
+twice, once per layout, which is why one locator needs `visible=true`.
+
+363 tests. Nothing under `src/` changed.
 
 ## 9. Log
 

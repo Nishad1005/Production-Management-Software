@@ -25,7 +25,8 @@
     "pdf": "node scripts/make-pdf.mjs",
     "walkthrough": "node scripts/make-walkthrough.mjs",
     "screens": "node scripts/capture-screens.mjs",
-    "report": "node scripts/make-sample-report.mjs"
+    "report": "node scripts/make-sample-report.mjs",
+    "clicks": "node scripts/make-click-guide.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

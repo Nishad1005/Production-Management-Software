@@ -53,7 +53,7 @@ for the hosted system. Both use the same views and functions.
 - `npm run typecheck` — **not** `tsc --noEmit`. The root tsconfig is
   `"files": []` with project references, so `tsc --noEmit` type-checks *nothing*
   and exits 0. It hid a real error for several sessions.
-- `npm test` — 358 tests against a real native Postgres, booted per run. Run it
+- `npm test` — 363 tests against a real native Postgres, booted per run. Run it
   **once, in the foreground, and never two at a time**: overlapping runs
   produce timeouts that look exactly like defects in the code (log §5).
 - `npm run screenshot` — drives every screen and interaction in headless
@@ -67,6 +67,9 @@ for the hosted system. Both use the same views and functions.
 - `npm run screens -- <out-dir> [email password]` — every screen, clean and
   fully loaded, for a designer: the demonstration build, and the live project
   when a login is given.
+- `npm run clicks`, then `npm run pdf docs/click-guide.html` — every control,
+  before and after (KRAM/11), on the demonstration build; no login needed.
+  `--only=<id,id>` re-takes named actions and keeps the rest.
 
 **Run `verify:live` after any migration touching privileges, policies or
 functions.** The local suite cannot catch what it catches, twice over now:
