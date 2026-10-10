@@ -40,6 +40,18 @@ export function humanise(text: string, names: Map<string, string>): string {
   return out
 }
 
+/**
+ * A component code, said for a person: `125034299::STITCH` is the stitching
+ * work on article 125034299, so it reads "125034299 · Stitching". A named
+ * component with no `::` is left as it is.
+ */
+export function componentLabel(code: string, names: Map<string, string>): string {
+  const i = code.indexOf('::')
+  if (i < 0) return code
+  const dept = code.slice(i + 2)
+  return `${code.slice(0, i)} · ${names.get(dept) ?? dept}`
+}
+
 /** Department code → name, from the master; a code with no row stays a code. */
 export function useDepartmentNames(): Map<string, string> {
   const departments = useDepartments()

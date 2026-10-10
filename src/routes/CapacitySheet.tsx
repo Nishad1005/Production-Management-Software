@@ -231,23 +231,32 @@ export function CapacitySheet() {
             No articles yet. Load the capacity sheet, or add one from Masters.
           </Empty>
         ) : (
-          <div className="border-rule overflow-x-auto border">
+          <div className="border-rule max-h-[70vh] overflow-auto border">
+            {/* The grid scrolls inside its own box so the header row and the
+                article column stay put — a spreadsheet that loses its headers
+                is a grid of unlabelled numbers by the twentieth row. Separate
+                borders, because collapsed ones are painted by the table and
+                would stay behind when a cell sticks. */}
             <table
               data-testid="capacity-grid"
-              className="nums min-w-max border-collapse text-caption"
+              className="nums min-w-max border-separate border-spacing-0 text-caption"
             >
               <thead>
                 <tr>
-                  <th className="bg-sheet border-rule-soft sticky left-0 z-10 border-r border-b px-2 py-2 text-left">
+                  <th className="bg-sheet border-rule-soft sticky top-0 left-0 z-30 border-r border-b px-2 py-2 text-left align-bottom">
                     <span className="label">Article</span>
                   </th>
                   {model.departments.map((d) => (
                     <th
                       key={d.code}
+                      data-code={d.code}
                       title={`${d.name} — position ${d.position}`}
-                      className="text-blue border-rule-soft border-b px-1 py-2 text-caption tracking-[0.06em] whitespace-nowrap uppercase"
+                      className="bg-sheet border-rule-soft sticky top-0 z-20 border-b px-1 pt-2 pb-1.5 text-right align-bottom"
                     >
-                      {d.code}
+                      <span className="inline-block max-w-[72px]">
+                        <span className="block text-[11px] leading-tight font-semibold">{d.name}</span>
+                        <span className="text-blue block font-mono text-[10px] tracking-[0.06em] uppercase">{d.code}</span>
+                      </span>
                     </th>
                   ))}
                 </tr>
@@ -289,6 +298,7 @@ export function CapacitySheet() {
                         return (
                           <td
                             key={d.code}
+                            data-code={d.code}
                             className={`border-rule-soft border-b px-1 py-1.5 text-right ${
                               routed ? '' : 'bg-paper/40'
                             }`}

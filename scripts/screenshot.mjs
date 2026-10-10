@@ -130,7 +130,7 @@ await step('add an order', async () => {
 // --- editing a master value persists ----------------------------------------
 
 await step('edit D-minus', async () => {
-  await go('#/masters', 'text=D-minus matrix')
+  await go('#/masters?tab=dminus', 'text=D-minus matrix')
   // Ply cutting on the Boden dining chair, the one article carrying no offset.
   const cell = page.locator('button:has-text("D-80")').first()
   await cell.click()
@@ -141,7 +141,7 @@ await step('edit D-minus', async () => {
 
   // And it survives a reload, which is what proves it reached the database
   // rather than only React state.
-  await go('#/masters', 'text=D-minus matrix')
+  await go('#/masters?tab=dminus', 'text=D-minus matrix')
   await page.waitForSelector('button:has-text("D-84")', { timeout: 60_000 })
   await page.screenshot({ path: `${outDir}/masters.png`, fullPage: true })
   return 'D-80 → D-84, persisted across reload'
@@ -162,6 +162,7 @@ await step('masters round-trip', async () => {
   // The previous step left ply cutting at D-84. Move it, then load the file
   // back and it should return — which is what proves the file carries real
   // values and the import reaches the database.
+  await go('#/masters?tab=dminus', 'text=D-minus matrix')
   const cell = page.locator('button:has-text("D-84")').first()
   await cell.click()
   const input = page.locator('input[type=number]:visible').first()
@@ -171,17 +172,17 @@ await step('masters round-trip', async () => {
 
   // The route graph travels in the file too, and did not until today. Break it
   // first, so the import has something to put back beyond a single number.
-  await go('#/masters', 'text=What feeds what')
+  await go('#/masters?tab=route', 'text=What feeds what')
   const graph = page.locator('[data-testid="route-dependency-grid"]')
   const columns = await page.evaluate(() => {
     const table = document.querySelector('[data-testid="route-dependency-grid"]')
-    return [...(table?.querySelectorAll('thead th') ?? [])].map((h) =>
-      h.textContent?.trim(),
+    // By the code the heading carries as data: the text is a name now.
+    return [...(table?.querySelectorAll('thead th') ?? [])].map(
+      (h) => h.dataset.code ?? h.textContent?.trim(),
     )
   })
   await graph
-    .locator('tbody tr')
-    .filter({ hasText: 'SAND' })
+    .locator('tbody tr[data-code="SAND"]')
     .first()
     .locator('td')
     .nth(columns.indexOf('ASSY'))
@@ -192,18 +193,19 @@ await step('masters round-trip', async () => {
   await go('#/masters', 'text=Production route')
   await page.setInputFiles('[data-testid="masters-import"]', saved)
   await page.waitForSelector('text=/\\d+ rows applied/', { timeout: 60_000 })
+  await go('#/masters?tab=dminus', 'text=D-minus matrix')
   await page.waitForSelector('button:has-text("D-84")', { timeout: 60_000 })
 
   // The edge has to come back with it. A file that carries departments and not
   // what feeds them rebuilds a factory where nothing waits for anything.
-  await go('#/masters', 'text=What feeds what')
+  await go('#/masters?tab=route', 'text=What feeds what')
   const restored = await page.evaluate(() => {
     const table = document.querySelector('[data-testid="route-dependency-grid"]')
-    const heads = [...(table?.querySelectorAll('thead th') ?? [])].map((h) =>
-      h.textContent?.trim(),
+    const heads = [...(table?.querySelectorAll('thead th') ?? [])].map(
+      (h) => h.dataset.code ?? h.textContent?.trim(),
     )
-    const row = [...(table?.querySelectorAll('tbody tr') ?? [])].find((r) =>
-      r.querySelector('td')?.textContent?.trim().startsWith('SAND'),
+    const row = [...(table?.querySelectorAll('tbody tr') ?? [])].find(
+      (r) => r.dataset.code === 'SAND',
     )
     const cell = row?.querySelectorAll('td')[heads.indexOf('ASSY')]
     return cell?.textContent?.trim()
@@ -218,7 +220,7 @@ await step('masters round-trip', async () => {
 // --- bringing a second shift on adds capacity -------------------------------
 
 await step('bring a shift on', async () => {
-  await go('#/masters', 'text=Who works which shift')
+  await go('#/masters?tab=shifts', 'text=Who works which shift')
 
   // Switch shift A on globally, then onto stitching specifically.
   await page
@@ -227,7 +229,7 @@ await step('bring a shift on', async () => {
     .click()
 
   const grid = page.locator('section').filter({ hasText: 'Who works which shift' })
-  const stitch = grid.locator('tr', { hasText: 'STITCH' })
+  const stitch = grid.locator('tr[data-code="STITCH"]')
 
   // Count rather than presence: the GEN column already reads "Running", so
   // waiting for that text would pass without anything having happened.
@@ -245,9 +247,7 @@ await step('bring a shift on', async () => {
       const section = [...document.querySelectorAll('section')].find((s) =>
         s.textContent?.includes('Who works which shift'),
       )
-      const row = [...(section?.querySelectorAll('tr') ?? [])].find((r) =>
-        r.textContent?.includes('STITCH'),
-      )
+      const row = section?.querySelector('tr[data-code="STITCH"]')
       const running = [...(row?.querySelectorAll('button') ?? [])].filter(
         (b) => b.textContent?.trim() === 'Running',
       )
@@ -359,8 +359,8 @@ await step('route order guard', async () => {
   const grid = page.locator('[data-testid="capacity-grid"]')
   const sandColumn = await page.evaluate(() => {
     const table = document.querySelector('[data-testid="capacity-grid"]')
-    const heads = [...(table?.querySelectorAll('thead th') ?? [])].map((h) =>
-      h.textContent?.trim(),
+    const heads = [...(table?.querySelectorAll('thead th') ?? [])].map(
+      (h) => h.dataset.code ?? h.textContent?.trim(),
     )
     return heads.indexOf('SAND')
   })
@@ -411,8 +411,8 @@ await step('parallel feeders', async () => {
   const grid = page.locator('[data-testid="capacity-grid"]')
   const sandColumn = await page.evaluate(() => {
     const table = document.querySelector('[data-testid="capacity-grid"]')
-    const heads = [...(table?.querySelectorAll('thead th') ?? [])].map((h) =>
-      h.textContent?.trim(),
+    const heads = [...(table?.querySelectorAll('thead th') ?? [])].map(
+      (h) => h.dataset.code ?? h.textContent?.trim(),
     )
     return heads.indexOf('SAND')
   })
@@ -432,16 +432,17 @@ await step('parallel feeders', async () => {
   )
 
   // Say what is true on Masters — sanding waits for nothing.
-  await go('#/masters', 'text=What feeds what')
+  await go('#/masters?tab=route', 'text=What feeds what')
   const dependencies = page.locator('[data-testid="route-dependency-grid"]')
   const columns = await page.evaluate(() => {
     const table = document.querySelector('[data-testid="route-dependency-grid"]')
-    return [...(table?.querySelectorAll('thead th') ?? [])].map((h) =>
-      h.textContent?.trim(),
+    // By the code the heading carries as data: the text is a name now.
+    return [...(table?.querySelectorAll('thead th') ?? [])].map(
+      (h) => h.dataset.code ?? h.textContent?.trim(),
     )
   })
   const rowFor = (code) =>
-    dependencies.locator('tbody tr').filter({ hasText: code }).first()
+    dependencies.locator(`tbody tr[data-code="${code}"]`).first()
 
   // Anchored by testid and by row text, not by position: this panel sits above
   // two other grids on the same screen.
@@ -607,8 +608,7 @@ await step('what-if scenario', async () => {
   }
 
   const changed = await page
-    .locator('table tr', { hasText: 'STITCH' })
-    .filter({ hasText: '::STITCH' })
+    .locator('[data-testid="changed-task"][data-department="STITCH"]')
     .count()
   if (changed < 2) {
     throw new Error(`only ${changed} tasks changed — expected the department's work to move`)
@@ -842,7 +842,7 @@ await step('department board', async () => {
 // --- machines: booking downtime takes the department's day down -------------
 
 await step('machine downtime', async () => {
-  await go('#/masters', 'text=Machines')
+  await go('#/masters?tab=machines', '[data-testid="machines-master"]')
   await page.waitForTimeout(600)
 
   const rows = await page.locator('[data-testid="machines-master"] tbody tr').count()
@@ -883,10 +883,18 @@ await step('machine downtime', async () => {
     undefined,
   )
 
-  const down = await page
-    .locator('[data-testid="machine-STITCH-05"]')
-    .getAttribute('data-down')
-  if (down !== 'yes') throw new Error('the machine is not marked down on its own row')
+  // The row and the summary come from two queries. Waiting on the summary and
+  // then reading the row once caught the row a refetch behind, the day the
+  // Machines panel moved behind a tab — the same lesson as 18 Aug, from the
+  // other side. Wait on the row.
+  await until(
+    'the machine to be marked down on its own row',
+    () =>
+      document
+        .querySelector('[data-testid="machine-STITCH-05"]')
+        ?.getAttribute('data-down') === 'yes',
+    undefined,
+  )
   void before
 
   await page.screenshot({ path: `${outDir}/machines.png`, fullPage: true })
@@ -1208,7 +1216,7 @@ await step('save everything to a file', async () => {
 // has a route and its offsets, rather than quietly scheduling on a zero.
 
 await step('add an article', async () => {
-  await go('#/masters', 'text=Production route')
+  await go('#/masters?tab=articles', '[data-testid="articles-master"]')
 
   const table = page.locator('[data-testid="articles-master"]')
   const before = await table.locator('tbody tr').count()
@@ -1268,7 +1276,7 @@ await step('add an article', async () => {
   await rate.press('Enter')
   await page.waitForSelector('button:has-text("25")', { timeout: 60_000 })
 
-  await go('#/masters', 'text=Production route')
+  await go('#/masters?tab=articles', '[data-testid="articles-master"]')
   await until(
     'the routed article to report its missing D-minus',
     () => {
@@ -1300,7 +1308,7 @@ await step('add an article', async () => {
   await days.press('Enter')
   await page.waitForTimeout(1500)
 
-  await go('#/masters', 'text=Production route')
+  await go('#/masters?tab=articles', '[data-testid="articles-master"]')
   try {
     await until(
       'the article to become schedulable',

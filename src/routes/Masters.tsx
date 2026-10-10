@@ -34,7 +34,10 @@ import {
   useUpdateDepartment,
   useUpdateShift,
 } from '@/data/mutations'
-import { Button, Empty, Field, Panel, Table, Tag, Td, Th } from '@/components/ui'
+import { Button, ColumnName, Empty, Field, Panel, Table, Tag, Td, Th } from '@/components/ui'
+import { Tabs } from '@/components/tabs'
+import { useTab } from '@/lib/useTab'
+import { componentLabel, useDepartmentNames } from '@/components/names'
 import { formatDateLong, formatNumber, inputClass, todayIso } from '@/components/format'
 import { rpc } from '@/lib/backend'
 import {
@@ -56,7 +59,35 @@ import {
  * schedule, so the effect of a change is visible on the next screen rather than
  * waiting for someone to remember to recompute.
  */
+/*
+ * Eight tabs, because the page was a hundred screens tall.
+ *
+ * Seventy-two articles by twenty departments, printed twice (the D-minus
+ * matrix and the rates), with the route, the machines, the shifts and the
+ * holidays somewhere in between: nobody scrolls that, and the browser paid
+ * for every cell on every visit. Each tab is one job — the route, the
+ * articles, the machines — and only the open one renders. The file controls
+ * sit above the tabs because they are about all of it.
+ */
+const TAB_IDS = ['route', 'articles', 'machines', 'shifts', 'dminus', 'rates', 'holidays', 'bom'] as const
+type MastersTab = (typeof TAB_IDS)[number]
+const TABS: { id: MastersTab; label: string }[] = [
+  { id: 'route', label: 'Route' },
+  { id: 'articles', label: 'Articles' },
+  { id: 'machines', label: 'Machines' },
+  { id: 'shifts', label: 'Shifts' },
+  { id: 'dminus', label: 'D-minus' },
+  { id: 'rates', label: 'Rates' },
+  { id: 'holidays', label: 'Holidays' },
+  { id: 'bom', label: 'Bill of materials' },
+]
+
 export function Masters() {
+  const [tab, setTab] = useTab<MastersTab>('route', TAB_IDS)
+  const names = useDepartmentNames()
+  const nameOf = (code: string) => names.get(code) ?? code
+  const articleMaster = useArticleMaster()
+  const [find, setFind] = useState('')
   const departments = useDepartments()
   const rates = useRates()
   const dminus = useDminus()
@@ -84,6 +115,31 @@ export function Masters() {
 
   const incomplete = dminus.data?.filter((d) => !d.is_complete).length ?? 0
 
+  // One search box for the two long grids: an article by code or name, or a
+  // department by name on the rates.
+  const q = find.trim().toLowerCase()
+  const articleName = new Map((articleMaster.data ?? []).map((a) => [a.code, a.name]))
+  const shownArticles = articles.filter(
+    (a) => !q || a.toLowerCase().includes(q) || (articleName.get(a) ?? '').toLowerCase().includes(q),
+  )
+  const shownRates = (rates.data ?? []).filter(
+    (r) =>
+      !q ||
+      r.component_code.toLowerCase().includes(q) ||
+      nameOf(r.department_code).toLowerCase().includes(q),
+  )
+  const findBox = (
+    <label className="mb-3 block">
+      <span className="label block pb-1">Find an article</span>
+      <input
+        className={`${inputClass} sm:max-w-64`}
+        value={find}
+        onChange={(e) => setFind(e.target.value)}
+        placeholder="Code or name"
+      />
+    </label>
+  )
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -94,6 +150,10 @@ export function Masters() {
         <MastersFileControls />
       </div>
 
+      <Tabs tabs={TABS} value={tab} onChange={setTab} testIdPrefix="masters-tab" />
+
+      {tab === 'route' ? (
+        <>
       <Panel
         title="Production route"
         meta={`${departments.data?.length ?? 0} departments`}
@@ -189,11 +249,18 @@ export function Masters() {
       </Panel>
 
       <RouteDependencyGrid />
-      <ArticlesPanel />
-      <MachinesPanel />
+        </>
+      ) : null}
+      {tab === 'articles' ? <ArticlesPanel /> : null}
+      {tab === 'machines' ? <MachinesPanel /> : null}
+      {tab === 'shifts' ? (
+        <>
       <ShiftsPanel />
       <DepartmentShiftGrid />
+        </>
+      ) : null}
 
+      {tab === 'dminus' ? (
       <Panel
         title="D-minus matrix"
         meta={
@@ -202,28 +269,29 @@ export function Masters() {
             : 'Complete — every article schedulable'
         }
       >
-        <Table>
+        {findBox}
+        <Table scroll>
           <thead>
             <tr>
-              <Th>Article</Th>
+              <Th sticky className="left-0 !z-30 pl-2">Article</Th>
               {routeCodes.map((code) => (
-                <Th key={code} align="right">
-                  {code}
+                <Th key={code} align="right" sticky wrap code={code} className="pl-1">
+                  <ColumnName name={nameOf(code)} code={code} />
                 </Th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {articles.map((article) => (
+            {shownArticles.map((article) => (
               <tr key={article}>
-                <Td className="font-semibold">{article}</Td>
+                <Td className="bg-sheet sticky left-0 z-10 pl-2 font-semibold">{article}</Td>
                 {routeCodes.map((code) => {
                   const cell = dminus.data?.find(
                     (d) =>
                       d.article_code === article && d.department_code === code,
                   )
                   return (
-                    <Td key={code} align="right">
+                    <Td key={code} align="right" code={code}>
                       <EditableNumber
                         value={cell?.is_complete ? cell.dminus_days : null}
                         prefix="D-"
@@ -246,6 +314,7 @@ export function Masters() {
             ))}
           </tbody>
         </Table>
+        {q && shownArticles.length === 0 ? <Empty>Nothing matches “{find}”.</Empty> : null}
         <p className="text-faint mt-3 max-w-[80ch] text-caption">
           Each article takes a different time through each department, so the
           offset is held per pair and entered by hand. Clearing a cell puts it
@@ -254,26 +323,29 @@ export function Masters() {
           normal.
         </p>
       </Panel>
+      ) : null}
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      {tab === 'rates' ? (
         <Panel title="Component rates" meta="Units per day, per shift">
-          <Table>
+          {findBox}
+          <Table scroll>
             <thead>
               <tr>
-                <Th>Department</Th>
-                <Th>Component</Th>
-                <Th>Shift</Th>
-                <Th align="right">Per day</Th>
-                <Th>Source</Th>
+                <Th sticky className="pl-2">Department</Th>
+                <Th sticky>Component</Th>
+                <Th sticky>Shift</Th>
+                <Th sticky align="right">Per day</Th>
+                <Th sticky>Source</Th>
               </tr>
             </thead>
             <tbody>
-              {rates.data?.map((r) => (
+              {shownRates.map((r) => (
                 <tr
                   key={`${r.department_code}-${r.component_code}-${r.shift_code}`}
+                  data-code={r.department_code}
                 >
-                  <Td>{r.department_code}</Td>
-                  <Td>{r.component_code}</Td>
+                  <Td className="pl-2 font-semibold">{nameOf(r.department_code)}</Td>
+                  <Td className="text-mid" title={r.component_code}>{componentLabel(r.component_code, names)}</Td>
                   <Td>{r.shift_code}</Td>
                   <Td align="right">
                     <EditableNumber
@@ -301,6 +373,7 @@ export function Masters() {
               ))}
             </tbody>
           </Table>
+          {q && shownRates.length === 0 ? <Empty>Nothing matches “{find}”.</Empty> : null}
           <p className="text-faint mt-3 text-caption">
             A rate is what the department makes in a day{' '}
             <em>doing nothing else</em>. That is what lets utilisation be added
@@ -308,7 +381,9 @@ export function Masters() {
             entered against. Rates become measured once derived from actuals.
           </p>
         </Panel>
+      ) : null}
 
+      {tab === 'holidays' ? (
         <Panel title="Holidays" meta="Sundays are derived, not listed">
           <Table>
             <thead>
@@ -347,23 +422,24 @@ export function Masters() {
             calendar, so every schedule shifts to accommodate it.
           </p>
         </Panel>
-      </div>
+      ) : null}
 
+      {tab === 'bom' ? (
       <Panel title="Bill of materials" meta="From the ERP — read only">
-        <Table>
+        <Table scroll>
           <thead>
             <tr>
-              <Th>Article</Th>
-              <Th>Component</Th>
-              <Th>Description</Th>
-              <Th align="right">Per unit</Th>
+              <Th sticky className="pl-2">Article</Th>
+              <Th sticky>Component</Th>
+              <Th sticky>Description</Th>
+              <Th sticky align="right">Per unit</Th>
             </tr>
           </thead>
           <tbody>
             {bom.data?.map((b) => (
               <tr key={`${b.article_code}-${b.component_code}`}>
-                <Td>{b.article_code}</Td>
-                <Td className="font-semibold">{b.component_code}</Td>
+                <Td className="pl-2">{b.article_code}</Td>
+                <Td className="font-semibold" title={b.component_code}>{componentLabel(b.component_code, names)}</Td>
                 <Td className="text-mid">{b.component_name}</Td>
                 <Td align="right">{formatNumber(b.qty_per_unit, 0)}</Td>
               </tr>
@@ -377,6 +453,7 @@ export function Masters() {
           from Panipuri, so it is not edited here.
         </p>
       </Panel>
+      ) : null}
 
       {addingDepartment ? (
         <AddDepartment
@@ -640,6 +717,8 @@ function ShiftsPanel() {
 function RouteDependencyGrid() {
   const graph = useRouteGraph()
   const setDependency = useSetDependency()
+  const names = useDepartmentNames()
+  const nameOf = (code: string) => names.get(code) ?? code
 
   const cells = graph.data ?? []
   const departments = [
@@ -677,17 +756,18 @@ function RouteDependencyGrid() {
             <tr>
               <Th>Cannot start until…</Th>
               {departments.map((code) => (
-                <Th key={code} align="right">
-                  {code}
+                <Th key={code} align="right" wrap code={code}>
+                  <ColumnName name={nameOf(code)} code={code} />
                 </Th>
               ))}
             </tr>
           </thead>
           <tbody>
             {departments.map((department) => (
-              <tr key={department}>
+              <tr key={department} data-code={department}>
                 <Td className="font-semibold">
-                  {department}
+                  {nameOf(department)}
+                  <span className="text-faint ml-1.5 font-mono text-[11px] font-normal">{department}</span>
                   {entryPoints.includes(department) ? (
                     <span className="ml-2">
                       <Tag tone="blue">Entry point</Tag>
@@ -720,8 +800,8 @@ function RouteDependencyGrid() {
                         }
                         title={
                           on
-                            ? `${feeder} must finish before ${department} starts — click to remove`
-                            : `Make ${department} wait for ${feeder}`
+                            ? `${nameOf(feeder)} must finish before ${nameOf(department)} starts — click to remove`
+                            : `Make ${nameOf(department)} wait for ${nameOf(feeder)}`
                         }
                       >
                         {on ? '●' : '·'}
@@ -758,6 +838,7 @@ function DepartmentShiftGrid() {
   const grid = useDepartmentShiftGrid()
   const setDepartmentShift = useSetDepartmentShift()
   const setHeadcount = useSetHeadcount()
+  const names = useDepartmentNames()
 
   const rows = grid.data ?? []
   const shiftCodes = [
@@ -792,8 +873,11 @@ function DepartmentShiftGrid() {
         </thead>
         <tbody>
           {departments.map(([departmentId, departmentCode]) => (
-            <tr key={departmentId}>
-              <Td className="font-semibold">{departmentCode}</Td>
+            <tr key={departmentId} data-code={departmentCode}>
+              <Td className="font-semibold">
+                {names.get(departmentCode) ?? departmentCode}
+                <span className="text-faint ml-1.5 font-mono text-[11px] font-normal">{departmentCode}</span>
+              </Td>
               {shiftCodes.map(([code]) => {
                 const cell = rows.find(
                   (r) =>
@@ -1269,7 +1353,7 @@ function AddMachine({ onClose }: { onClose: () => void }) {
               <option value="">Choose…</option>
               {departments.data?.map((d) => (
                 <option key={d.id} value={d.code}>
-                  {d.code} — {d.name}
+                  {d.name}
                 </option>
               ))}
             </select>

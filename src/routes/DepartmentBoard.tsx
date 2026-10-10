@@ -62,7 +62,7 @@ export function DepartmentBoard() {
           >
             {departments.data?.map((d) => (
               <option key={d.id} value={d.code}>
-                {d.code} — {d.name}
+                {d.name}
               </option>
             ))}
           </select>

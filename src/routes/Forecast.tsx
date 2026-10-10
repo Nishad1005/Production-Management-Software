@@ -6,6 +6,7 @@ import {
   type Risk,
 } from '@/data/forecast'
 import { Empty, Panel, Table, Tag, Td, Th } from '@/components/ui'
+import { componentLabel, useDepartmentNames } from '@/components/names'
 import { formatDateLong, formatNumber } from '@/components/format'
 
 /**
@@ -19,6 +20,7 @@ import { formatDateLong, formatNumber } from '@/components/format'
  * say, which is the correct outcome rather than a broken screen.
  */
 export function Forecast() {
+  const names = useDepartmentNames()
   const readiness = useForecastReadiness()
   const rates = useMeasuredRates()
   const leads = useLeadTimes()
@@ -179,7 +181,7 @@ export function Forecast() {
                     data-confidence={m.confidence}
                   >
                     <Td className="font-semibold">{m.department_name}</Td>
-                    <Td className="text-faint">{m.component_code}</Td>
+                    <Td className="text-faint" title={m.component_code}>{componentLabel(m.component_code, names)}</Td>
                     <Td align="right">{m.observations}</Td>
                     <Td align="right">
                       {m.standing_rate === null ? '—' : formatNumber(m.standing_rate)}

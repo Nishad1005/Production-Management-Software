@@ -9,6 +9,7 @@ import {
   useRunSchedule,
 } from '@/data/planning'
 import { Button, Empty, Metric, Panel, Table, Tag, Td, Th } from '@/components/ui'
+import { useDepartmentNames } from '@/components/names'
 import { useAccess } from '@/lib/access-context'
 import { formatDate, formatDateLong, formatNumber } from '@/components/format'
 
@@ -29,6 +30,7 @@ const TRIAGE_LABEL: Record<string, { text: string; tone: 'clear' | 'amber' | 'fl
 }
 
 export function CommandCentre() {
+  const names = useDepartmentNames()
   const [confidence, setConfidence] = useState('Confirmed + probable')
   const run = useCurrentRun()
   const kpis = useKpis(run.data?.id)
@@ -166,7 +168,7 @@ export function CommandCentre() {
                   <Td align="right">
                     <UtilisationBar value={b.avg_utilisation} />
                   </Td>
-                  <Td align="right">{b.peak_utilisation.toFixed(2)}</Td>
+                  <Td align="right">{Math.round(b.peak_utilisation * 100)}%</Td>
                   <Td align="right">
                     <span className={b.flagged_days ? 'text-flag' : ''}>
                       {b.flagged_days}
@@ -205,7 +207,7 @@ export function CommandCentre() {
                 return (
                   <tr key={`${t.department_code}-${t.load_date}`}>
                     <Td>{formatDate(t.load_date)}</Td>
-                    <Td>{t.department_code}</Td>
+                    <Td>{names.get(t.department_code) ?? t.department_code}</Td>
                     <Td align="right" className="text-flag">
                       +{(t.over_by * 100).toFixed(0)}%
                     </Td>
@@ -253,7 +255,7 @@ export function UtilisationBar({ value }: { value: number }) {
             scale is fixed at 0–2.0, so it always sits at the halfway point. */}
         <span className="bg-ink/40 absolute inset-y-0 left-1/2 w-px" />
       </span>
-      <span className="nums w-10 text-right">{value.toFixed(2)}</span>
+      <span className="nums w-12 text-right">{Math.round(value * 100)}%</span>
     </span>
   )
 }

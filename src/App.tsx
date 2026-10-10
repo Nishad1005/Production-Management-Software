@@ -36,28 +36,37 @@ import { WhatIf } from '@/routes/WhatIf'
 import { Users } from '@/routes/Users'
 import { Login, NoAccess } from '@/routes/Login'
 
-/** Which roles each screen is for. Cosmetic — RLS is the real boundary. */
-const NAV: { to: string; label: string; end?: boolean; roles: Role[] }[] = [
-  { to: '/attention', label: 'Attention', roles: ['md', 'planner', 'hod', 'purchase', 'store', 'quality', 'admin'] },
-  { to: '/', label: 'Command centre', end: true, roles: ['md', 'planner', 'merchandiser', 'admin'] },
-  { to: '/dashboard', label: 'Dashboard', roles: ['md', 'planner', 'admin'] },
-  { to: '/map', label: 'Factory map', roles: ['md', 'planner', 'hod', 'admin'] },
-  { to: '/heatmap', label: 'Load heatmap', roles: ['md', 'planner', 'merchandiser', 'admin'] },
-  { to: '/gantt', label: 'Schedule', roles: ['md', 'planner', 'admin'] },
-  { to: '/orders', label: 'Order book', roles: ['md', 'planner', 'merchandiser', 'admin'] },
-  { to: '/accept', label: 'Accept an order', roles: ['planner', 'merchandiser', 'admin'] },
-  { to: '/whatif', label: 'What if', roles: ['planner', 'admin'] },
-  { to: '/wip', label: 'WIP', roles: ['md', 'planner', 'merchandiser', 'admin'] },
-  { to: '/board', label: 'My department', roles: ['hod', 'planner', 'md', 'admin'] },
-  { to: '/production', label: 'Production', roles: ['hod', 'planner', 'md', 'admin'] },
-  { to: '/manpower', label: 'Manpower', roles: ['hod', 'hr', 'planner', 'md', 'admin'] },
-  { to: '/material', label: 'Material', roles: ['purchase', 'store', 'planner', 'md', 'admin'] },
-  { to: '/quality', label: 'Quality', roles: ['quality', 'hod', 'planner', 'md', 'admin'] },
-  { to: '/forecast', label: 'Forecast', roles: ['md', 'planner', 'admin'] },
-  { to: '/money', label: 'Money', roles: ['accounts', 'purchase', 'md', 'admin'] },
-  { to: '/capacity', label: 'Capacity sheet', roles: ['planner', 'admin'] },
-  { to: '/masters', label: 'Masters', roles: ['planner', 'admin'] },
-  { to: '/users', label: 'Users', roles: ['admin'] },
+/**
+ * Which roles each screen is for. Cosmetic — RLS is the real boundary.
+ *
+ * In five groups, by what a person is doing: twenty names in two unlabelled
+ * rows was a list to search, not a menu to read. Each entry stays a one-line
+ * literal beginning `{ to, label` because `tests/docs-are-current.test.ts`
+ * reads this file as text to check the guide covers every screen.
+ */
+const GROUPS = ['Today', 'Plan', 'Floor', 'Watch', 'Set up'] as const
+type Group = (typeof GROUPS)[number]
+const NAV: { to: string; label: string; group: Group; end?: boolean; roles: Role[] }[] = [
+  { to: '/attention', label: 'Attention', group: 'Today', roles: ['md', 'planner', 'hod', 'purchase', 'store', 'quality', 'admin'] },
+  { to: '/', label: 'Command centre', group: 'Today', end: true, roles: ['md', 'planner', 'merchandiser', 'admin'] },
+  { to: '/dashboard', label: 'Dashboard', group: 'Today', roles: ['md', 'planner', 'admin'] },
+  { to: '/gantt', label: 'Schedule', group: 'Plan', roles: ['md', 'planner', 'admin'] },
+  { to: '/heatmap', label: 'Load heatmap', group: 'Plan', roles: ['md', 'planner', 'merchandiser', 'admin'] },
+  { to: '/map', label: 'Factory map', group: 'Plan', roles: ['md', 'planner', 'hod', 'admin'] },
+  { to: '/orders', label: 'Order book', group: 'Plan', roles: ['md', 'planner', 'merchandiser', 'admin'] },
+  { to: '/accept', label: 'Accept an order', group: 'Plan', roles: ['planner', 'merchandiser', 'admin'] },
+  { to: '/whatif', label: 'What if', group: 'Plan', roles: ['planner', 'admin'] },
+  { to: '/production', label: 'Production', group: 'Floor', roles: ['hod', 'planner', 'md', 'admin'] },
+  { to: '/board', label: 'My department', group: 'Floor', roles: ['hod', 'planner', 'md', 'admin'] },
+  { to: '/wip', label: 'WIP', group: 'Floor', roles: ['md', 'planner', 'merchandiser', 'admin'] },
+  { to: '/manpower', label: 'Manpower', group: 'Floor', roles: ['hod', 'hr', 'planner', 'md', 'admin'] },
+  { to: '/material', label: 'Material', group: 'Watch', roles: ['purchase', 'store', 'planner', 'md', 'admin'] },
+  { to: '/quality', label: 'Quality', group: 'Watch', roles: ['quality', 'hod', 'planner', 'md', 'admin'] },
+  { to: '/money', label: 'Money', group: 'Watch', roles: ['accounts', 'purchase', 'md', 'admin'] },
+  { to: '/forecast', label: 'Forecast', group: 'Watch', roles: ['md', 'planner', 'admin'] },
+  { to: '/capacity', label: 'Capacity sheet', group: 'Set up', roles: ['planner', 'admin'] },
+  { to: '/masters', label: 'Masters', group: 'Set up', roles: ['planner', 'admin'] },
+  { to: '/users', label: 'Users', group: 'Set up', roles: ['admin'] },
 ]
 
 /**
@@ -200,25 +209,57 @@ function WriteErrorBanner() {
  * Across the top rather than tucked in a corner: it is answering "should I act
  * on what I am about to read", which is not a footnote.
  */
+const BANNER_KEY = 'kram.banner.open'
+
 function ProvisionalBanner() {
   const state = useProvisionalState()
+  // One line by default. Three lines on every screen was the first thing
+  // anyone saw and the first thing anyone stopped reading; the detail is one
+  // click away, and the choice is remembered in this browser only.
+  const [open, setOpen] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem(BANNER_KEY) === 'yes'
+    } catch {
+      return false
+    }
+  })
   if (!state.data?.is_provisional) return null
+  const toggle = () => {
+    const next = !open
+    setOpen(next)
+    try {
+      localStorage.setItem(BANNER_KEY, next ? 'yes' : 'no')
+    } catch {
+      /* a private window, or storage blocked: the banner still works */
+    }
+  }
 
   return (
     <div
       className="border-amber/40 bg-amber-wash border-b"
       data-testid="provisional-banner"
+      data-open={open ? 'yes' : 'no'}
     >
-      <div className="mx-auto max-w-[1400px] px-4 py-2.5 sm:px-6">
+      <div className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-x-3 gap-y-0 px-4 py-1.5 sm:px-6">
         <p className="text-amber text-small font-semibold">
-          These figures are placeholders, not U&amp;M's
+          These figures are placeholders, not U&amp;M's.
         </p>
-        <p className="text-mid text-caption mt-0.5 max-w-[95ch]">
-          {state.data.what} Rates and D-minus will be replaced cell by cell when
-          PPC's sheet is loaded; the {state.data.provisional_orders} orders
-          marked <em className="not-italic">{state.data.order_prefix}</em> are
-          removed in one command.
-        </p>
+        <button
+          type="button"
+          onClick={toggle}
+          aria-expanded={open}
+          className="text-amber min-h-11 text-caption font-semibold underline-offset-2 hover:underline sm:min-h-0"
+        >
+          {open ? 'Hide details' : 'Details'}
+        </button>
+        {open ? (
+          <p className="text-mid text-caption basis-full pb-1 max-w-[95ch]">
+            {state.data.what} Rates and D-minus will be replaced cell by cell when
+            PPC's sheet is loaded; the {state.data.provisional_orders} orders
+            marked <em className="not-italic">{state.data.order_prefix}</em> are
+            removed in one command.
+          </p>
+        ) : null}
       </div>
     </div>
   )
@@ -245,6 +286,10 @@ function AttentionBadge() {
 function Shell({ children }: { children: React.ReactNode }) {
   const access = useAccess()
   const visible = NAV.filter((item) => has(access, ...item.roles))
+  const clusters = GROUPS.map((group) => ({
+    group,
+    items: visible.filter((item) => item.group === group),
+  })).filter((c) => c.items.length)
 
   return (
     <div className="min-h-full">
@@ -282,8 +327,21 @@ function Shell({ children }: { children: React.ReactNode }) {
               <AttentionBadge />
               {!access.isOffline ? (
                 <>
-                  <span className="text-faint text-caption hidden lg:inline">
-                    {access.roles.join(' · ')}
+                  {/* Who is signed in, in the space the twelve-role list
+                      used to take. The roles are in the title and on the
+                      Users screen; the bar only needs to say who. */}
+                  <span
+                    className="text-mid hidden max-w-[22ch] truncate text-caption lg:inline"
+                    title={`${access.email ?? ''} · ${access.roles.join(' · ')}`}
+                  >
+                    {access.fullName || access.email?.split('@')[0] || 'Signed in'}
+                    {access.roles.length ? (
+                      <span className="text-faint">
+                        {' · '}
+                        {access.roles[0]}
+                        {access.roles.length > 1 ? ` +${access.roles.length - 1}` : ''}
+                      </span>
+                    ) : null}
                   </span>
                   <button
                     type="button"
@@ -297,25 +355,37 @@ function Shell({ children }: { children: React.ReactNode }) {
             </div>
           </div>
 
-          {/* One line that scrolls sideways on a phone rather than three
-              wrapped rows. -mx-4/px-4 lets it bleed to the screen edges so
-              there is no cut-off item pretending to be the last one. */}
-          <nav className="-mx-4 flex snap-x gap-x-5 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:gap-x-6 sm:gap-y-1 sm:overflow-visible sm:px-0">
-            {visible.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.end}
-                className={({ isActive }) =>
-                  `text-small flex shrink-0 snap-start items-center border-b-2 pb-2.5 font-medium min-h-11 sm:min-h-0 ${
-                    isActive
-                      ? 'border-blue text-blue'
-                      : 'text-mid hover:text-ink border-transparent'
-                  }`
-                }
+          {/* Five clusters, each captioned with what the person is doing. On a
+              desk they wrap, a hairline between them; on a phone they run as
+              one line that scrolls sideways inside its own box, the captions
+              inline, so nothing is cut off and the page itself never scrolls
+              sideways. -mx-4/px-4 lets the strip bleed to the screen edges. */}
+          <nav className="-mx-4 flex snap-x gap-x-5 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:gap-x-9 sm:gap-y-1 sm:overflow-visible sm:px-0">
+            {clusters.map((c) => (
+              <div
+                key={c.group}
+                className="flex shrink-0 items-center gap-x-4 sm:flex-col sm:items-start sm:gap-0"
               >
-                {item.label}
-              </NavLink>
+                <span className="label snap-start sm:pt-1.5 sm:pb-1">{c.group}</span>
+                <div className="flex gap-x-4 sm:gap-x-5">
+                  {c.items.map((item) => (
+                    <NavLink
+                      key={item.to}
+                      to={item.to}
+                      end={item.end}
+                      className={({ isActive }) =>
+                        `text-small flex shrink-0 snap-start items-center border-b-2 pb-2.5 font-medium min-h-11 sm:min-h-0 ${
+                          isActive
+                            ? 'border-blue text-blue'
+                            : 'text-mid hover:text-ink border-transparent'
+                        }`
+                      }
+                    >
+                      {item.label}
+                    </NavLink>
+                  ))}
+                </div>
+              </div>
             ))}
           </nav>
         </div>

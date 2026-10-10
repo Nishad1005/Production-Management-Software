@@ -93,10 +93,20 @@ export function Metric({
   )
 }
 
-export function Table({ children }: { children: ReactNode }) {
+/**
+ * `scroll` makes a long table scroll inside a box of its own, so its header
+ * can stick. Two things follow from how browsers work: a `top-0` header only
+ * sticks inside the element that scrolls vertically, which the plain wrapper
+ * never does; and collapsed borders are painted by the table rather than the
+ * cell, so a stuck header's rule would stay behind — hence `border-separate`
+ * with the rule on each cell.
+ */
+export function Table({ children, scroll = false }: { children: ReactNode; scroll?: boolean }) {
   return (
-    <div className="-mx-5 overflow-x-auto px-5">
-      <table className="nums w-full border-collapse text-small">
+    <div className={scroll ? 'border-rule-soft max-h-[70vh] overflow-auto border' : '-mx-5 overflow-x-auto px-5'}>
+      <table
+        className={`nums w-full text-small ${scroll ? 'border-separate border-spacing-0' : 'border-collapse'}`}
+      >
         {children}
       </table>
     </div>
@@ -106,33 +116,65 @@ export function Table({ children }: { children: ReactNode }) {
 export function Th({
   children,
   align = 'left',
+  sticky = false,
+  wrap = false,
+  code,
+  className = '',
 }: {
   // Optional: an action column has a header cell but no heading.
   children?: ReactNode
   align?: 'left' | 'right'
+  /** Stays at the top while a `scroll` Table scrolls beneath it. */
+  sticky?: boolean
+  /** A department name over a narrow column wraps onto two lines. */
+  wrap?: boolean
+  /** The code behind a named column, for the checks: `th[data-code="SAND"]`. */
+  code?: string
+  className?: string
 }) {
   return (
     <th
-      className={`text-mid border-ink border-b-[1.5px] py-2.5 pr-3 font-mono text-[11px] font-medium tracking-[0.06em] whitespace-nowrap uppercase ${
-        align === 'right' ? 'pr-0 text-right' : 'text-left'
-      }`}
+      data-code={code}
+      className={`text-mid border-ink border-b-[1.5px] py-2.5 pr-3 font-mono text-[11px] font-medium tracking-[0.06em] uppercase ${
+        wrap ? 'whitespace-normal align-bottom' : 'whitespace-nowrap'
+      } ${align === 'right' ? 'pr-0 text-right' : 'text-left'} ${
+        sticky ? 'bg-sheet sticky top-0 z-20' : ''
+      } ${className}`}
     >
       {children}
     </th>
   )
 }
 
+/** A department name as a column heading: the name wrapped, the code beneath. */
+export function ColumnName({ name, code }: { name: string; code: string }) {
+  return (
+    <span className="inline-block max-w-[72px] text-right">
+      <span className="font-sans block text-[11px] leading-tight font-semibold tracking-normal normal-case">
+        {name}
+      </span>
+      <span className="text-blue block text-[10px]">{code}</span>
+    </span>
+  )
+}
+
 export function Td({
+  code,
+  title,
   children,
   align = 'left',
   className = '',
 }: {
+  code?: string
+  title?: string
   children: ReactNode
   align?: 'left' | 'right'
   className?: string
 }) {
   return (
     <td
+      data-code={code}
+      title={title}
       className={`border-rule-soft border-b py-2.5 pr-3 align-top ${
         align === 'right' ? 'pr-0 text-right' : ''
       } ${className}`}

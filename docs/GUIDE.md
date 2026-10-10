@@ -63,6 +63,16 @@ access to yet. The screen says as much rather than showing empty tables.
 Roles are enforced in the database on every request, not in the browser. Hiding a
 screen is a convenience; being unable to read the data is the actual rule.
 
+**The menu** is in five groups, by what you are doing: **Today** (Attention,
+Command centre, Dashboard), **Plan** (Schedule, Load heatmap, Factory map,
+Order book, Accept an order, What if), **Floor** (Production, My department,
+WIP, Manpower), **Watch** (Material, Quality, Money, Forecast) and **Set up**
+(Capacity sheet, Masters, Users). You only see the screens your roles allow.
+
+**The yellow line across the top** says the figures are placeholders while
+that is true. Press **Details** on it to read what was loaded and how it is
+removed; the line stays one line otherwise.
+
 To hand it to someone else, `npm run build` produces a `dist/` folder that will
 run from any static web host.
 
@@ -584,7 +594,9 @@ department — writing where the engine reads it.
 
 Pick what you are entering: **Units per day**, **Manpower**, or **D-minus**. One
 number per cell, because three across a thousand cells is not something anyone
-can read. Click a cell, type, press Enter.
+can read. Click a cell, type, press Enter. The grid scrolls inside its own box:
+the department names across the top and the article down the side stay in
+view however far you scroll.
 
 - A **units** figure means the article passes through that department at that
   rate. A blank means it does not go there at all, which is the usual answer.
@@ -614,6 +626,14 @@ an impossible plan that looks entirely normal.
 
 The figures every schedule run depends on. **Underlined values are editable** —
 click one, type, press Enter. Every change re-runs the schedule immediately.
+
+**Eight tabs**, each a page of its own: **Route** (the departments and what
+feeds what), **Articles**, **Machines**, **Shifts** (the shifts and who works
+which), **D-minus**, **Rates**, **Holidays** and **Bill of materials**. The
+file controls above the tabs work on every tab. A tab's address can be
+bookmarked — the D-minus matrix is `#/masters?tab=dminus`. The long grids
+scroll inside their own box with the header row held still, and the D-minus
+and Rates tabs have a **Find an article** box like the Capacity sheet's.
 
 **Save masters to a file / Load from a file.** Everything on this screen —
 route, shifts, staffing, D-minus, rates, BOM, holidays — written to a single

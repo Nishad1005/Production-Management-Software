@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useAcceptanceCheck, useArticles } from '@/data/planning'
 import { friendlyWriteError } from '@/lib/queryClient'
 import { Button, Field, Panel, Table, Tag, Td, Th } from '@/components/ui'
+import { componentLabel, useDepartmentNames } from '@/components/names'
 import { BREACH_EXPLAINER, BREACH_LABEL, formatDateLong, formatNumber, inputClass } from '@/components/format'
 
 /**
@@ -14,6 +15,7 @@ import { BREACH_EXPLAINER, BREACH_LABEL, formatDateLong, formatNumber, inputClas
 export function Acceptance() {
   const articles = useArticles()
   const check = useAcceptanceCheck()
+  const names = useDepartmentNames()
 
   const [articleId, setArticleId] = useState('')
   const [qty, setQty] = useState('250')
@@ -116,8 +118,8 @@ export function Acceptance() {
             <tbody>
               {rows.map((r) => (
                 <tr key={`${r.department_code}-${r.component_code}`}>
-                  <Td>{r.department_code}</Td>
-                  <Td>{r.component_code}</Td>
+                  <Td className="font-semibold">{names.get(r.department_code) ?? r.department_code}</Td>
+                  <Td className="text-mid" title={r.component_code}>{componentLabel(r.component_code, names)}</Td>
                   <Td align="right">{formatNumber(r.qty_required, 0)}</Td>
                   <Td>{formatDateLong(r.start_date)}</Td>
                   <Td>{formatDateLong(r.due_date)}</Td>

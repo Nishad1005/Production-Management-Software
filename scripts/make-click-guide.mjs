@@ -996,7 +996,7 @@ await action('capacity-rate', 'Capacity sheet', 'Enter a rate, and route an arti
   // The first blank cell in the first row — "does not go here" — whichever
   // department that is in this build's data.
   const blank = await page.evaluate(() => {
-    const heads = [...document.querySelectorAll('[data-testid="capacity-grid"] thead th')].map((h) => h.textContent?.trim())
+    const heads = [...document.querySelectorAll('[data-testid="capacity-grid"] thead th')].map((h) => h.dataset.code ?? h.textContent?.trim())
     const row = document.querySelector('[data-testid="capacity-grid"] tbody tr')
     const tds = [...(row?.querySelectorAll('td') ?? [])]
     for (let i = 1; i < tds.length; i += 1) {
@@ -1050,12 +1050,12 @@ await action('capacity-conflict', 'Capacity sheet', 'Enter a day-count the route
   await settle(400)
   const grid = page.locator('[data-testid="capacity-grid"]')
   const sand = await page.evaluate(() => {
-    const heads = [...document.querySelectorAll('[data-testid="capacity-grid"] thead th')].map((h) => h.textContent?.trim())
+    const heads = [...document.querySelectorAll('[data-testid="capacity-grid"] thead th')].map((h) => h.dataset.code ?? h.textContent?.trim())
     return heads.indexOf('SAND')
   })
   const cellAt = () => grid.locator('tbody tr').first().locator('td').nth(sand).locator('button')
   const was = (await cellAt().innerText()).trim()
-  const assyCol = await page.evaluate(() => [...document.querySelectorAll('[data-testid="capacity-grid"] thead th')].map((h) => h.textContent?.trim()).indexOf('ASSY'))
+  const assyCol = await page.evaluate(() => [...document.querySelectorAll('[data-testid="capacity-grid"] thead th')].map((h) => h.dataset.code ?? h.textContent?.trim()).indexOf('ASSY'))
   const assy = (await grid.locator('tbody tr').first().locator('td').nth(assyCol).locator('button').innerText()).trim().replace(/\D/g, '')
   const before = await shot('capacity-conflict', 'before', {
     around: [title('Capacity sheet'), grid.locator('tbody tr').last()],
@@ -1178,23 +1178,23 @@ await action('masters-yield', 'Masters', 'Change a department’s yield', async 
 })
 
 await action('masters-feeds', 'Masters', 'Change what feeds what', async () => {
-  await go('#/masters', 'text=What feeds what')
+  await go('#/masters?tab=route', 'text=What feeds what')
   const grid = page.locator('[data-testid="route-dependency-grid"]')
   const columns = await page.evaluate(() =>
-    [...document.querySelectorAll('[data-testid="route-dependency-grid"] thead th')].map((h) => h.textContent?.trim()),
+    [...document.querySelectorAll('[data-testid="route-dependency-grid"] thead th')].map((h) => h.dataset.code ?? h.textContent?.trim()),
   )
-  const cell = grid.locator('tbody tr').filter({ hasText: 'SAND' }).first().locator('td').nth(columns.indexOf('ASSY')).locator('button')
+  const cell = grid.locator('tbody tr[data-code="SAND"]').first().locator('td').nth(columns.indexOf('ASSY')).locator('button')
   const was = (await cell.innerText()).trim()
   const before = await shot('masters-feeds', 'before', {
     around: [title('What feeds what'), grid],
     maxHeight: 900,
     marks: [{ n: 1, at: cell, where: 'left', ring: true }],
-    notes: [`Row SAND, column ASSY: ${was === '●' ? 'assembly feeds sanding' : 'no link'}. Click to toggle.`],
+    notes: [`Row Sanding, column Assembly: ${was === '●' ? 'assembly feeds sanding' : 'no link'}. Click to toggle.`],
   })
   await cell.click()
   await until('the cell to toggle', ({ r, c, v }) => {
     const table = document.querySelector('[data-testid="route-dependency-grid"]')
-    const row = [...(table?.querySelectorAll('tbody tr') ?? [])].find((x) => x.querySelector('td')?.textContent?.trim().startsWith(r))
+    const row = [...(table?.querySelectorAll('tbody tr') ?? [])].find((x) => x.dataset.code === r)
     return row?.querySelectorAll('td')[c]?.textContent?.trim() !== v
   }, { r: 'SAND', c: columns.indexOf('ASSY'), v: was })
   await settle()
@@ -1207,7 +1207,7 @@ await action('masters-feeds', 'Masters', 'Change what feeds what', async () => {
   await cell.click()
   await until('the cell to toggle back', ({ r, c, v }) => {
     const table = document.querySelector('[data-testid="route-dependency-grid"]')
-    const row = [...(table?.querySelectorAll('tbody tr') ?? [])].find((x) => x.querySelector('td')?.textContent?.trim().startsWith(r))
+    const row = [...(table?.querySelectorAll('tbody tr') ?? [])].find((x) => x.dataset.code === r)
     return row?.querySelectorAll('td')[c]?.textContent?.trim() === v
   }, { r: 'SAND', c: columns.indexOf('ASSY'), v: was })
   await settle()
@@ -1220,7 +1220,7 @@ await action('masters-feeds', 'Masters', 'Change what feeds what', async () => {
 })
 
 await action('masters-shift', 'Masters', 'Switch a second shift on for a department', async () => {
-  await go('#/masters', 'text=Who works which shift')
+  await go('#/masters?tab=shifts', 'text=Who works which shift')
   const grid = panelWith('Who works which shift')
   const shiftRow = page.locator('tr', { hasText: 'Shift A' }).first()
   const on = shiftRow.getByRole('button', { name: 'Switch on' })
@@ -1264,7 +1264,7 @@ await action('masters-shift', 'Masters', 'Switch a second shift on for a departm
 })
 
 await action('masters-dminus', 'Masters', 'Edit the D-minus matrix', async () => {
-  await go('#/masters', 'text=D-minus matrix')
+  await go('#/masters?tab=dminus', 'text=D-minus matrix')
   const matrix = panelWith('D-minus matrix')
   const cell = page.locator('button:has-text("D-80")').first()
   const before = await shot('masters-dminus', 'before', {
@@ -1293,7 +1293,7 @@ await action('masters-dminus', 'Masters', 'Edit the D-minus matrix', async () =>
 })
 
 await action('masters-holiday', 'Masters', 'Declare a holiday', async () => {
-  await go('#/masters', 'text=Holidays')
+  await go('#/masters?tab=holidays', 'section > header > b:text-is("Holidays")')
   const holidays = panelWith('Holidays')
   const add = page.locator('button:has-text("Add a holiday")')
   const rowsBefore = await holidays.locator('tbody tr, li').count()
@@ -1339,7 +1339,7 @@ await action('masters-holiday', 'Masters', 'Declare a holiday', async () => {
 })
 
 await action('masters-article', 'Masters', 'Add an article, and take it to schedulable', async () => {
-  await go('#/masters', 'text=Production route')
+  await go('#/masters?tab=articles', '[data-testid="articles-master"]')
   const table = page.locator('[data-testid="articles-master"]')
   const add = page.locator('button:has-text("Add an article")')
   const before = await shot('masters-article', 'before', {
@@ -1382,7 +1382,7 @@ await action('masters-article', 'Masters', 'Add an article, and take it to sched
   await editor().fill('25')
   await editor().press('Enter')
   await page.waitForSelector('button:has-text("25")', { timeout: 60_000 })
-  await go('#/masters', 'text=Production route')
+  await go('#/masters?tab=articles', '[data-testid="articles-master"]')
   await until('the missing day-count to be reported', () => {
     const r = document.querySelector('[data-testid="article-DEMO-1"]')
     return r?.getAttribute('data-routed') === '1' && r?.getAttribute('data-missing-dminus') === '1'
@@ -1403,7 +1403,7 @@ await action('masters-article', 'Masters', 'Add an article, and take it to sched
   await editor().fill('45')
   await editor().press('Enter')
   await settle(1500)
-  await go('#/masters', 'text=Production route')
+  await go('#/masters?tab=articles', '[data-testid="articles-master"]')
   await until('the article to become schedulable', () => document.querySelector('[data-testid="article-DEMO-1"]')?.getAttribute('data-can-schedule') === 'yes')
   await settle()
   const ready = await shot('masters-article', 'ready', {
@@ -1421,7 +1421,7 @@ await action('masters-article', 'Masters', 'Add an article, and take it to sched
 })
 
 await action('masters-downtime', 'Masters', 'Book a machine down', async () => {
-  await go('#/masters', 'text=Machines')
+  await go('#/masters?tab=machines', '[data-testid="machines-master"]')
   await settle(500)
   const short = page.locator('[data-testid="machines-short-STITCH"]')
   const book = page.locator('[data-testid="book-downtime"]')

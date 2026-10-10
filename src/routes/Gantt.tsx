@@ -11,7 +11,7 @@ import {
 } from '@/components/format'
 import { Modal, ModalActions } from '@/components/edit'
 import { dayNumber as day, isoOf as iso, timelineMarks } from '@/components/timeline'
-import { useDepartmentNames } from '@/components/names'
+import { componentLabel, useDepartmentNames } from '@/components/names'
 
 type Scale = { from: number; to: number; span: number }
 type Marks = ReturnType<typeof timelineMarks>
@@ -234,7 +234,7 @@ export function Gantt() {
                     <span className="text-faint"> line {p.line_no}</span>
                   </Td>
                   <Td>{nameOf(p.department_code)}</Td>
-                  <Td>{p.component_code}</Td>
+                  <Td className="text-mid" title={p.component_code}>{componentLabel(p.component_code, names)}</Td>
                   <Td>{formatDateLong(p.pinned_start_date)}</Td>
                   <Td className="text-mid">{p.reason}</Td>
                   <Td align="right">

@@ -19,6 +19,7 @@ import {
   Td,
   Th,
 } from '@/components/ui'
+import { componentLabel, useDepartmentNames } from '@/components/names'
 import {
   BREACH_LABEL,
   formatDateLong,
@@ -69,6 +70,7 @@ const CHANGE_LABEL: Record<string, string> = {
 }
 
 export function WhatIf() {
+  const names = useDepartmentNames()
   const current = useCurrentRun()
   const departments = useDepartments()
   const runs = useRuns()
@@ -299,12 +301,12 @@ export function WhatIf() {
               <tbody>
                 {comparison.data.map((r) => (
                   <tr key={r.department_code}>
-                    <Td className="font-semibold">{r.department_code}</Td>
+                    <Td className="font-semibold">{names.get(r.department_code) ?? r.department_code}</Td>
                     <Td align="right">
-                      {r.base_utilisation?.toFixed(2) ?? '—'}
+                      {r.base_utilisation === null || r.base_utilisation === undefined ? '—' : `${Math.round(r.base_utilisation * 100)}%`}
                     </Td>
                     <Td align="right">
-                      {r.scenario_utilisation?.toFixed(2) ?? '—'}
+                      {r.scenario_utilisation === null || r.scenario_utilisation === undefined ? '—' : `${Math.round(r.scenario_utilisation * 100)}%`}
                     </Td>
                     <Td align="right">
                       <span
@@ -317,7 +319,7 @@ export function WhatIf() {
                         }
                       >
                         {r.utilisation_delta > 0 ? '+' : ''}
-                        {r.utilisation_delta.toFixed(2)}
+                        {Math.round(r.utilisation_delta * 100)}%
                       </span>
                     </Td>
                     <Td align="right">{r.base_breaches}</Td>
@@ -381,7 +383,11 @@ export function WhatIf() {
                 </thead>
                 <tbody>
                   {changed.data.slice(0, 40).map((t, i) => (
-                    <tr key={`${t.erp_order_no}-${t.department_code}-${t.component_code}-${i}`}>
+                    <tr
+                      key={`${t.erp_order_no}-${t.department_code}-${t.component_code}-${i}`}
+                      data-testid="changed-task"
+                      data-department={t.department_code}
+                    >
                       <Td>
                         <Tag tone={CHANGE_TONE[t.change] ?? 'mid'}>
                           {CHANGE_LABEL[t.change] ?? t.change}
@@ -391,8 +397,8 @@ export function WhatIf() {
                         {t.erp_order_no}
                         <span className="text-faint"> line {t.line_no}</span>
                       </Td>
-                      <Td>{t.department_code}</Td>
-                      <Td>{t.component_code}</Td>
+                      <Td>{names.get(t.department_code) ?? t.department_code}</Td>
+                      <Td className="text-mid" title={t.component_code}>{componentLabel(t.component_code, names)}</Td>
                       <Td>{formatDateLong(t.base_start)}</Td>
                       <Td className="font-semibold">
                         {formatDateLong(t.scenario_start)}

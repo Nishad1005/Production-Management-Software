@@ -1721,6 +1721,71 @@ so a blind click on a toggle closes the line the next action needs; they now
 open a line only when it is closed. KRAM/09 and KRAM/11 regenerated against
 the new screens (the walkthrough from `kraam.netlify.app` itself) and pushed.
 
+### 2026-10-10 — Batch 2 of the readability work: structure
+
+Chosen by Nishad on 9 Oct from the list of what was left. Built on the
+demonstration build, 49 browser checks and 363 tests green, pictures in
+`~/Desktop/Kram batch 2 preview`, **held unpushed for his go.** Nothing in
+the database; the web pages only.
+
+**The menu, in five groups** — Today (Attention, Command centre, Dashboard),
+Plan (Schedule, Load heatmap, Factory map, Order book, Accept an order, What
+if), Floor (Production, My department, WIP, Manpower), Watch (Material,
+Quality, Money, Forecast), Set up (Capacity sheet, Masters, Users). Each
+cluster captioned in the drawing hand; they wrap on a desk and run as one
+sideways-scrolling line on a phone. Every NAV entry is still a one-line
+literal beginning `{ to, label`, because `tests/docs-are-current` reads this
+file as text; `group` sits after `label`. The twelve-role list in the app bar
+became a name and the first role, the rest in its hover text; **Sign out**
+stays a visible button, because `verify:hosted-ui` clicks it and that check
+only runs against the live project.
+
+**The banner is one line** with a *Details* button; the detail is remembered
+open or closed per browser. The word "placeholders" stays in the line,
+because the browser check looks for it.
+
+**Masters is eight tabs** — Route, Articles, Machines, Shifts, D-minus,
+Rates, Holidays, Bill of materials — in the URL (`#/masters?tab=dminus`), so
+a tab can be bookmarked and the checks can go straight to it. Only the open
+tab renders: the matrix of 1,440 editable cells no longer costs every visit.
+`src/lib/useTab.ts` holds the hook, `src/components/tabs.tsx` the strip
+(buttons, 44px on a phone, scrolling in their own box). Under the hash router
+the query lives inside the hash and `useSearchParams` reads it;
+`window.location.search` is empty and must never be used.
+
+**Headers that hold still.** `Table scroll` and `Th sticky`: the capacity grid
+and the three long Masters grids scroll inside a box of 70vh with the header
+row fixed and, on the capacity grid and the D-minus matrix, the article
+column too. Two browser facts behind it, worth remembering: a `top-0` header
+only sticks inside the element that scrolls vertically, and collapsed table
+borders are painted by the table rather than the cell, so a stuck header's
+rule would stay behind — those tables use `border-separate`.
+
+**Names, not codes**, on the thirteen remaining places: column headings carry
+the name wrapped with the code small beneath and `data-code` for the checks;
+dropdowns show the name and keep the code as the value; component codes read
+"125034299 · Stitching" (`componentLabel`) with the raw code in the hover;
+utilisation is a percentage everywhere, matching the map and the heatmap.
+The departments table on Masters keeps both, since the code is the key.
+
+**Scripts.** Every Masters step navigates to its tab; `text=Machines` would
+have matched the tab label before the panel rendered, so those steps wait on
+a testid. Column lookups read `data-code` instead of parsing a heading that is
+now a name. The what-if step counts changed rows by `data-department` rather
+than by the string `::STITCH`, which the label no longer contains.
+`capture-screens` photographs Masters once per tab instead of one picture
+101,260 pixels tall.
+
+**One check moved one refetch behind.** 'machine downtime' waited on the
+department summary and then read the machine's row once; with the panel
+behind a tab the row arrived a refetch later and the step failed. It now
+waits on the row — the 18 Aug lesson, arriving from the other side.
+
+GUIDE: the menu groups, the banner's Details, the Masters tabs, the held
+headers. `capacity_sheet`'s constructed-string join and the loading-versus-
+empty sweep (§8.2) are untouched; the Command centre's "No run yet" flash is
+batch 3.
+
 ## 9. Log
 
 Newest first. One entry per working session — what changed, and anything a

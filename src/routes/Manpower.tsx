@@ -172,7 +172,7 @@ export function Manpower() {
           >
             {departments.data?.map((d) => (
               <option key={d.id} value={d.code}>
-                {d.code} — {d.name}
+                {d.name}
               </option>
             ))}
           </select>

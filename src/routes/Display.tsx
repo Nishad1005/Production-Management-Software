@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { componentLabel, useDepartmentNames } from '@/components/names'
 import { useDepartmentInbound, useDepartmentQueue } from '@/data/wip'
 import { useManpowerDay } from '@/data/manpower'
 import { useMachineStatus } from '@/data/mutations'
@@ -25,6 +26,7 @@ import { formatNumber, todayIso } from '@/components/format'
  * the wall must never be able to disagree.
  */
 export function Display() {
+  const names = useDepartmentNames()
   const departments = useDepartments()
   const [code, setCode] = useState<string | null>(() =>
     localStorage.getItem('kram.display.department'),
@@ -113,8 +115,8 @@ export function Display() {
                     <div className="truncate text-[24px] font-semibold">
                       {r.article_code}
                     </div>
-                    <div className="text-[15px] text-white/60">
-                      {r.erp_order_no} · {r.component_code}
+                    <div className="text-[15px] text-white/60" title={r.component_code}>
+                      {r.erp_order_no} · {componentLabel(r.component_code, names)}
                     </div>
                   </div>
                   <div className="shrink-0 text-right">

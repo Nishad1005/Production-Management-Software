@@ -175,6 +175,35 @@ async function capture({ label, dir, base, signIn }) {
       if (ready) await page.waitForSelector(ready, { timeout: 30_000 }).catch(() => {})
       await settle()
 
+      // Masters is eight tabs since 10 Oct: the page as it opens, then one
+      // picture per tab, each tab being a page of its own.
+      if (name === 'masters') {
+        const file = `${no}-${name}.png`
+        await page.screenshot({ path: `${dir}/${file}`, fullPage: true })
+        taken.push({ file, name, height: await page.evaluate(() => document.documentElement.scrollHeight) })
+        const sub = `${no}-${name}-tabs`
+        await mkdir(`${dir}/${sub}`, { recursive: true })
+        const tabs = page.locator('[data-testid^="masters-tab-"]')
+        const count = await tabs.count()
+        for (let i = 0; i < count; i += 1) {
+          const tab = tabs.nth(i)
+          const id = (await tab.getAttribute('data-testid')).replace('masters-tab-', '')
+          await tab.click()
+          await settle()
+          const h = await page.evaluate(() => document.documentElement.scrollHeight)
+          const tfile = `${sub}/${String(i + 1).padStart(2, '0')}-${id}.png`
+          if (h <= CAP) await page.screenshot({ path: `${dir}/${tfile}`, fullPage: true })
+          else {
+            await page.setViewportSize({ width: WIDTH, height: CAP })
+            await page.screenshot({ path: `${dir}/${tfile}` })
+            await page.setViewportSize({ width: WIDTH, height: 1000 })
+          }
+          taken.push({ file: tfile, name: `${name} — ${id}`, height: h, cut: h > CAP })
+        }
+        console.log(`${count} tabs`)
+        continue
+      }
+
       const height = await page.evaluate(() => document.documentElement.scrollHeight)
       const file = `${no}-${name}.png`
       if (height <= CAP) {

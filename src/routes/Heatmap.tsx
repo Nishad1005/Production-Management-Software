@@ -14,7 +14,7 @@ import {
   monthBands,
   todayIso,
 } from '@/components/timeline'
-import { useDepartmentNames } from '@/components/names'
+import { componentLabel, useDepartmentNames } from '@/components/names'
 
 /*
  * Five steps of green rather than a continuous fade.
@@ -270,7 +270,7 @@ export function Heatmap() {
                 <tr key={`${d.erp_order_no}-${d.component_code}`}>
                   <Td>{d.erp_order_no}</Td>
                   <Td>{d.customer_name}</Td>
-                  <Td>{d.component_code}</Td>
+                  <Td className="text-mid" title={d.component_code}>{componentLabel(d.component_code, names)}</Td>
                   <Td align="right">{formatNumber(d.qty_planned, 1)}</Td>
                   <Td align="right">{formatNumber(d.capacity, 0)}</Td>
                   <Td align="right">

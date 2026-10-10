@@ -13,6 +13,7 @@ import {
 } from '@/data/wip'
 import { useDepartments } from '@/data/planning'
 import { Button, Empty, Panel, Table, Tag, Td, Th } from '@/components/ui'
+import { componentLabel, useDepartmentNames } from '@/components/names'
 import { formatDateLong, formatNumber, inputClass, todayIso } from '@/components/format'
 
 /**
@@ -57,7 +58,7 @@ export function Production() {
           >
             {departments.data?.map((d) => (
               <option key={d.id} value={d.code}>
-                {d.code} — {d.name}
+                {d.name}
               </option>
             ))}
           </select>
@@ -171,6 +172,7 @@ export function Production() {
 }
 
 function WorklistEntry({ row, date }: { row: WorklistRow; date: string }) {
+  const names = useDepartmentNames()
   const declare = useDeclareProduction()
   const [good, setGood] = useState(String(row.qty_good))
   const [rejected, setRejected] = useState(String(row.qty_rejected))
@@ -307,8 +309,8 @@ function WorklistEntry({ row, date }: { row: WorklistRow; date: string }) {
             </span>
           ) : null}
         </Td>
-        <Td>
-          {row.component_code}
+        <Td title={row.component_code}>
+          {componentLabel(row.component_code, names)}
           <span className="text-faint"> · {row.shift_code}</span>
         </Td>
         <Td align="right">{formatNumber(row.qty_planned)}</Td>
@@ -355,6 +357,7 @@ function AcceptancePanel({
   departmentCode: string
   rows: NonNullable<ReturnType<typeof usePendingAcceptance>['data']>
 }) {
+  const names = useDepartmentNames()
   const accept = useAcceptProduction()
   const [counts, setCounts] = useState<Record<string, string>>({})
 
@@ -468,7 +471,7 @@ function AcceptancePanel({
                     </span>
                   </Td>
                   <Td className="font-semibold">{row.erp_order_no}</Td>
-                  <Td>{row.component_code}</Td>
+                  <Td className="text-mid" title={row.component_code}>{componentLabel(row.component_code, names)}</Td>
                   <Td align="right">{formatNumber(row.qty_declared)}</Td>
                   <Td align="right">
                     <input
