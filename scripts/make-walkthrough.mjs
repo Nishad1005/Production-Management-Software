@@ -502,7 +502,9 @@ if (wants('what-if')) {
   const main = await page.locator('main').innerText()
   const tile = (label) => Number(main.match(new RegExp(`${label}\\s*\\n\\s*([\\d,]+)`, 'i'))?.[1].replace(/,/g, ''))
   const scenario = panelWith(note)
-  const row = scenario.locator('tbody tr', { has: page.locator('td:text-is("SAND")') }).first()
+  // By the row's code, not its first cell: that cell says "Sanding" since the
+  // screens stopped showing codes, and a name is master data U&M may rename.
+  const row = scenario.locator('tbody tr[data-code="SAND"]').first()
   const cells = await row.locator('td').allInnerTexts()
   facts.whatIf = {
     note,
@@ -517,7 +519,7 @@ if (wants('what-if')) {
     rows: await scenario.locator('tbody tr').evaluateAll((all) =>
       all.map((r) => {
         const c = [...r.children].map((x) => x.textContent.trim())
-        return { code: c[0], now: Number(c.at(-2)), then: Number(c.at(-1)) }
+        return { code: r.dataset.code ?? c[0], now: Number(c.at(-2)), then: Number(c.at(-1)) }
       }),
     ),
     tasksChanged: await panelWith('What changed').locator('tbody tr').count(),
@@ -534,7 +536,7 @@ if (wants('what-if')) {
   // Down to Sanding's own row and two past it: the tiles and that one line are
   // the answer, and the other seventeen rows say "no change".
   const rows = scenario.locator('tbody tr')
-  const at = await rows.evaluateAll((all) => all.findIndex((r) => r.firstElementChild?.textContent?.trim() === 'SAND'))
+  const at = await rows.evaluateAll((all) => all.findIndex((r) => r.dataset.code === 'SAND'))
   await shot('what-if', top, await bottomOf(rows.nth(Math.min(at + 2, (await rows.count()) - 1)), 8))
 }
 

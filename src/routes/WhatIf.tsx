@@ -300,7 +300,7 @@ export function WhatIf() {
               </thead>
               <tbody>
                 {comparison.data.map((r) => (
-                  <tr key={r.department_code}>
+                  <tr key={r.department_code} data-code={r.department_code}>
                     <Td className="font-semibold">{names.get(r.department_code) ?? r.department_code}</Td>
                     <Td align="right">
                       {r.base_utilisation === null || r.base_utilisation === undefined ? '—' : `${Math.round(r.base_utilisation * 100)}%`}
