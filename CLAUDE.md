@@ -84,6 +84,13 @@ for the hosted system. Both use the same views and functions.
 - `npm run screens -- <out-dir> [email password]` — every screen, clean and
   fully loaded, for a designer: the demonstration build, and the live project
   when a login is given.
+- `npm run bench:engine [-- --fixtures=sparse,dense,um,um4 --roles=owner,planner
+  --dump <dir> --explain --pglite]` — times the engine on the fixtures the
+  suite guards, **as the owner and as a signed-in planner**, and dumps the run
+  by natural key so two engines can be `diff`ed. The planner column is the
+  one that predicts the site: the tests run as the owner, where row-level
+  security costs nothing, and the engine's whole problem was row-level
+  security (log §5, 11 Oct). Run it alone; it is a Postgres on this machine.
 - `npm run clicks`, then `npm run pdf docs/click-guide.html` — every control,
   before and after (KRAM/11), on the demonstration build; no login needed.
   `--only=<id,id>` re-takes named actions and keeps the rest.

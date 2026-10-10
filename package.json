@@ -26,7 +26,8 @@
     "walkthrough": "node scripts/make-walkthrough.mjs",
     "screens": "node scripts/capture-screens.mjs",
     "report": "node scripts/make-sample-report.mjs",
-    "clicks": "node scripts/make-click-guide.mjs"
+    "clicks": "node scripts/make-click-guide.mjs",
+    "bench:engine": "node scripts/bench-engine.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

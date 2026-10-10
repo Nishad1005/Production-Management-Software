@@ -1,71 +1,11 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import { withRollback } from './helpers/db'
+import { becomeUser, createUser, withRollback } from './helpers/db'
 import { applySeed, createOrder, runSchedule } from './helpers/fixtures'
-
-/**
- * Spec §11 sizes the real workload: "324 orders averaging two shipment lines,
- * across seven departments, three components and up to three shifts gives
- * roughly 40,000 tasks and 300,000–400,000 daily-load rows per run. A set-based
- * Postgres workload measured in seconds."
- *
- * This builds that shape and checks the claim. The assertion is deliberately
- * loose — wall-clock in CI is not a precise instrument — but a regression that
- * turns the engine row-by-row would blow through it by orders of magnitude,
- * which is the failure worth catching.
- */
-const FIXTURE = `
-  insert into shifts (code, name, start_time, end_time) values
-    ('GEN', 'General', '09:00', '18:00'),
-    ('A',   'Shift A', '06:00', '14:00'),
-    ('B',   'Shift B', '14:00', '22:00');
-
-  insert into departments (code, name, route_position, yield_pct)
-  select 'D' || i, 'Department ' || i, i * 10, 98
-    from generate_series(1, 7) i;
-
-  insert into department_shifts (department_id, shift_id, sanctioned_headcount)
-  select d.id, s.id, 12 from departments d cross join shifts s;
-
-  insert into components (code, name)
-  select 'C' || i, 'Component ' || i from generate_series(1, 3) i;
-
-  insert into articles (code, name) values ('ART', 'Scale-test article');
-
-  insert into article_bom (article_id, component_id, qty_per_unit)
-  select (select id from articles where code = 'ART'), c.id, 2 from components c;
-
-  -- Every department works every component, on every shift.
-  insert into component_rates (component_id, department_id, shift_id, units_per_day)
-  select c.id, d.id, s.id, 200
-    from components c cross join departments d cross join shifts s;
-
-  -- D-minus 70, 60, ... 10 down the route.
-  update article_dept_dminus adm
-     set dminus_days = 80 - (d.route_position), is_complete = true
-    from departments d
-   where adm.department_id = d.id;
-
-  insert into customers (code, name) values ('C1', 'Scale-test customer');
-
-  -- Sized so each task spans roughly eight working days against 600/day of
-  -- combined shift capacity. That is what produces the spec's 300–400k
-  -- daily-load rows; a token quantity would fit every task into one day and
-  -- quietly test a tenth of the workload.
-  insert into orders (erp_order_no, customer_id, article_id, total_qty)
-  select 'SO-' || i,
-         (select id from customers where code = 'C1'),
-         (select id from articles where code = 'ART'),
-         4000
-    from generate_series(1, 324) i;
-
-  -- Two shipment lines each, stuffing dates spread across about six months.
-  insert into shipment_lines (order_id, line_no, qty, stuffing_date)
-  select o.id, l.line_no, 2000,
-         date '2027-01-04' + ((row_number() over (order by o.erp_order_no, l.line_no))::integer % 180)
-    from orders o
-    cross join (values (1), (2)) as l (line_no);
-`
+import {
+  DENSE_FIXTURE as FIXTURE,
+  SPARSE_FIXTURE as SPARSE,
+} from './helpers/scale-fixtures'
 
 describe('engine at production scale', () => {
   it('schedules 324 orders across seven departments in seconds', async () => {
@@ -104,77 +44,59 @@ describe('engine at production scale', () => {
       expect(stats.task_count).toBe(648 * 7 * 3)
       expect(Number(stats.loads)).toBeGreaterThan(100_000)
 
-      // "Measured in seconds", not minutes.
-      expect(stats.duration_ms).toBeLessThan(60_000)
+      // "Measured in seconds", not minutes. 4.6 s on 11 Oct 2026 with the grid
+      // built as one statement; 60 s was the bound before that, and the old
+      // engine sat at 5.5 s under it as the owner while taking 95 s as a
+      // planner — which the next test is for.
+      expect(stats.duration_ms).toBeLessThan(15_000)
+    })
+  })
+
+  it('costs a planner what it costs the owner', async () => {
+    /*
+     * Every test in this suite runs as the table owner, where row-level
+     * security does not apply, and the engine's cost on the live project was
+     * almost entirely row-level security: a function call per grid cell, each
+     * its own statement, each paying the policy once; then a summary that
+     * re-read 300,000 rows through a security_invoker view. The owner saw 5.5
+     * seconds on this fixture and a signed-in planner saw 95. No test noticed,
+     * because no test had ever run the engine as a planner at scale.
+     *
+     * The same fixture, as the authenticated role with a planner's claims,
+     * exactly as a request through PostgREST arrives. 4.5 s on 11 Oct 2026.
+     */
+    await withRollback(async (c) => {
+      await c.query(FIXTURE)
+      const planner = await createUser(c, 'planner@scale.test', ['planner'])
+      await becomeUser(c, planner)
+
+      const { rows: run } = await c.query<{ id: string }>(`select run_schedule() as id`)
+      const { rows } = await c.query<{ task_count: number; duration_ms: number }>(
+        `select task_count, duration_ms from schedule_runs where id = $1`,
+        [run[0].id],
+      )
+      expect(rows[0].task_count).toBe(648 * 7 * 3)
+      expect(rows[0].duration_ms).toBeLessThan(20_000)
+    })
+  })
+
+  it('makes no call per cell or per task', async () => {
+    // The static half of the guard above. The four functions below are each
+    // a statement of their own when called from the engine, and a statement
+    // per cell is what cost a minute a run; the engine has them as joins now.
+    // Read from pg_proc, so it is the installed engine and not a file.
+    await withRollback(async (c) => {
+      const { rows } = await c.query<{ prosrc: string }>(
+        `select prosrc from pg_proc where proname = 'run_schedule'`,
+      )
+      expect(rows).toHaveLength(1)
+      const body = rows[0].prosrc.replace(/--[^\n]*/g, '')
+      for (const fn of ['resolve_capacity(', 'machine_availability(', 'prev_working_day(', 'next_working_day(', 'working_days_between(']) {
+        expect(body, `run_schedule calls ${fn} per row`).not.toContain(fn)
+      }
     })
   })
 })
-
-/**
- * The shape the live project actually has, which the fixture above does not.
- *
- * Above, every article is ordered and every rate is in the plan, so the
- * capacity grid could be built from the whole masters set and nothing would
- * show. U&M's project holds seventy-one articles and twelve orders: five sixths
- * of the rates belong to articles nobody has ordered. The engine built the grid
- * from all of them, and `resolve_capacity` is a function call per cell.
- *
- * The measurement that prompted this, from the live project: 45 seconds to
- * schedule 24 tasks, and 120 seconds — the ceiling — once the missing
- * departments were staffed.
- */
-const SPARSE = `
-  insert into shifts (code, name, start_time, end_time)
-  values ('GEN', 'General', '09:00', '18:00');
-
-  insert into departments (code, name, route_position, yield_pct)
-  select 'D' || i, 'Department ' || i, i * 10, 98 from generate_series(1, 14) i;
-
-  insert into department_shifts (department_id, shift_id, sanctioned_headcount)
-  select d.id, s.id, 10 from departments d cross join shifts s;
-
-  -- Seventy-one articles, one component per department each, as the interim
-  -- loader builds them.
-  insert into articles (code, name)
-  select 'ART' || i, 'Article ' || i from generate_series(1, 71) i;
-
-  insert into components (code, name)
-  select a.code || '::' || d.code, a.code || ' at ' || d.code
-    from articles a cross join departments d;
-
-  insert into article_bom (article_id, component_id, qty_per_unit)
-  select a.id, c.id, 1
-    from articles a
-    join departments d on true
-    join components c on c.code = a.code || '::' || d.code;
-
-  insert into component_rates (component_id, department_id, shift_id, units_per_day)
-  select c.id, d.id, s.id, 100
-    from articles a
-    join departments d on true
-    join components c on c.code = a.code || '::' || d.code
-    cross join shifts s;
-
-  update article_dept_dminus adm
-     set dminus_days = 150 - d.route_position, is_complete = true
-    from departments d
-   where adm.department_id = d.id;
-
-  insert into customers (code, name) values ('C1', 'Sparse-test customer');
-
-  -- Twelve orders, on twelve of the seventy-one articles.
-  insert into orders (erp_order_no, customer_id, article_id, total_qty)
-  select 'SO-' || i,
-         (select id from customers where code = 'C1'),
-         (select id from articles where code = 'ART' || i),
-         180
-    from generate_series(1, 12) i;
-
-  insert into shipment_lines (order_id, line_no, qty, stuffing_date)
-  select o.id, 1, 180,
-         date '2027-02-01' + ((row_number() over (order by o.erp_order_no))::integer * 7)
-    from orders o;
-`
 
 describe('a book that touches a fraction of the masters', () => {
   it('builds capacity for the twelve articles ordered, not the seventy-one', async () => {

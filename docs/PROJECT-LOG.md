@@ -77,7 +77,7 @@ unmodified in the browser, so the demo runs the real engine with no backend.
 `npm run build` produces a static folder.
 
 **Online.** Supabase project `fiqfbbnmksppbpxmhnbv` — *kram*, Mumbai
-(ap-south-1), Postgres 17.6. All sixty-three migrations applied, the last on 4 Oct (§9).
+(ap-south-1), Postgres 17.6. All sixty-four migrations applied — the sixty-fourth, the engine rewrite of 11 Oct, on the live project only on Nishad's go (§9).
 
 **The plan of record is §8.0** — the concept deck's promises, each marked
 built, partly or not built, and what it waits on. Written 9 Oct.
@@ -274,6 +274,33 @@ with it and breaking the Masters screen. Rewritten to join `article_bom` to
 **Never join on a constructed string**, and remember that a local timing says
 nothing about a view under RLS. `verify:live` now times every view signed in.
 (23 Aug)
+
+**The engine's cost is paid by the planner, and the tests are the owner.** The
+scale test reported 5.5 seconds for 13,608 tasks for two months; the same
+fixture as a signed-in planner took 95, and twelve orders on the live project
+took 37. Neither cause was visible as the owner: a function call per grid cell,
+each its own statement paying the policy once, and a summary that re-read
+300,000 rows it had just written through a `security_invoker` view.
+`scripts/bench-engine.mjs` runs every fixture both ways, and `engine-scale`
+now runs the dense fixture as a planner with a bound. Measure where the cost is
+paid. (11 Oct)
+
+**`plan_cache_mode = force_custom_plan` on a function re-plans its own
+foreign-key checks.** Set on `run_schedule` as insurance against a stale
+cached plan, it applied to every prepared statement in the session, the five
+referential checks on every row written included — 1.4 million on the dense
+fixture — and the load insert went from 2.7 seconds to 8.6. The stale plan was
+real: the department-day summary took 82 seconds as the owner on a session that
+had just planned a small run twice, and under 0.2 on a fresh one. It is gone
+for a different reason — every heavy statement reads temp tables, recreated
+each run, so no plan outlives the run it was made for. (11 Oct)
+
+**A function's `statement_timeout` does not cancel a run on a session that
+arrived without one.** On Supabase `run_schedule` is cancelled at 120.1 s,
+because the role's eight-second timer is already running when the function's
+setting takes over. On a local session with no timeout the old engine sat
+inside one U&M-scale run for twenty minutes before it was killed. A local
+bench sets its own cap on the session. (11 Oct)
 
 
 **Supabase gives `authenticated` an eight-second statement timeout, and the
@@ -692,40 +719,48 @@ what-if, optimal sequence, barcode/QR, purchase status.
 The one open mismatch is "stuffing date" (ours) against "delivery deadline"
 (deck) and "HOD" (their sheet), which may be two different dates — §6 item 9.
 
-### 8.1 The one thing that will stop this working at U&M's real scale
+### 8.1 The engine at U&M's real scale — rewritten 11 Oct, awaiting the go
 
-**The engine takes 68 seconds to plan twelve orders**, and it does not scale the
-way it needs to. `_cap_shift` is department × component × shift × working day,
-and every cell is a call to `resolve_capacity` — five policy-checked lookups
-(two on `capacity_overrides`, one on `component_rates`, a correlated attendance
-subquery, and `machine_availability`, itself a function). Roughly 2.6 ms a cell.
+**Done on 11 Oct, locally; on the live project once Nishad says go** (the 11
+Oct entry in §9 has the whole story). The diagnosis below stood — it was the
+number of statements, not the cost of each — and measuring as a planner found
+a second cause the tests could never see. The capacity grid is one statement;
+the three calendar lookups are columns of one pass over the calendar; the
+department-day summary is computed from the rows the engine is holding
+instead of re-read through a view under row-level security.
 
-30 Aug narrowed the grid to the components the plan actually touches, which took
-it from cancelled-at-120s to 56–68s. That was the cheap half. The expensive half
-is untouched: **spec §11 sizes the real workload at 324 orders and ~40,000
-tasks**, where every one of the 980 pairings is in the plan and the grid is six
-times today's. Extrapolating the measured per-cell cost puts a real run at
-several minutes, against a 120-second ceiling that exists for a reason.
+| fixture | tasks | before, owner | before, planner | after, owner | after, planner |
+|---|---:|---:|---:|---:|---:|
+| sparse (71 articles, 12 orders — the live shape) | 168 | 1.6 s | 4.3 s | 0.64 s | 0.65 s |
+| dense (324 orders, 7 departments) | 13,608 | 5.5 s | 95 s | 4.6 s | 4.5 s |
+| um (994 pairings, 324 orders) | 9,072 | not done in 20 min | — | 10.9 s | 11.3 s |
+| um4 (four components a cell) | 36,288 | — | — | 53 s | 58 s |
 
-The grid wants to be built **set-based** — hash joins against
-`capacity_overrides`, `component_rates` and `department_attendance` instead of
-five correlated lookups per cell, with `machine_availability` inlined. That is a
-rewrite of the engine's hottest section. `tests/engine-scale.test.ts` already
-holds both shapes to measure it against: the dense fixture (324 orders, every
-article ordered) and the sparse one (71 articles, 12 ordered) that this month's
-defect hid behind.
+The live project's 37 seconds was the planner column; the two columns are the
+same now. The plan is identical, cell for cell: `tests/engine-grid-parity`
+holds every written cell to `resolve_capacity`, `tests/calendar-as-a-set`
+holds the three calendar columns to the functions, and the benchmark's dumps
+of four tables before and after are byte-identical on every fixture.
 
-**This is the largest remaining piece of work in the project.** It is not
-urgent for a demonstration and it is a hard blocker on U&M's real order book.
+**What is left is writing the run**, and it scales with the output rather than
+with the number of statements: five foreign-key checks on every row of 533,000
+capacity rows at U&M's shape (6 of the 11 seconds), and the running total's
+window sort over 886,000 rows. Neither is dearer as a planner. The next lever
+is the capacity grid's *volume* — every shift of every pairing on every day of
+the whole window, 20 runs retained, which is ten million rows on the live
+project at U&M's shape — and reducing it changes what
+`schedule_component_load` lists, so it is a decision to put to Nishad, not
+a rewrite to make quietly. Until then a real order book with one component a
+pairing plans in about eleven seconds locally; with four it is just under a
+minute, inside the ceiling and not quick.
 
-**Measured again on 4 Oct: 37 seconds for eleven orders and 220 tasks**, after
-every policy was rewritten to be evaluated once per statement (§5). That
-rewrite took the views from about a second to about 400 ms and did almost
-nothing for the engine, which is itself the finding: `resolve_capacity` is
-thousands of *separate small statements*, and each one pays its own InitPlan.
-Once per statement is no saving when the statements are the problem. The
-diagnosis above stands, with the cause now stated correctly — it is the number
-of statements, not the cost of each lookup.
+The diagnosis, kept as written: **the engine took 68 seconds to plan twelve
+orders** (30 Aug) and 37 (4 Oct) because `_cap_shift` was department ×
+component × shift × working day and every cell was a call to
+`resolve_capacity` — five lookups, each its own statement, each paying its
+row-level policy. Once-per-statement policies (3 Oct) did nothing for it,
+which was the finding: the number of statements was the cost. Spec §11 sizes
+the real workload at 324 orders and ~40,000 tasks.
 
 ### 8.2 Ours, and small
 
@@ -1808,6 +1843,83 @@ with the earlier scenario reopened, so nothing new on the client's database)
 and KRAM/11 (43 pages, 33 actions) regenerated and pushed. The `## 9. Log`
 heading had drifted: every entry since 31 August had been written above it,
 inside §8. It sits above the 31 August entry now.
+
+### 2026-10-11 — The engine, set-based: the grid as one statement, and what measuring as a planner found
+
+Nishad chose the engine rewrite over the workbook loader on 10 Oct ("make our
+engine as quick as possible"). Plan of record §8.0's blocker on the real order
+book; §8.1 had the diagnosis right and the measurement in the wrong place.
+
+**The order of work, which is the point.** The oracle first: a grid-parity test
+written against the *old* engine and watched pass, holding every cell the
+engine writes to `resolve_capacity` and the set of cells to the function's
+over the engine's own grid, on a fixture that puts every branch on the board
+(component override beside a department override, a zero, an override on a
+shift with no rate, attendance with and without a crew, machines part down,
+a department with none). Then a benchmark that runs every fixture as the
+owner *and* as a signed-in planner, dumps the run's four tables by natural
+key, and prints the slowest statements inside the function with
+`auto_explain`. Only then the migration, regenerated from the text of
+20260830140000.
+
+**What measuring as a planner found.** The grid was the cost on the live
+project's shape — sparse as planner 4.3 s against 1.6 as owner, 2.1 of it the
+grid — but on the dense fixture the grid was under a second and the run was
+95 seconds as a planner against 5.5 as the owner, 89 of them in the last
+statement: the department-day summary re-reading the 300,000 rows it had
+just written through `schedule_component_load`, a `security_invoker` view,
+under row-level security. Invisible in every test, because every test is the
+owner. The same statement also took 82 seconds *as the owner* on a session
+that had just planned the small fixture twice — a cached plan made for the
+wrong size — and under 0.2 s on a fresh one. Three changes, then:
+
+1. **The grid as one statement.** `_cap_shift` is left joins to the two
+   override shapes, the rate, the day's attendance and a per-department-day
+   machine table, `coalesce`d in the function's order and rounded the same
+   way; every join is at most one row by constraint (both exclusion
+   constraints are `'[]'`, checked). The DELETE became the WHERE.
+2. **The calendar as a set.** `prev_working_day`, `next_working_day` and
+   `working_days_between` — sub-selects in their bodies, so never inlined,
+   one statement per task — are three window columns of one pass over
+   `working_days`, proved against the functions for every date in the
+   calendar and a month beyond each end.
+3. **The load and capacity rows staged in temp tables**, written from there
+   and summarised from there, so nothing re-reads a permanent table under a
+   policy and no heavy statement's plan can outlive the run it was made for.
+   Plus `analyze` on four temp tables and `work_mem = 32MB` on the function.
+
+**Measured and rejected, both in the migration's header:**
+`plan_cache_mode = force_custom_plan` as insurance against the stale plan
+re-planned every foreign-key check on every row written and took the load
+insert from 2.7 s to 8.6; ordering the inserts by their indexes' keys made no
+difference in any order (the write is five referential checks a row, 0.6 s of
+2.7 without them) and only spilled a sort.
+
+| fixture | tasks | load rows | before, owner | before, planner | after, owner | after, planner |
+|---|---:|---:|---:|---:|---:|---:|
+| sparse | 168 | 336 | 1.6 s | 4.3 s | 0.64 s | 0.65 s |
+| dense | 13,608 | 285,768 | 5.5 s | 95 s | 4.6 s | 4.5 s |
+| um | 9,072 | 54,432 | not done in 20 min | — | 10.9 s | 11.3 s |
+| um4 | 36,288 | 217,728 | — | — | 53 s | 58 s |
+| PGlite, the demonstration seed | 102 | 275 | 1.6 s | — | 0.69 s | — |
+
+Native Postgres 18 on this machine, a fresh session per run, the engine's own
+`duration_ms`. The dumps are byte-identical before and after on every
+fixture, and owner against planner. 368 tests, 49 browser checks. The dense
+bound in `engine-scale` is 15 s now, it runs the dense fixture as a planner
+under 20 s, and a static check reads `run_schedule` from `pg_proc` and fails
+on any of the five functions being called per row.
+
+**Three things the log now carries in §5:** the engine's cost is paid by the
+planner and the tests are the owner; `force_custom_plan` re-plans foreign-key
+checks; a function's `statement_timeout` does not arm on a session that had
+none (the old engine sat in one U&M-scale run for twenty minutes locally).
+
+**Not pushed to the live project.** The migration, the tests, the benchmark
+and this entry are committed; `npm run db:push` waits for Nishad's go, and
+the live `duration_ms` beside 4 Oct's 37 seconds goes here when it has one.
+§8.1 says what is left: the run is now bounded by writing its output, and the
+capacity grid's volume is the next lever and a decision rather than a rewrite.
 
 ### 2026-08-17 — Three asks, and a sheet PPC can actually fill in
 
