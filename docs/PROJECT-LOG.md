@@ -337,7 +337,10 @@ against `innerText`, which *does* reflect `text-transform: uppercase`, so
 "Articles routed" reads as ARTICLES ROUTED; and waiting for a panel that renders
 only when it has data, on a database that correctly has none. Every one reported
 a defect in a screen that was rendering exactly right. Anchor to `data-testid`,
-attributes, or counted structure — never to a sentence. (17 Aug)
+attributes, or counted structure — never to a sentence. (17 Aug) A seventh,
+from the other direction: batch 2 turned the What-if table's first cell from
+`SAND` into Sanding, and the walkthrough, the one capture script that batch
+had not touched, stopped there. The rows carry `data-code` now. (10 Oct)
 
 **`data-testid` on a custom component compiles and does nothing.** JSX does not
 type-check hyphenated attributes, so passing one to a component that takes an
@@ -848,6 +851,13 @@ the database ships to the browser — right for a demonstration, wrong for a
 factory.
 
 ---
+
+## 9. Log
+
+One entry per working session — what changed, and anything a future reader
+would not infer from the diff. From 31 August onward the entries read oldest
+first, as they were appended; the first three weeks, 10 to 31 August, follow
+them, broadly newest first.
 
 ### 2026-08-31 — The notes render to PDF, and my own print CSS was wrong
 
@@ -1725,7 +1735,7 @@ the new screens (the walkthrough from `kraam.netlify.app` itself) and pushed.
 
 Chosen by Nishad on 9 Oct from the list of what was left. Built on the
 demonstration build, 49 browser checks and 363 tests green, pictures in
-`~/Desktop/Kram batch 2 preview`, **held unpushed for his go.** Nothing in
+`~/Desktop/Kram batch 2 preview`, held unpushed for his go. Nothing in
 the database; the web pages only.
 
 **The menu, in five groups** — Today (Attention, Command centre, Dashboard),
@@ -1786,10 +1796,18 @@ headers. `capacity_sheet`'s constructed-string join and the loading-versus-
 empty sweep (§8.2) are untouched; the Command centre's "No run yet" flash is
 batch 3.
 
-## 9. Log
-
-Newest first. One entry per working session — what changed, and anything a
-future reader would not infer from the diff.
+**Pushed on Nishad's go at 21:58 IST**, live about three minutes later.
+`verify:hosted-ui` against `kraam.netlify.app`: 30 checks green — 20
+departments × 67 days, 145 over, the 72 × 20 capacity grid, the badge and
+the list agreeing on 28. One follow-up push at 22:08 (`5410c38`): KRAM/09
+stopped at the What-if page, because the walkthrough looked for `SAND` in a
+cell that now says Sanding — §5's rule about prose, a seventh time, from the
+one capture script this batch had not touched. The comparison rows carry
+`data-code` and the script reads it. KRAM/09 (14 pages, from the site itself
+with the earlier scenario reopened, so nothing new on the client's database)
+and KRAM/11 (43 pages, 33 actions) regenerated and pushed. The `## 9. Log`
+heading had drifted: every entry since 31 August had been written above it,
+inside §8. It sits above the 31 August entry now.
 
 ### 2026-08-17 — Three asks, and a sheet PPC can actually fill in
 
