@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { todayIso } from '@/components/format'
 import { rpc, rpcRows, select } from '@/lib/backend'
 
 /**
@@ -105,6 +106,7 @@ export function useRunWhatIf() {
         p_from: s.from,
         p_to: s.to,
         p_factor: s.factor,
+        p_today: todayIso(),
       })
     },
     onSuccess: () => client.invalidateQueries({ queryKey: ['runs'] }),

@@ -78,7 +78,7 @@ unmodified in the browser, so the demo runs the real engine with no backend.
 `npm run build` produces a static folder.
 
 **Online.** Supabase project `fiqfbbnmksppbpxmhnbv` — *kram*, Mumbai
-(ap-south-1), Postgres 17.6. All sixty-five migrations applied, the last on 11 Oct (§9).
+(ap-south-1), Postgres 17.6. All sixty-seven migrations applied — the last two, the plan that learns from the floor (12 Oct), on the live project only on Nishad's go (§9).
 
 **The plan of record is §8.0** — the concept deck's promises, each marked
 built, partly or not built, and what it waits on. Written 9 Oct.
@@ -177,6 +177,21 @@ lives on `schedule_daily_load`, where it is real. *Flag this at spec review.*
 **Runs are immutable.** Each run writes a new `schedule_runs` row and never
 mutates an old one, so any past plan can be recovered and compared against what
 happened. A partial unique index enforces exactly one `is_current`.
+
+**The engine is told what day it is, and plans what remains.** Since 12 Oct a
+run subtracts what each department has declared good from each job and places
+only the remainder (`qty_required` keeps its meaning for every view that
+compares declared against required); told the day (`p_today`, recorded in
+`params`), it moves work that is behind to start on the first working day
+from today — as a pin would — and reports it *late* when it still overruns
+its date; and it keeps the days before today exactly as the previous run
+planned them, so "planned against made" is a record. Not told the day, it
+behaves exactly as before: the parity test, the bench's dumps and every
+fixture without declarations are byte-identical. A declaration still does not
+re-run the schedule (12 Aug): the plan must not move under people during the
+day; the next run — the morning's attendance, any master edit, the button —
+plans what remains. The one forced consequence: a pin dated before today
+starts from today, because the days before today are frozen.
 
 **Pins are honoured and reported, never undone.** A planner who drags a task has
 made a decision the engine cannot see the reasons for. The reason is mandatory —
@@ -679,8 +694,8 @@ the Google Sheets** the deck expected for daily production and manpower.
 | Item | Status |
 |---|---|
 | Order schedule | **Built** (Schedule, Order book) |
-| WIP status | **Built** (WIP in units on the dashboard; WIP screen) |
-| Delayed jobs | **Built** (Delayed orders KPI; breaches) |
+| WIP status | **Built** (WIP in units on the dashboard; WIP screen). Since 12 Oct the next run plans what remains of each job and shows a finished one as *Made* |
+| Delayed jobs | **Built** (Delayed orders KPI; breaches). Since 12 Oct work that is behind is re-planned from today and reported *late*, with the rate it would take on Attention |
 | Machine status | **Partly**: on Masters and Attention, not a dashboard tile |
 | Labour availability | **Partly**: on Manpower, not a dashboard tile |
 | Material shortage | **Built** (KPI) |
@@ -2006,6 +2021,95 @@ to the anon key. Then the pages, and `verify:hosted-ui` against the site,
 which gained a read-only step for the one thing no offline run can prove:
 the browser builds the workbook from the live project and the file carries
 all 1,440 cells, 1,044 with a rate — the read behind the button pages.
+
+### 2026-10-12 — The plan learns from the floor
+
+Nishad's question, after the loader: "are we recording daily production done
+vs what our system planned, so we know where we are lacking and plan the next
+day accordingly?" Three explorations gave the honest answer. Recording, yes:
+per job, per day, good and rejected, two-sided handovers, attendance.
+Comparing, yes: seven views put planned beside made. Planning the next day
+from it, no — the engine never read `production_declarations`; every job was
+re-planned at its full quantity; a job fully made stayed in the plan; and with
+no notion of today, work that fell behind stayed placed in the past. The
+12 Aug decision that a declaration does not re-run the schedule stands; what
+was missing was the next run planning what remains. Approved as the plan,
+with the lighter alternative (report "behind" and move nothing) offered and
+not taken.
+
+**Three changes to the engine, in `20261012090100`**, regenerated from the
+text of the 11 Oct engine; the enum value `late` in `20261012090000` on its
+own, because a value added to an enum cannot be used in the transaction that
+added it, and each file is one transaction everywhere it is applied.
+
+1. **Netting.** `_task` carries `qty_done` (good declared against the job,
+   every day and shift summed) and `qty_remaining`; placement, the daily
+   load and the breach tests work on what remains; `qty_required` is written
+   unchanged so WIP, the queue, the dashboard's complete / containers ready /
+   OTIF and shipment risk keep their meaning. A job with nothing left has no
+   window, no load, no breach — not even `dminus_incomplete` — and reads
+   *Made* on the schedule.
+2. **Today.** `p_today` on `run_schedule` and its three wrappers (last
+   parameter, so positional calls stand; the old signatures dropped, so
+   `pg_proc` holds one of each), recorded in `params` and shown in the
+   Command centre header as "as of". Work that remains on a job whose
+   latest-start window has passed is placed forward from the first working
+   day on or after today with the pinned LATERAL, and reported `late` when it
+   still overruns its date. The grid reaches a year past today so it has
+   somewhere to land. A pin dated before today starts from today.
+3. **The past is frozen.** Load and capacity rows before today are copied
+   from the run that was current when this one started (joined to
+   `shipment_lines` only — a cancelled order's past plan is still what the
+   day was planned to hold); fresh capacity starts at today; the
+   department-day summary reads frozen and fresh alike; the horizon spans
+   both. "Planned against made" and the efficiency figure are a record.
+
+With `p_today` null and no declarations every expression reduces to what it
+was: the bench's sparse and dense dumps are byte-identical to the 11 Oct
+engine's, and the parity suite is untouched. `tests/engine-actuals.test.ts`
+carries the three changes in twelve cases: the remainder planned, a made job
+retired without a breach and still counted, another line untouched, good
+pieces only, no day recorded when none was given, behind work started on the
+first working day (a Sunday becomes Monday) and called late, work not behind
+left exactly where its date puts it, a day outside the calendar refused, one
+finding per job behind and none in the breach list, a past pin started from
+today, and the frozen past across three runs with a deleted order's past gone.
+
+**On the screens.** `attention_behind`: "<dept> is behind on <order> · n of m
+made · needs k a day from today against c · due <date>" — the word "late" kept
+out of the prose because the client swaps whole words for names and reasons;
+`attention_breach` leaves `late` to it; the badge counts it. *Made* on the
+schedule, neutral. `production_worklist` is a full join now, so a declaration
+on a day the plan has no row for stays on the Production screen. `run_history`
+carries `planned_as_of`; every call site passes `todayIso()`, the wall-clock
+date (§5, the UTC night). GUIDE: Production, Schedule, Dashboard, Command
+centre, Attention, the breach table.
+
+**Two things found by measuring the demonstration build, both kept out of the
+code's way.** The demonstration's *initial* run is deliberately not told the
+day: a first run has no predecessor to freeze, so its past would be blank,
+"planned against made" would open empty, and the what-if window, which
+defaults to the plan's span, would cover nothing — the two browser steps that
+said so. On a real project the predecessor always exists; in the
+demonstration it is the plan the seed was written around, and the first click
+re-plans what remains from it. And the demonstration seed's three
+declarations against `SO/26-27/0455` now net, as they should: that order's
+Ply Cutting, Machining and Assembly are made.
+
+**Said in advance, not fixed.** Runway across late work is still due-date
+based (a late feeder and a late consumer both start today). `shipment_risk`'s
+"at risk" band rarely fires for a line re-based from today (likely-late still
+does). `flagged_days` counts frozen past days. A late task placed on a day a
+what-if shut the department gets no window, as a pin on such a day does.
+
+406 tests, 50 browser checks. KRAM/11 regenerated on the demonstration build.
+**Not pushed to the live project**: two migrations wait for Nishad's go, from
+his terminal, the enum first; then the pages, `verify:live` (functions were
+re-created), the hosted check, one press of Run, and KRAM/09 from the site.
+The consequence stated in the plan stands: the sample book, dated August and
+September with nothing declared, will move forward from today as *late* —
+the heatmap's red into the coming weeks, Attention full of "behind", delayed
+orders 100%, efficiency 0% — the truthful picture of a book nobody has worked.
 
 ### 2026-08-17 — Three asks, and a sheet PPC can actually fill in
 

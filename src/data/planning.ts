@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { todayIso } from '@/components/format'
 import { backend, rpc, rpcRows, select } from '@/lib/backend'
 
 /**
@@ -20,6 +21,8 @@ export type Run = {
   duration_ms: number | null
   horizon_from: string | null
   horizon_to: string | null
+  /** The day the run was told it was; null for a run that was not told. */
+  planned_as_of: string | null
 }
 
 export function useCurrentRun() {
@@ -165,6 +168,9 @@ export type GanttRow = {
   end_date: string | null
   days_needed: number | null
   qty_required: number
+  /** What the department has declared good against this job, and what is left. */
+  qty_done: number
+  qty_remaining: number
   is_feasible: boolean
   breach_reason: string | null
   is_pinned: boolean
@@ -255,6 +261,7 @@ export function useAcceptanceCheck() {
         p_article_id: input.articleId,
         p_qty: input.qty,
         p_stuffing_date: input.stuffingDate,
+        p_today: todayIso(),
       }),
   })
 }
@@ -276,7 +283,7 @@ export function useRunSchedule() {
   const client = useQueryClient()
   return useMutation({
     mutationFn: (confidence: string[]) =>
-      rpc('run_schedule', { p_confidence: confidence }),
+      rpc('run_schedule', { p_confidence: confidence, p_today: todayIso() }),
     onSuccess: () => client.invalidateQueries(),
   })
 }

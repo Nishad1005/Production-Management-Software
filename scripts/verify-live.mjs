@@ -338,6 +338,7 @@ async function checkSignedIn(db, email, password) {
     const { error: runError } = await db.rpc('run_schedule', {
       p_make_current: false,
       p_note: 'verify:live probe',
+      p_today: new Date(Date.now() - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 10),
     })
     report('can run the schedule', !runError, runError?.message?.slice(0, 60))
 

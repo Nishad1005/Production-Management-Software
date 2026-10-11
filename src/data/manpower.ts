@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { todayIso } from '@/components/format'
 import { rpc, select } from '@/lib/backend'
 
 /**
@@ -128,7 +129,10 @@ export function useSetEmployeeAttendance() {
         p_ot_hours: input.otHours ?? 0,
         p_note: input.note ?? null,
       })
-      await rpc('run_schedule', { p_note: 'Recomputed after an attendance change' })
+      await rpc('run_schedule', {
+        p_note: 'Recomputed after an attendance change',
+        p_today: todayIso(),
+      })
     },
     onSuccess: () => client.invalidateQueries(),
   })

@@ -110,6 +110,7 @@ if (error) {
 }
 const { error: runError } = await db.rpc('run_schedule', {
   p_note: 'Recomputed after loading a capacity workbook',
+  p_today: new Date(Date.now() - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 10),
 })
 if (runError) {
   console.error(`\nApplied, but the schedule did not re-run: ${runError.message}`)

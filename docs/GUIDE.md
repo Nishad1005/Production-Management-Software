@@ -90,8 +90,9 @@ first, and the only one that tells you whether you need to open any of the
 others.
 
 **Needs an answer today** is what cannot wait: work that cannot be made as
-planned inside a fortnight, a material past the last day it could be ordered, a
-D-minus that contradicts the route. **Worth knowing** is everything else —
+planned inside a fortnight, a department behind on an order — how much is
+made, how much is left, and the rate it now needs from today — a material
+past the last day it could be ordered, a D-minus that contradicts the route. **Worth knowing** is everything else —
 shortages, machines down, articles that cannot be scheduled. **For the record**
 is a handover somebody declared and nobody counted in.
 
@@ -115,7 +116,10 @@ Where to start, and the screen to open every morning.
 **Run the schedule.** Choose which orders to include — confirmed only, confirmed
 plus probable, or everything including forecast — and run it. Each run is saved
 as a new immutable version, so an earlier plan can always be recovered and
-compared against what actually happened; nothing is overwritten.
+compared against what actually happened; nothing is overwritten. Each run is
+told which day it is and says so in the header (*as of 12 Oct*): it plans
+what remains of every job from that day, and keeps the days before it as
+they were planned.
 
 **The four figures** are shipment lines in the book, tasks scheduled, breaches,
 and flagged days. A *breach* is work that cannot be made as planned. A *flagged
@@ -208,6 +212,11 @@ thin black marker. **Expand all** and **Collapse all** do every line at once.
 - **Blue** — pinned by a planner
 - **Green** — fits in its days
 - **Red** — cannot be made in time, with the reason at the end of the row
+- **Made** — the department has declared the whole job; nothing left to place
+
+Work that has fallen behind is placed from the day the plan was run, not left
+in the past, so the bar shows what still has to happen. If it runs past its
+deadline the reason reads **Late**.
 
 **Drag a bar to reschedule it.** You will be asked why, and the reason is
 required: a pin without one is indistinguishable from a mistake six weeks later.
@@ -309,7 +318,9 @@ would be read as a fact.
 **Planned against made** sits underneath: every department's last fortnight, what
 the plan asked for beside what was declared, and the difference. A day where
 something was made that nobody planned appears just as plainly as a day where
-nothing was made at all.
+nothing was made at all. The planned figure is the plan **as it stood on that
+day**: once a day has passed, its plan is fixed and a later run does not
+rewrite it.
 
 ---
 
@@ -386,9 +397,14 @@ separately: both are counts you can stand behind, and the percentage is worked
 out from them. That worked-out figure is what the yield on Masters gets compared
 against.
 
-Entering output **does not move any dates**. The plan stays where it is, because
-it is what everyone is working to today. Rescheduling the factory every time
-someone types a number would move the ground under them.
+Entering output **does not move any dates today**. The plan stays where it is,
+because it is what everyone is working to; rescheduling the factory every time
+someone types a number would move the ground under them. **The next run plans
+only what remains**: a job fully declared leaves the plan and shows as *Made*
+on the Schedule, a half-made one asks for the rest, and work that has fallen
+behind is placed from today and flagged *Late* if it still cannot make its
+date. The next run is the morning's attendance entry, any change on Masters,
+or **Run the schedule**.
 
 Entering a figure again corrects it rather than adding to it, so there is no way
 to double a day by entering it twice.
@@ -835,6 +851,7 @@ is a ratio rather than a count.
 | **D-minus missing** | The article × department offset has never been entered, so it cannot be scheduled. |
 | **No capacity** | No rate for this component in this department. |
 | **Out of horizon** | The window falls outside the working-day calendar. |
+| **Late** | What remained of the job was re-planned from the day the plan was run and still does not finish by its due date. Nothing is moved backwards: the plan says what can still be done, and Attention says what rate it would take. |
 
 ### Order confidence
 

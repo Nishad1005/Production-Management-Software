@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { todayIso } from '@/components/format'
 import { rpc, select } from '@/lib/backend'
 import type { CapacityWorkbookFile } from '@/lib/capacity-workbook'
 
@@ -37,7 +38,10 @@ function useSheetWrite<TInput>(fn: (input: TInput) => Promise<void>) {
     mutationFn: async (input: TInput) => {
       await fn(input)
       // A capacity figure changes what the engine can do, so the plan follows.
-      await rpc('run_schedule', { p_note: 'Recomputed after a capacity change' })
+      await rpc('run_schedule', {
+        p_note: 'Recomputed after a capacity change',
+        p_today: todayIso(),
+      })
     },
     onSuccess: () => client.invalidateQueries(),
   })
@@ -95,6 +99,7 @@ export function useApplyCapacityWorkbook() {
       })
       await rpc('run_schedule', {
         p_note: 'Recomputed after loading a capacity workbook',
+        p_today: todayIso(),
       })
       return applied
     },

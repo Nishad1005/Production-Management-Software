@@ -13,9 +13,11 @@ export const BREACH_LABEL: Record<string, string> = {
   no_capacity: 'No capacity',
   out_of_horizon: 'Out of horizon',
   dminus_incomplete: 'D-minus missing',
+  late: 'Late',
 }
 
 export const BREACH_EXPLAINER: Record<string, string> = {
+  late: 'Behind: what remains was re-planned from today and still overruns the due date.',
   material: 'The window opens before material is available.',
   runway:
     'Fewer working days than the department needs. Overtime cannot fix this.',

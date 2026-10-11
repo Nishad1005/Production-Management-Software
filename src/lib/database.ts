@@ -69,6 +69,14 @@ async function applySchema(db: PGlite) {
     await db.exec(seeds[path])
   }
 
+  // Not told what day it is, on purpose. Every run from a button is, and the
+  // first of those keeps the days before today from the run that was current
+  // when it started — this one. On a real project that predecessor always
+  // exists; here it is the plan the demonstration opens on, with the past the
+  // seed was written around, and the first click re-plans what remains from
+  // it. Told today, this run would have had nothing to freeze, the past would
+  // have been blank, and the what-if window that defaults to the plan's span
+  // would have covered nothing.
   await db.exec(`select run_schedule(p_note => 'Initial run')`)
 }
 

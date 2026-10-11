@@ -279,6 +279,7 @@ describe('the branches and the union say the same thing', () => {
     'attention_article_unplannable',
     'attention_handover',
     'attention_department_unstaffed',
+    'attention_behind',
   ]
 
   it('add up to exactly the union, on a factory with things wrong with it', async () => {

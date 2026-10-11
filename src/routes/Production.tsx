@@ -78,8 +78,8 @@ export function Production() {
         </label>
 
         <p className="text-mid hidden max-w-[52ch] text-caption sm:block">
-          Entering output does not move any dates. The plan stays where it is —
-          it is what everyone is working to today.
+          Entering output does not move any dates today — the plan is what
+          everyone is working to. The next run plans only what remains.
         </p>
       </div>
 

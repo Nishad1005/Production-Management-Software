@@ -23,6 +23,7 @@ const REASON: Record<string, string> = {
   no_capacity: 'no rate for this department',
   out_of_horizon: 'outside the working calendar',
   dminus_incomplete: 'D-minus missing',
+  late: 'behind — re-planned from today',
 }
 
 const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')

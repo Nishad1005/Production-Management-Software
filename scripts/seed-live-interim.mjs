@@ -129,7 +129,7 @@ async function call(fn, args, what) {
 
 if (purge) {
   const gone = await call('purge_provisional', {}, 'purge')
-  await call('run_schedule', { p_note: 'Interim data removed' }, 're-run')
+  await call('run_schedule', { p_note: 'Interim data removed', p_today: new Date(Date.now() - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 10) }, 're-run')
   console.log(`Removed ${gone} interim orders and everything recorded against them.`)
   console.log('Masters were left alone — they upsert by code and PPC\'s sheet replaces them.')
   await db.auth.signOut()
@@ -306,7 +306,7 @@ console.log(`  ${made} orders${skipped ? `, ${skipped} already there` : ''}`)
  * than retrying.
  */
 try {
-  await call('run_schedule', { p_note: 'Interim data loaded' }, 'schedule')
+  await call('run_schedule', { p_note: 'Interim data loaded', p_today: new Date(Date.now() - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 10) }, 'schedule')
 } catch (e) {
   console.error(`\n${e.message}`)
   console.error(

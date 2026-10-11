@@ -541,7 +541,7 @@ function MastersFileControls() {
     setMessage(null)
     try {
       const applied = await importMasters(await readJsonFile(file))
-      await rpc('run_schedule', { p_note: 'Masters imported' })
+      await rpc('run_schedule', { p_note: 'Masters imported', p_today: todayIso() })
       await client.invalidateQueries()
       setMessage(`${applied} rows applied, and the schedule re-run.`)
     } catch (e) {

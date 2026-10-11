@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { todayIso } from '@/components/format'
 import { rpc, select } from '@/lib/backend'
 
 /**
@@ -266,7 +267,10 @@ function useCapacityWrite<TInput>(fn: (input: TInput) => Promise<void>) {
   return useMutation({
     mutationFn: async (input: TInput) => {
       await fn(input)
-      await rpc('run_schedule', { p_note: "Recomputed after a change to today's capacity" })
+      await rpc('run_schedule', {
+        p_note: "Recomputed after a change to today's capacity",
+        p_today: todayIso(),
+      })
     },
     onSuccess: () => client.invalidateQueries(),
   })

@@ -576,6 +576,16 @@ function Bar({
                 : ''
             } — drag to reschedule`}
           />
+        ) : task.qty_remaining === 0 ? (
+          // Nothing left to place: the department has declared the whole job.
+          // Not a breach, and not the flag colour.
+          <span
+            data-testid="gantt-made"
+            title={`${name}: ${formatNumber(task.qty_done, 0)} of ${formatNumber(task.qty_required, 0)} made`}
+            className="text-mid bg-sheet text-caption absolute top-1/2 left-0 -translate-y-1/2 pr-2 font-medium"
+          >
+            Made
+          </span>
         ) : (
           <span className="text-flag bg-sheet text-caption absolute top-1/2 left-0 -translate-y-1/2 pr-2 font-medium">
             {BREACH_LABEL[task.breach_reason ?? ''] ?? 'Not scheduled'}

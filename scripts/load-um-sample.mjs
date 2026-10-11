@@ -189,7 +189,12 @@ console.log(`  ${made} dispatches entered`)
 const started = Date.now()
 await call(
   'run_schedule',
-  { p_confidence: ['confirmed', 'probable'], p_make_current: true, p_note: 'U&M sample sheet' },
+  {
+    p_confidence: ['confirmed', 'probable'],
+    p_make_current: true,
+    p_note: 'U&M sample sheet',
+    p_today: new Date(Date.now() - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 10),
+  },
   'schedule',
 )
 console.log(`  planned in ${Math.round((Date.now() - started) / 1000)}s`)

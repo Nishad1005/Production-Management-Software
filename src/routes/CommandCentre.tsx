@@ -48,7 +48,11 @@ export function CommandCentre() {
         title="Schedule run"
         meta={
           run.data
-            ? `${formatDateLong(run.data.run_at.slice(0, 10))} · ${run.data.duration_ms ?? 0} ms`
+            ? `${formatDateLong(run.data.run_at.slice(0, 10))}${
+                run.data.planned_as_of
+                  ? ` · as of ${formatDateLong(run.data.planned_as_of)}`
+                  : ''
+              } · ${run.data.duration_ms ?? 0} ms`
             : 'No run yet'
         }
       >

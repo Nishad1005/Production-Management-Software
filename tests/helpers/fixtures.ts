@@ -68,15 +68,23 @@ export async function createOrder(
   return line[0].id
 }
 
-/** Runs the engine and returns the run id. */
+/**
+ * Runs the engine and returns the run id.
+ *
+ * `today` is the day the engine is told it is. Left out, the engine plans
+ * every job back from its due date wherever that lands, which is what every
+ * fixture with exact calendar expectations wants; given, work that is behind
+ * is placed forward from that day and the days before it are kept from the
+ * previous run.
+ */
 export async function runSchedule(
   client: pg.Client,
-  opts: { makeCurrent?: boolean; note?: string } = {},
+  opts: { makeCurrent?: boolean; note?: string; today?: string } = {},
 ): Promise<string> {
   const { rows } = await client.query<{ id: string }>(
     `select run_schedule(
-       array['confirmed','probable']::order_confidence[], $1, $2) as id`,
-    [opts.makeCurrent ?? true, opts.note ?? null],
+       array['confirmed','probable']::order_confidence[], $1, $2, $3::date) as id`,
+    [opts.makeCurrent ?? true, opts.note ?? null, opts.today ?? null],
   )
   return rows[0].id
 }
@@ -138,8 +146,9 @@ export async function importMastersOnSeed(
  * calendar had walked past them and three tests failed without a line of code
  * having changed. A fixed date in such a test is a timer, not a fixture.
  *
- * (Engine tests are different and keep their fixed dates: the engine never
- * looks at today, and its expectations are exact calendar arithmetic.)
+ * (Engine tests are different and keep their fixed dates: unless a run is
+ * told what day it is, the engine never looks at today, and its expectations
+ * are exact calendar arithmetic.)
  */
 export function inDays(days: number): string {
   const d = new Date()

@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { todayIso } from '@/components/format'
 import { rpc, select } from '@/lib/backend'
 
 /**
@@ -18,7 +19,7 @@ import { rpc, select } from '@/lib/backend'
  */
 
 async function rerunSchedule() {
-  await rpc('run_schedule', { p_note: 'Recomputed after change' })
+  await rpc('run_schedule', { p_note: 'Recomputed after change', p_today: todayIso() })
 }
 
 /** Every write invalidates everything: the schedule touches all of it. */
