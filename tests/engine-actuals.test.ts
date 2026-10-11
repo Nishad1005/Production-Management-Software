@@ -218,7 +218,10 @@ describe('told what day it is', () => {
       const line = await createOrder(c, BEHIND)
       const run = await runSchedule(c, { today: MONDAY })
       const t = await cover(c, run, line)
-      expect(t.start_date).toBe(MONDAY)
+      // Stitching is third on the route and starts after the two departments
+      // feeding it (the exact day is under "late work keeps its order"); the
+      // entry point starts on the day itself, checked below.
+      expect(t.start_date! >= MONDAY).toBe(true)
       expect(t.is_pinned).toBe(false)
       expect(t.end_date! > '2026-09-30').toBe(true)
       expect(t.breach_reason).toBe('late')
@@ -238,9 +241,13 @@ describe('told what day it is', () => {
   it('starts on Monday when told it is Sunday', async () => {
     await withRollback(async (c) => {
       await applySeed(c)
-      const line = await createOrder(c, BEHIND)
+      await createOrder(c, BEHIND)
       const run = await runSchedule(c, { today: '2026-11-01' })
-      expect((await cover(c, run, line)).start_date).toBe(MONDAY)
+      const { rows } = await c.query<{ starts: string }>(
+        `select min(start_date)::text as starts from schedule_tasks where run_id = $1`,
+        [run],
+      )
+      expect(rows[0].starts).toBe(MONDAY)
     })
   })
 
@@ -366,6 +373,225 @@ describe('the past is frozen', () => {
       await c.query(`delete from orders where id = (select order_id from shipment_lines where id = $1)`, [line])
       const runC = await runSchedule(c, { today: '2026-11-10' })
       expect(await loads(c, runC)).toEqual([])
+    })
+  })
+})
+
+describe('late work keeps its order', () => {
+  // The seed's route is one line, wood → fabric cutting → stitching →
+  // assembly (D-minus 60 / 50 / 40 / 25). Stuffing on 20 Oct and a run told
+  // it is 2 Nov puts all four behind. Before 12 Oct every one of them started
+  // on 2 Nov, assembly included, on chairs whose covers were not yet made.
+  const BEHIND = { qty: 100, stuffingDate: '2026-10-20' }
+  const MONDAY = '2026-11-02'
+  const EDGES: [string, string][] = [
+    ['WOOD', 'FABCUT'],
+    ['FABCUT', 'STITCH'],
+    ['STITCH', 'ASSY'],
+  ]
+
+  type Dept = {
+    dept: string
+    start: string | null
+    end: string | null
+    reasons: (string | null)[]
+    pinned: boolean
+  }
+
+  /** One line's plan by department: earliest start, latest end, every reason. */
+  async function byDept(c: pg.Client, run: string, line: string) {
+    const { rows } = await c.query<Dept>(
+      `select d.code as dept,
+              min(t.start_date)::text as start,
+              max(t.end_date)::text as "end",
+              array_agg(distinct t.breach_reason::text) as reasons,
+              bool_or(t.is_pinned) as pinned
+         from schedule_tasks t
+         join departments d on d.id = t.department_id
+        where t.run_id = $1 and t.shipment_line_id = $2
+        group by d.code`,
+      [run, line],
+    )
+    const map = new Map(rows.map((r) => [r.dept, r]))
+    return (code: string): Dept => {
+      const d = map.get(code)
+      if (!d) throw new Error(`no task for ${code}`)
+      return d
+    }
+  }
+
+  /** The first working day after a date. */
+  async function dayAfter(c: pg.Client, date: string | null): Promise<string> {
+    if (!date) throw new Error('no date to count from')
+    const { rows } = await c.query<{ d: string }>(
+      `select min(calendar_date)::text as d
+         from working_days where is_working and calendar_date > $1::date`,
+      [date],
+    )
+    return rows[0].d
+  }
+
+  /** Declares the whole of a department's job on a line, component by component. */
+  async function declareAll(c: pg.Client, plainRun: string, line: string, dept: string) {
+    const { rows } = await c.query<{ comp: string; qty: number }>(
+      `select cmp.code as comp, ceil(t.qty_required)::int as qty
+         from schedule_tasks t
+         join components cmp on cmp.id = t.component_id
+         join departments d on d.id = t.department_id
+        where t.run_id = $1 and t.shipment_line_id = $2 and d.code = $3`,
+      [plainRun, line, dept],
+    )
+    expect(rows.length).toBeGreaterThan(0)
+    for (const r of rows) {
+      await c.query(`select declare_production($1, $2, $3, '2026-10-01', 'GEN', $4, 0)`, [
+        line,
+        dept,
+        r.comp,
+        r.qty,
+      ])
+    }
+  }
+
+  it('places each department the working day after the one feeding it ends', async () => {
+    await withRollback(async (c) => {
+      await applySeed(c)
+      const line = await createOrder(c, BEHIND)
+      const run = await runSchedule(c, { today: MONDAY })
+      const at = await byDept(c, run, line)
+      expect(at('WOOD').start).toBe(MONDAY)
+      for (const [feeder, consumer] of EDGES) {
+        expect(at(consumer).start, `${consumer} after ${feeder}`).toBe(
+          await dayAfter(c, at(feeder).end),
+        )
+      }
+      expect(at('ASSY').reasons).toEqual(['late'])
+      // The chain moves the days, not the quantity: what is placed is still
+      // what remains.
+      expect((await cover(c, run, line)).load).toBeCloseTo(COVER_FOR_100, 1)
+    })
+  })
+
+  it('a department that has declared the whole job holds nothing back', async () => {
+    await withRollback(async (c) => {
+      await applySeed(c)
+      const line = await createOrder(c, BEHIND)
+      const plain = await runSchedule(c)
+      await declareAll(c, plain, line, 'WOOD')
+      await declareAll(c, plain, line, 'FABCUT')
+      const run = await runSchedule(c, { today: MONDAY })
+      const at = await byDept(c, run, line)
+      expect(at('WOOD').start).toBeNull()
+      expect(at('FABCUT').start).toBeNull()
+      expect(at('STITCH').start).toBe(MONDAY)
+      expect(at('ASSY').start).toBe(await dayAfter(c, at('STITCH').end))
+    })
+  })
+
+  it('a department that has not declared holds the ones after it, past one that has', async () => {
+    await withRollback(async (c) => {
+      await applySeed(c)
+      const line = await createOrder(c, BEHIND)
+      const plain = await runSchedule(c)
+      await declareAll(c, plain, line, 'FABCUT')
+      const run = await runSchedule(c, { today: MONDAY })
+      const at = await byDept(c, run, line)
+      expect(at('FABCUT').start).toBeNull()
+      expect(at('WOOD').start).toBe(MONDAY)
+      // Stitching waits for wood, two steps up the route, not for the day.
+      expect(at('STITCH').start).toBe(await dayAfter(c, at('WOOD').end))
+      expect(at('STITCH').start).not.toBe(MONDAY)
+    })
+  })
+
+  it('a feeder that is on time still holds, and a delay carries down the route', async () => {
+    await withRollback(async (c) => {
+      await applySeed(c)
+      // Stitching at three covers a day needs thirty-five days. Stuffing sixty
+      // days out puts wood exactly on its date and fabric cutting ten days
+      // later, both on time, stitching far behind, and assembly — which could
+      // have met its date on its own — behind because stitching is.
+      await c.query(
+        `update component_rates set units_per_day = 3
+          where department_id = (select id from departments where code = 'STITCH')
+            and component_id = (select id from components where code = 'COVER')`,
+      )
+      const line = await createOrder(c, { qty: 100, stuffingDate: '2027-01-01' })
+      const run = await runSchedule(c, { today: MONDAY })
+      const at = await byDept(c, run, line)
+      expect(at('WOOD').reasons).toEqual([null])
+      expect(at('FABCUT').reasons).toEqual([null])
+      expect(at('FABCUT').start! >= MONDAY).toBe(true)
+      expect(at('STITCH').reasons).toEqual(['late'])
+      expect(at('STITCH').start).toBe(await dayAfter(c, at('FABCUT').end))
+      expect(at('ASSY').reasons).toEqual(['late'])
+      expect(at('ASSY').start).toBe(await dayAfter(c, at('STITCH').end))
+
+      // Attention counts the rate from the day the department can start, and
+      // says which day; assembly cannot start before a day past its date.
+      const { rows: today } = await c.query<{ d: string }>(`select current_date::text as d`)
+      const { rows } = await c.query<{ key: string; detail: string }>(
+        `select key, detail from attention_behind order by key`,
+      )
+      const stitch = rows.find((r) => r.key.includes(':STITCH:'))!
+      const assy = rows.find((r) => r.key.includes(':ASSY:'))!
+      const stitchStart = at('STITCH').start!
+      expect(stitch.detail).toMatch(
+        stitchStart > today[0].d
+          ? new RegExp(`a day from ${stitchStart} against 3`)
+          : /a day from today against 3|the date has passed/,
+      )
+      expect(assy.detail).toMatch(
+        today[0].d <= '2026-12-07'
+          ? new RegExp(`^0 of \\d+ made · cannot start before ${at('ASSY').start}, which is past its date`)
+          : /the date has passed/,
+      )
+    })
+  })
+
+  it('a pinned feeder holds the departments after it', async () => {
+    await withRollback(async (c) => {
+      await applySeed(c)
+      const line = await createOrder(c, BEHIND)
+      await c.query(
+        `insert into schedule_pins
+           (shipment_line_id, department_id, component_id, pinned_start_date, reason)
+         values ($1, (select id from departments where code = 'FABCUT'),
+                 (select id from components where code = 'FAB-PANEL'),
+                 '2026-11-09', 'Cloth arrives on the ninth')`,
+        [line],
+      )
+      const run = await runSchedule(c, { today: MONDAY })
+      const at = await byDept(c, run, line)
+      expect(at('FABCUT').pinned).toBe(true)
+      expect(at('FABCUT').start).toBe('2026-11-09')
+      expect(at('STITCH').start).toBe(await dayAfter(c, at('FABCUT').end))
+    })
+  })
+
+  it('with two feeders, the later one decides', async () => {
+    await withRollback(async (c) => {
+      await applySeed(c)
+      // The seed's single line re-wired into a fork: wood feeds both fabric
+      // cutting and stitching, and assembly waits for both of them.
+      await c.query(
+        `delete from department_dependencies
+          where department_id = (select id from departments where code = 'STITCH')`,
+      )
+      await c.query(
+        `insert into department_dependencies (department_id, depends_on_department_id)
+         values ((select id from departments where code = 'STITCH'),
+                 (select id from departments where code = 'WOOD')),
+                ((select id from departments where code = 'ASSY'),
+                 (select id from departments where code = 'FABCUT'))`,
+      )
+      const line = await createOrder(c, BEHIND)
+      const run = await runSchedule(c, { today: MONDAY })
+      const at = await byDept(c, run, line)
+      const afterWood = await dayAfter(c, at('WOOD').end)
+      expect(at('FABCUT').start).toBe(afterWood)
+      expect(at('STITCH').start).toBe(afterWood)
+      expect(at('STITCH').end! > at('FABCUT').end!).toBe(true)
+      expect(at('ASSY').start).toBe(await dayAfter(c, at('STITCH').end))
     })
   })
 })

@@ -8,7 +8,7 @@
  *                                 [--roles=owner,planner]
  *                                 [--dump <dir>] [--explain] [--plans=N]
  *                                 [--pglite] [--stale-plans] [--custom-plans]
- *                                 [--timeout=300]
+ *                                 [--timeout=300] [--today=YYYY-MM-DD]
  *
  * The tests run as the table owner, where row-level security does not apply,
  * and the engine's cost on Supabase was almost entirely row-level security:
@@ -67,6 +67,10 @@ const dumpDir = option('dump', null)
 const explain = flag('explain')
 const plans = Number(option('plans', 0)) // full plans for the N slowest statements
 const customPlans = flag('custom-plans') // plan_cache_mode = force_custom_plan on the session
+// The day the engine is told it is. Left out, nothing is late and the run is
+// the byte-identity baseline; given, work that is behind is placed forward
+// and the depth passes run, which is what this flag is for timing.
+const today = option('today', null)
 // A cap on every run. The function's own 120-second ceiling is armed by the
 // session's timer on Supabase and not on a fresh local session, where the old
 // engine sat inside one U&M-scale run for twenty minutes before it was killed.
@@ -222,7 +226,7 @@ async function benchOne(client, fixture, role) {
       await client.query('savepoint run')
       const started = Date.now()
       try {
-        const { rows } = await client.query(`select run_schedule() as id`)
+        const { rows } = await client.query(`select run_schedule(p_today => $1::date) as id`, [today])
         runId = rows[0].id
         await client.query('release savepoint run')
         const { rows: s } = await client.query(

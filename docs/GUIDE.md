@@ -91,7 +91,8 @@ others.
 
 **Needs an answer today** is what cannot wait: work that cannot be made as
 planned inside a fortnight, a department behind on an order — how much is
-made, how much is left, and the rate it now needs from today — a material
+made, how much is left, and the rate it now needs from the day it can start,
+which is after the departments feeding it when they are behind too — a material
 past the last day it could be ordered, a D-minus that contradicts the route. **Worth knowing** is everything else —
 shortages, machines down, articles that cannot be scheduled. **For the record**
 is a handover somebody declared and nobody counted in.
@@ -215,8 +216,11 @@ thin black marker. **Expand all** and **Collapse all** do every line at once.
 - **Made** — the department has declared the whole job; nothing left to place
 
 Work that has fallen behind is placed from the day the plan was run, not left
-in the past, so the bar shows what still has to happen. If it runs past its
-deadline the reason reads **Late**.
+in the past, so the bar shows what still has to happen. A department that is
+behind starts the working day after the last department feeding it has
+finished what it still owes — its bar sits after theirs, never alongside — and
+a department that was on time but is fed by one that is behind moves with it.
+If it runs past its deadline the reason reads **Late**.
 
 **Drag a bar to reschedule it.** You will be asked why, and the reason is
 required: a pin without one is indistinguishable from a mistake six weeks later.
@@ -750,8 +754,10 @@ alongside each other, and that is how most of a furniture factory works.
 
 This drives two things:
 
-- A department is held back until everything feeding it is due. Wire a feeder
-  into the wrong place and it produces runway breaches that are not real.
+- A department is held back until everything feeding it is due — and, once
+  work is behind, until they have actually finished. Wire a feeder into the
+  wrong place and it produces runway breaches that are not real, and holds
+  back work that could have started.
 - Yield compounds along these edges, so a component is only inflated by the
   losses of the departments its material actually passes through. A wooden leg
   charged for stitching is a leg you make and never need.
@@ -861,7 +867,7 @@ is a ratio rather than a count.
 | **D-minus missing** | The article × department offset has never been entered, so it cannot be scheduled. |
 | **No capacity** | No rate for this component in this department. |
 | **Out of horizon** | The window falls outside the working-day calendar. |
-| **Late** | What remained of the job was re-planned from the day the plan was run and still does not finish by its due date. Nothing is moved backwards: the plan says what can still be done, and Attention says what rate it would take. |
+| **Late** | What remained of the job was re-planned from the day the plan was run — or from the working day after the departments feeding it finish, when they are behind too — and still does not finish by its due date. Nothing is moved backwards: the plan says what can still be done, and Attention says what rate it would take and from which day. |
 
 ### Order confidence
 

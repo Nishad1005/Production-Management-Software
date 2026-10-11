@@ -78,7 +78,7 @@ unmodified in the browser, so the demo runs the real engine with no backend.
 `npm run build` produces a static folder.
 
 **Online.** Supabase project `fiqfbbnmksppbpxmhnbv` — *kram*, Mumbai
-(ap-south-1), Postgres 17.6. All sixty-seven migrations applied, the last two on 11 Oct (§9).
+(ap-south-1), Postgres 17.6. All sixty-eight migrations applied once `20261012100000` is pushed: it is committed and, as of this writing, not yet on the live project (§9, 12 Oct).
 
 **The plan of record is §8.0** — the concept deck's promises, each marked
 built, partly or not built, and what it waits on. Written 9 Oct.
@@ -192,6 +192,21 @@ re-run the schedule (12 Aug): the plan must not move under people during the
 day; the next run — the morning's attendance, any master edit, the button —
 plans what remains. The one forced consequence: a pin dated before today
 starts from today, because the days before today are frozen.
+
+**Late work keeps its order (12 Oct).** A task is behind when the latest start
+that still meets its date is before the first day it can actually begin: the
+first working day from today, or the working day after the last department
+upstream of it ends, whichever is later. Upstream is the whole closure,
+restricted to departments with something left to make on the same line — so
+a department the article skips does not break the chain, a feeder that has
+declared the whole job holds nothing back, and one that has *not* declared
+does (the plan is honest to the declarations it has; the remedy is to
+declare). A feeder's delay therefore carries down the route: Assembly is
+behind because Stitching is, and starts after it. Placed one route depth at a
+time from the entry points, so every feeder is in before the department it
+feeds is asked. Pins are untouched — honoured and reported, never undone —
+and the runway test, which compares against due dates, no longer applies to a
+late task, which is after its feeders by construction.
 
 **Pins are honoured and reported, never undone.** A planner who drags a task has
 made a decision the engine cannot see the reasons for. The reason is mandatory —
@@ -2123,6 +2138,60 @@ Attention, the header reading "as of 11 Oct", the horizon from 12 August
 in the plan, exactly: the sample book, dated August and September with
 nothing declared, has moved forward from today, and the screens say so.
 KRAM/09 regenerated from the site.
+
+### 2026-10-12 — Late work keeps its order
+
+Item 4 of the 12 Oct ranking (§8), chosen by Nishad. Since the plan learned
+from the floor, a job that is behind has been re-planned forward from today —
+and every such job started on the same day. The forward placement anchored on
+`p_today` alone, and the runway test compares a task's start with its
+feeders' *due dates*, which for work that is behind are in the past, so it
+never fired. The sample book showed it plainly: 214 late tasks, all starting
+on the run day, Assembly on chairs whose covers Stitching also started that
+morning. A factory is behind by default, so this was the first thing real
+declarations would have exposed.
+
+**The rule** (§4): a task is behind when the latest start that still meets
+its date is before the first day it can actually begin — the first working
+day from today, or the working day after the last department upstream of it
+ends, whichever is later. Decided one route depth at a time from the entry
+points, so every feeder has its end before the department it feeds is asked.
+Upstream is the closure, restricted to departments with something left to
+make on the same line: a skipped department does not break the chain, a
+feeder that declared the whole job holds nothing, one that has not declared
+does. A feeder's delay carries down the route — a department that was on time
+on its own account is behind because its feeder is, and starts after it. Pins
+are untouched. The runway test no longer applies to a late task, which is
+after its feeders by construction.
+
+**One migration**, `20261012100000_late_work_keeps_its_order.sql`,
+regenerated from the text of its predecessor: backward placement lands in a
+table (`_pb`), forward placement in passes into another (`_fwd`) — pins
+first, then the depths — and `_final` reads both. `attention_behind`
+counts the rate a department needs from the day it can actually start and
+says which day ("needs 4 a day from 13 Nov against 3"; "cannot start before
+24 Dec, which is past its date"). No client code. GUIDE: Schedule, Late,
+What feeds what, Attention.
+
+**Measured.** Dumps on the sparse and dense fixtures with no day given are
+byte-identical before and after. As a planner, dense 4.1 s with a day and
+4.1 s without; um4 (four components a cell) 51 s with and 51 s without,
+against the 53 s recorded on 11 Oct. One cold pass with a day read 63 s and
+did not reproduce in three further runs (4.3 s, 4.1 s, 4.3 s); it followed
+the previous bench's Postgres shutdown, which was still writing its
+checkpoint. `bench:engine` gained `--today=<date>` so the depth passes can
+be timed at all. Six new tests under "late work keeps its order" (the chain,
+a finished feeder, an undeclared one, an on-time feeder with the delay
+carrying down, a pinned feeder, a fork where the later feeder decides); two
+older tests that assumed Stitching starts on the run day now check the entry
+point. 422 tests.
+
+**What it will do to the live project** once pushed and run: the late bars on
+the sample book form a chain down each order's route instead of a stack on
+the run day; the later departments move further out, so more of them end past
+their dates and the Late count can only rise; the heatmap's load spreads over
+the coming weeks instead of piling onto the first days. That is the truthful
+shape of a book nobody has worked. KRAM/09 regenerates after the run.
 
 ### 2026-10-11 — Loading is not empty, on every screen
 
