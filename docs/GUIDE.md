@@ -117,7 +117,7 @@ Where to start, and the screen to open every morning.
 plus probable, or everything including forecast — and run it. Each run is saved
 as a new immutable version, so an earlier plan can always be recovered and
 compared against what actually happened; nothing is overwritten. Each run is
-told which day it is and says so in the header (*as of 12 Oct*): it plans
+told which day it is and says so in the header (*as of 11 Oct*): it plans
 what remains of every job from that day, and keeps the days before it as
 they were planned.
 

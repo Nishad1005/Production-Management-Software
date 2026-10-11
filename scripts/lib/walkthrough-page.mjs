@@ -239,7 +239,7 @@ export function walkthroughPage({ facts: f, sheet, site }) {
         `<strong>The link</strong> opens the screen where that problem can be dealt with.`,
         `<strong>A different kind of card.</strong> Your sheet gives two steps the same day, and one of them has to finish before the other can start. The software will not guess which is right, so it asks. There are ${n(f.sameDay)} of these, all straight from the sheet.`,
       ],
-      sample: `The count is high for two reasons, and both are about the sample rather than your factory. The stand-in speed makes jobs not fit. And October dispatches mean the work was due in August and September, which is already behind us, with nothing recorded as made.`,
+      sample: `The count is high for two reasons, and both are about the sample rather than your factory. The stand-in speed makes jobs not fit. And October dispatches mean the work was due in August and September, which is already behind us, with nothing recorded as made &mdash; so the plan has moved all of it forward to today and lists every job as behind, with the rate it would now take.`,
       tell: `Would your team work from a list like this each morning? Who should see it &mdash; planning only, or every department head?`,
     }),
     stop({
@@ -251,7 +251,9 @@ export function walkthroughPage({ facts: f, sheet, site }) {
         `<strong>One block per dispatch.</strong> This is the first one: ${n(qty)} ${esc(product)}s, dispatch ${day(sheet.dispatches[col])}.`,
         `<strong>Each bar is one department&rsquo;s work</strong>, from the day it starts to the day it must finish. The thin black line on the bar is the deadline from your sheet.`,
         `<strong>A red bar cannot be done in time.</strong> This one is ${esc(sheet.departments[4].name)}.`,
-        `<strong>The reason is at the end of the row.</strong> <em>Runway</em> means the step before it finishes too late to leave this one enough working days.`,
+        f.scheduleReason === 'Late'
+          ? `<strong>The reason is at the end of the row.</strong> <em>Late</em> means what remains of this step was re-planned from the day the plan was run and still cannot finish by its date. The sample&rsquo;s dispatches have passed with nothing recorded as made, so the plan has moved that work forward to today and says so.`
+          : `<strong>The reason is at the end of the row.</strong> <em>${esc(f.scheduleReason ?? 'Runway')}</em> ${f.scheduleReason === 'Runway' || !f.scheduleReason ? 'means the step before it finishes too late to leave this one enough working days.' : 'is why this step cannot be done as planned.'}`,
         `<strong>Tick &ldquo;Breaches only&rdquo;</strong> to hide everything that is fine and see just the problems.`,
       ],
       sample: `Read the bars from top to bottom and you are reading one row of your sheet from left to right. The short bars are QC steps: a date to pass, not days of work.`,

@@ -241,14 +241,20 @@ if (wants('attention')) {
   facts.firstFinding = (await findings.first().locator('p, div, span, b, strong').first().innerText())
     .split('\n')[0]
     .trim()
+  const conflictNear =
+    hasConflict && (await box(conflict.first())).y < (await bottomOf(findings.nth(3), 10))
   await mark([
     { n: 1, at: page.locator('[data-testid="attention-badge"]'), where: 'left', ring: true },
     { n: 2, at: findings.first(), where: 'inside', dx: -40, dy: 0 },
     { n: 3, at: page.locator('text=Go to the screen that fixes this').first(), where: 'right' },
-    ...(hasConflict ? [{ n: 4, at: conflict.first(), where: 'inside', dx: -40, dy: 0 }] : []),
+    ...(conflictNear ? [{ n: 4, at: conflict.first(), where: 'inside', dx: -40, dy: 0 }] : []),
   ])
   const header = await box(page.locator('header.gridpaper'))
-  const last = hasConflict ? conflict.first() : findings.nth(3)
+  // Four cards, whatever the list holds. Since the plan learned to call work
+  // late, the list can run to hundreds, and the route-conflict card sorts
+  // below them all; a picture clipped to it was twelve thousand pixels tall.
+  const fourth = await bottomOf(findings.nth(3), 10)
+  const last = hasConflict && (await box(conflict.first())).y < fourth ? conflict.first() : findings.nth(3)
   await shot('attention', header.y - 8, await bottomOf(last, 10))
 }
 
@@ -267,7 +273,14 @@ if (wants('schedule')) {
   const bars = page.locator('[data-testid="gantt-bar"]')
   const heading = groups.first().locator('span.font-semibold').first()
   facts.scheduleOrder = (await heading.innerText()).trim().replace(/\s+line \d+$/, '')
-  const label = page.locator('text=/^Runway$/i').first()
+  // The first reason the open order shows, whatever it is: since the plan
+  // learned to call work late, the sample's labels read Late where they read
+  // Runway. The page quotes the one in the picture.
+  const label = groups
+    .first()
+    .locator('text=/^(Late|Runway|Material|Pin|Out of horizon|D-minus missing|No capacity)$/')
+    .first()
+  facts.scheduleReason = (await label.innerText()).trim()
   // The department labels down the left are plain text; the fifth row of the
   // first order is Sanding, the first production step the sample cannot fit.
   await mark([

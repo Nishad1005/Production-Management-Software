@@ -78,7 +78,7 @@ unmodified in the browser, so the demo runs the real engine with no backend.
 `npm run build` produces a static folder.
 
 **Online.** Supabase project `fiqfbbnmksppbpxmhnbv` — *kram*, Mumbai
-(ap-south-1), Postgres 17.6. All sixty-seven migrations applied — the last two, the plan that learns from the floor (12 Oct), on the live project only on Nishad's go (§9).
+(ap-south-1), Postgres 17.6. All sixty-seven migrations applied, the last two on 11 Oct (§9).
 
 **The plan of record is §8.0** — the concept deck's promises, each marked
 built, partly or not built, and what it waits on. Written 9 Oct.
@@ -178,7 +178,7 @@ lives on `schedule_daily_load`, where it is real. *Flag this at spec review.*
 mutates an old one, so any past plan can be recovered and compared against what
 happened. A partial unique index enforces exactly one `is_current`.
 
-**The engine is told what day it is, and plans what remains.** Since 12 Oct a
+**The engine is told what day it is, and plans what remains.** Since 11 Oct a
 run subtracts what each department has declared good from each job and places
 only the remainder (`qty_required` keeps its meaning for every view that
 compares declared against required); told the day (`p_today`, recorded in
@@ -694,8 +694,8 @@ the Google Sheets** the deck expected for daily production and manpower.
 | Item | Status |
 |---|---|
 | Order schedule | **Built** (Schedule, Order book) |
-| WIP status | **Built** (WIP in units on the dashboard; WIP screen). Since 12 Oct the next run plans what remains of each job and shows a finished one as *Made* |
-| Delayed jobs | **Built** (Delayed orders KPI; breaches). Since 12 Oct work that is behind is re-planned from today and reported *late*, with the rate it would take on Attention |
+| WIP status | **Built** (WIP in units on the dashboard; WIP screen). Since 11 Oct the next run plans what remains of each job and shows a finished one as *Made* |
+| Delayed jobs | **Built** (Delayed orders KPI; breaches). Since 11 Oct work that is behind is re-planned from today and reported *late*, with the rate it would take on Attention |
 | Machine status | **Partly**: on Masters and Attention, not a dashboard tile |
 | Labour availability | **Partly**: on Manpower, not a dashboard tile |
 | Material shortage | **Built** (KPI) |
@@ -2022,7 +2022,7 @@ which gained a read-only step for the one thing no offline run can prove:
 the browser builds the workbook from the live project and the file carries
 all 1,440 cells, 1,044 with a rate — the read behind the button pages.
 
-### 2026-10-12 — The plan learns from the floor
+### 2026-10-11 — The plan learns from the floor
 
 Nishad's question, after the loader: "are we recording daily production done
 vs what our system planned, so we know where we are lacking and plan the next
@@ -2103,13 +2103,18 @@ does). `flagged_days` counts frozen past days. A late task placed on a day a
 what-if shut the department gets no window, as a pin on such a day does.
 
 406 tests, 50 browser checks. KRAM/11 regenerated on the demonstration build.
-**Not pushed to the live project**: two migrations wait for Nishad's go, from
-his terminal, the enum first; then the pages, `verify:live` (functions were
-re-created), the hosted check, one press of Run, and KRAM/09 from the site.
-The consequence stated in the plan stands: the sample book, dated August and
-September with nothing declared, will move forward from today as *late* —
-the heatmap's red into the coming weeks, Attention full of "behind", delayed
-orders 100%, efficiency 0% — the truthful picture of a book nobody has worked.
+
+**Pushed on Nishad's go, mid-afternoon**, by Nishad from his terminal, the
+enum first; `supabase db push --dry-run` reports the remote up to date and
+`verify:live` is green with the three re-created functions refused to the
+anon key. Then the pages, and `verify:hosted-ui` against the site. **One press
+of Run on the live project, told the day: 2.0 seconds, 220 tasks, 215
+breaches — 214 of them *late*, one runway — 214 "behind" findings on
+Attention, the header reading "as of 11 Oct", the horizon from 12 August
+(the frozen past of the previous run) to 17 October.** The consequence stated
+in the plan, exactly: the sample book, dated August and September with
+nothing declared, has moved forward from today, and the screens say so.
+KRAM/09 regenerated from the site.
 
 ### 2026-08-17 — Three asks, and a sheet PPC can actually fill in
 
