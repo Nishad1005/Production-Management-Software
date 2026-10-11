@@ -65,7 +65,8 @@ material, cash and customer relationships the system cannot see.
 **Client**: twenty screens, all reading from database views. Editable: D-minus
 matrix, component rates, department yield/route/headcount, what feeds what,
 holidays, orders, shipment lines, article cost, who came in — per person or as a
-head count — and pins by dragging a schedule bar.
+head count — and pins by dragging a schedule bar. The capacity sheet goes out
+as an Excel workbook and comes back in through a preview.
 
 **The route is a graph, not a line.** `department_dependencies` says what must
 finish before what; `route_position` only orders the display. The engine reads
@@ -77,7 +78,7 @@ unmodified in the browser, so the demo runs the real engine with no backend.
 `npm run build` produces a static folder.
 
 **Online.** Supabase project `fiqfbbnmksppbpxmhnbv` — *kram*, Mumbai
-(ap-south-1), Postgres 17.6. All sixty-four migrations applied, the last on 11 Oct (§9).
+(ap-south-1), Postgres 17.6. All sixty-five migrations applied — the sixty-fifth, the capacity workbook function of 11 Oct, on the live project only on Nishad's go (§9).
 
 **The plan of record is §8.0** — the concept deck's promises, each marked
 built, partly or not built, and what it waits on. Written 9 Oct.
@@ -301,6 +302,13 @@ because the role's eight-second timer is already running when the function's
 setting takes over. On a local session with no timeout the old engine sat
 inside one U&M-scale run for twenty minutes before it was killed. A local
 bench sets its own cap on the session. (11 Oct)
+
+**A script with its own client has to page — third time.**
+`make-capacity-workbook.mjs` read `capacity_sheet` bare, so at twenty
+departments it would have written PPC a sheet with the last 440 of 1,440 cells
+blank, and said nothing; the browser client learned this on 30 Aug and the
+demonstration script on 2 Sep. `scripts/lib/hosted.mjs` `selectAll` is now
+the only way a script reads the hosted project. (11 Oct)
 
 
 **Supabase gives `authenticated` an eight-second statement timeout, and the
@@ -579,10 +587,10 @@ Note the task count is lower than the spec's ~40,000 estimate; three components
 across seven departments gives 21 pairs. The row count matches. Worth checking
 against the real route.
 
-**Browser** — `npm run screenshot` drives eighteen screens plus thirty-one
+**Browser** — `npm run screenshot` drives eighteen screens plus thirty-two
 interactions in headless Chromium and fails on any console error. It checks the
 D-minus edit survives a reload, which is what proves it reached the database
-rather than only React state. Forty-nine steps, three of them at other viewports — two phones and a 1920×1080 wall.
+rather than only React state. Fifty steps, three of them at other viewports — two phones and a 1920×1080 wall.
 Several real defects came from this that the build was happy with.
 
 Waits are named: `until('the article to become schedulable', …)` fails with that
@@ -817,22 +825,15 @@ all.
    itself** and answers to six questions listed in that entry; and **rates**,
    which the sheet does not contain at all.
 
-   **Do not run `scripts/import-capacity-sheet.mjs` against the live project as
-   it stands** (noticed 4 Oct, reading it to answer "how do the real figures get
-   in"). It predates the sample load and hard-codes the fourteen-department
-   route, Ply Cutting first. Given a workbook in the old fourteen-column layout
-   — **which is the layout of the blank one already sent out with KRAM/04** — it
-   would re-lay `route_position` in its own order and *retire* the six
-   checkpoint departments as "not in the real route". Given a workbook freshly
-   generated from the live project, it stops before writing, because it does
-   not know the six new names; safe, but it loads nothing. Either way it needs
-   bringing in line with whatever route PPC confirm before the next real load:
-   take the department list and order from the database instead of from a
-   constant, and never retire anything. The generator,
-   `make-capacity-workbook.mjs`, already reads the live departments and is
-   fine. There is also **no in-app upload for the workbook** — `Load from a
-   file` on Masters takes Kram's own JSON, not Excel — so today the bulk load
-   is a terminal command only we can run.
+   **The loader is on the screen (11 Oct).** *Load a workbook* on the
+   Capacity sheet reads PPC's file, previews what it would change against the
+   live masters — unknown columns and codes listed and skipped, never created,
+   retired or re-ordered — and applies it in one transaction or not at all;
+   *Blank workbook* hands the sheet out pre-filled. `import-capacity-sheet.mjs`
+   is thin on the same code and previews the same way; `--dry-run` stops
+   before writing. The first version, which hard-coded the fourteen-department
+   route and would have retired the six checkpoint departments, is gone. What
+   is owed is unchanged: the workbook itself, the six answers, and the rates.
 9. **The what-feeds-what table**, `DBBS/UM/KRAM/02` — and inside it the one
    concrete question: **does Machining feed Ply Cutting?** (§6 item 0.) No
    longer shouting from the Attention screen, and not answered either.
@@ -1934,6 +1935,72 @@ pictures carry the new figure; the plan it wrote is the one that was there.
 capacity grid's volume is the next lever and a decision rather than a rewrite.
 The documents and the app's one message that said "about a minute" say what
 it is now.
+
+### 2026-10-11 — The capacity workbook loads from the screen
+
+Chosen by Nishad after the engine ("Lets start with the workbook loader"),
+with two questions first: are the documents kept current as we go (yes — the
+log, the guide, and the three client documents regenerated when their content
+changes), and what is left (the list in §8). Built on the demonstration build;
+the migration reaches the live project only on his go.
+
+**What was there, read properly.** §8.4 item 8 warned against
+`import-capacity-sheet.mjs` and understated it. It never used
+`import_masters`: it wrote cell by cell through six RPCs with no transaction,
+created any article code it did not know, reset every routed department's
+yield to 98, parked and re-laid every `route_position` from a fourteen-name
+constant, and retired the rest. Given the blank sheet already sent to PPC it
+would have retired the six checkpoint departments. And
+`make-capacity-workbook.mjs` read `capacity_sheet` without paging — at 72 × 20
+it would have handed PPC a sheet with the last 440 cells blank (§5).
+
+**What is there now.** `src/lib/capacity-workbook.ts`: the layout, the parser,
+the model from what Kram holds, and `planWorkbookLoad` — a pure function that
+works out, against the active masters, exactly what a file would do before
+anything is written. Departments match by name with capitals and spacing
+ignored; articles by code; an unknown column or code is listed and skipped,
+never created, and nothing is ever retired or re-ordered — the route is
+changed on Masters. A Units figure sets the rate and the crew beside it (a
+blank crew keeps the old one); a blank Units cell changes nothing; a D-minus
+is written wherever given. One module for the browser (loaded when a button
+is pressed, so the spreadsheet library is its own chunk) and for the scripts,
+under Node's type stripping — one parser, so the generator and the loader
+cannot drift a column apart.
+
+`apply_capacity_workbook(jsonb)` — one migration, one function, set-based: the
+four writes of `set_capacity_cell` (component, BOM row, a rate on every active
+shift, manpower coalesced) and `set_dminus`'s, except that the D-minus row is
+upserted, because the seeding triggers cover active × active only and
+`set_article_active` does not reseed, so `set_dminus` on a missing row
+updates nothing and reports success. It raises before writing on any code not
+active on Masters, on a duplicated pair, a zero rate or a fractional day, with
+the codes named — a masters change between preview and Apply writes nothing.
+No timeout of its own: it never plans, and `engine-timeout` would object.
+Proved by `tests/apply-capacity-workbook.test.ts`: the same cells through the
+grid's two functions and through this one, every table snapshotted by natural
+key, identical; then the refusals, idempotence, the crew kept, both shifts,
+the missing row created, and a planner calling it. The plan's rules are in
+`tests/capacity-workbook.test.ts`, without a database.
+
+**On the Capacity sheet**: *Blank workbook* (the file, pre-filled, built in the
+browser) and *Load a workbook* (the preview: six lines of counts, the unknown
+names as tags, "N of M routed articles will be schedulable after loading",
+then Apply or Cancel; the result in one line; a refusal in the banner like
+any other write). The two scripts are thin on the module through
+`scripts/lib/hosted.mjs`, which pages; the importer previews against the
+live project, `--dry-run` stops there, and it can no longer touch a
+department, an article's existence or a yield.
+
+**Checks.** A fiftieth browser step sends the demonstration build's sheet
+out, edits one rate and one D-minus on the Mable chair plus a column and a
+row Kram does not know, loads it back, reads the preview by its data
+attributes, applies, reads the cell after a reload, and checks the sheet's
+shape did not grow. KRAM/11 gained the action. GUIDE: the Capacity sheet's
+rules, a pointer from Masters, a common task.
+
+**Not pushed to the live project.** Committed; on Nishad's go the migration
+goes first, from his terminal, then the pages, so the live button never
+points at a function that is not there.
 
 ### 2026-08-17 — Three asks, and a sheet PPC can actually fill in
 

@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { rpc, select } from '@/lib/backend'
+import type { CapacityWorkbookFile } from '@/lib/capacity-workbook'
 
 /**
  * U&M's capacity sheet: one row per article, two figures per department, plus
@@ -74,6 +75,30 @@ export function useSetCellDminus() {
       p_department_code: departmentCode,
       p_days: days,
     })
+  })
+}
+
+export type WorkbookApplied = { rates: number; dminus: number }
+
+/**
+ * The whole workbook in one call — all of it or none of it — then the
+ * schedule, then everything refetched. Not through `useSheetWrite`, which
+ * throws the result away, and the result is the sentence on screen: how many
+ * rates and how many D-minus figures went in.
+ */
+export function useApplyCapacityWorkbook() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: async (file: CapacityWorkbookFile): Promise<WorkbookApplied> => {
+      const applied = await rpc<WorkbookApplied>('apply_capacity_workbook', {
+        p_file: file,
+      })
+      await rpc('run_schedule', {
+        p_note: 'Recomputed after loading a capacity workbook',
+      })
+      return applied
+    },
+    onSuccess: () => client.invalidateQueries(),
   })
 }
 

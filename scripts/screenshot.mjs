@@ -9,7 +9,7 @@
  * in the browser, and "it renders" says nothing about whether a form saves. A
  * blank screenshot is a failure however green the build was.
  */
-import { mkdir, readFile } from 'node:fs/promises'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { chromium } from 'playwright'
 
 const baseUrl = process.argv[2] ?? 'http://localhost:5173'
@@ -344,6 +344,89 @@ await step('capacity sheet', async () => {
   await page.waitForSelector('button:has-text("42")', { timeout: 60_000 })
   await page.screenshot({ path: `${outDir}/capacity-sheet.png`, fullPage: true })
   return 'a rate entered, routed and persisted'
+})
+
+// --- the sheet goes out as a workbook and comes back ------------------------
+
+await step('load a workbook', async () => {
+  await go('#/capacity', 'text=Capacity sheet')
+  // Case-insensitive: the panel meta is set in capitals, and innerText
+  // reflects text-transform (§5). A shape that cannot be read is a failure
+  // here, not a pass — the check below would otherwise compare two undefineds.
+  const shape = async () =>
+    (await page.locator('main').innerText()).match(/\d+ articles × \d+ departments/i)?.[0]
+  const before = await shape()
+  if (!before) throw new Error('could not read the sheet\'s shape from the panel meta')
+
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    page.click('[data-testid="workbook-blank"]'),
+  ])
+  const saved = `${outDir}/kram-capacity-sheet.xlsx`
+  await download.saveAs(saved)
+
+  // Edited in Node with the module the screen uses: one rate and one D-minus
+  // on the Mable chair, plus a column and a row Kram does not know, which
+  // must be listed and skipped rather than created.
+  const { parseWorkbook, buildWorkbook, modelFromParsed } = await import(
+    '../src/lib/capacity-workbook.ts'
+  )
+  const model = modelFromParsed(parseWorkbook(new Uint8Array(await readFile(saved))))
+  const mable = model.articles.find((a) => a.code === 'DL25107')
+  if (!mable) throw new Error('DL25107 is not in the workbook Kram wrote')
+  mable.cells.Stitching = { ...mable.cells.Stitching, units: 41, dminus: 34 }
+  model.departments.push({ name: 'Upholstery' })
+  model.articles.push({
+    code: 'NOT-IN-KRAM',
+    name: 'Nobody',
+    cells: { Stitching: { units: 10 } },
+  })
+  const edited = `${outDir}/kram-capacity-sheet-edited.xlsx`
+  await writeFile(edited, new Uint8Array(buildWorkbook(model)))
+
+  await page.setInputFiles('[data-testid="workbook-input"]', edited)
+  const preview = page.locator('[data-testid="workbook-preview"]')
+  await preview.waitFor({ timeout: 60_000 })
+  // By the figures the preview carries as data, not by its sentences.
+  const want = async (attr, value) => {
+    const got = await preview.getAttribute(attr)
+    if (got !== value) throw new Error(`${attr} is ${got}, expected ${value}`)
+  }
+  await want('data-departments-unknown', '1')
+  await want('data-articles-unknown', '1')
+  await want('data-rates-new', '0')
+  await want('data-rates-changed', '1')
+  await want('data-dminus-new', '0')
+  await want('data-dminus-changed', '1')
+  if (
+    (await preview.getAttribute('data-schedulable')) !==
+    (await preview.getAttribute('data-routed'))
+  ) {
+    throw new Error('the edit should not have made anything unschedulable')
+  }
+  const unchanged = Number(await preview.getAttribute('data-rates-unchanged'))
+  await page.screenshot({ path: `${outDir}/workbook-preview.png`, fullPage: true })
+
+  await page.click('[data-testid="workbook-apply"]')
+  const result = page.locator('[data-testid="workbook-result"]')
+  await result.waitFor({ timeout: 120_000 })
+  const rates = Number(await result.getAttribute('data-rates'))
+  if (rates !== unchanged + 1) {
+    throw new Error(`applied ${rates} rates, expected ${unchanged + 1}`)
+  }
+
+  // And the cell, after a reload, by code — so it is the database talking.
+  await go('#/capacity', 'text=Capacity sheet')
+  await page.fill('input[placeholder="Code or name"]', 'DL25107')
+  await until('Stitching on the Mable chair to read 41', () => {
+    const row = document.querySelector('[data-testid="capacity-grid"] tbody tr')
+    return row?.querySelector('td[data-code="STITCH"] button')?.textContent?.trim() === '41'
+  })
+  const after = await shape()
+  if (after !== before) {
+    throw new Error(`the sheet changed shape, ${before} → ${after}: a column or row was invented`)
+  }
+  return `blank workbook out, one rate and one D-minus back, an unknown column and row skipped (${before})`
 })
 
 // --- a D-minus that contradicts the route order is caught -------------------

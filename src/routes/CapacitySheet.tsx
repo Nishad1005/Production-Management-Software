@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import {
+  useApplyCapacityWorkbook,
   useCapacitySheet,
   useRouteConflicts,
   useSetArticleCost,
@@ -7,10 +8,14 @@ import {
   useSetCellDminus,
   type CapacityCell,
   type RouteConflict,
+  type WorkbookApplied,
 } from '@/data/capacity'
-import { Empty, Metric, Panel, Table, Tag, Td, Th } from '@/components/ui'
+import { Button, Empty, Metric, Panel, Table, Tag, Td, Th } from '@/components/ui'
 import { inputClass } from '@/components/format'
 import { EditableNumber } from '@/components/edit'
+// Types only: the module itself carries the spreadsheet library and is
+// loaded when a button is pressed, so this screen does not.
+import type { WorkbookPlan } from '@/lib/capacity-workbook'
 
 /**
  * U&M's capacity sheet, as a screen.
@@ -52,6 +57,17 @@ export function CapacitySheet() {
   const [measure, setMeasure] = useState<'units' | 'manpower' | 'dminus'>('units')
   const [filter, setFilter] = useState('')
 
+  // The workbook: out as a file, and back in through a preview. Nothing is
+  // written until Apply; a file that cannot be read says so here, and a load
+  // the database refuses says so in the banner, like any other write.
+  const applyWorkbook = useApplyCapacityWorkbook()
+  const [plan, setPlan] = useState<WorkbookPlan | null>(null)
+  const [fileName, setFileName] = useState('')
+  const [busy, setBusy] = useState<'build' | 'read' | null>(null)
+  const [problem, setProblem] = useState<string | null>(null)
+  const [result, setResult] = useState<WorkbookApplied | null>(null)
+  const fileInput = useRef<HTMLInputElement>(null)
+
   const model = useMemo(() => {
     const rows = sheet.data ?? []
     const departments = [
@@ -64,7 +80,9 @@ export function CapacitySheet() {
     ].sort((a, b) => a.position - b.position)
 
     const articles = [
-      ...new Map(rows.map((r) => [r.article_code, r.article_name])).values(),
+      ...new Map(
+        rows.map((r) => [r.article_code, { code: r.article_code, name: r.article_name }]),
+      ).values(),
     ]
     const articleCodes = [...new Set(rows.map((r) => r.article_code))]
 
@@ -139,6 +157,56 @@ export function CapacitySheet() {
   }
 
   const active = MEASURES.find((m) => m.key === measure)!
+
+  async function onBlankWorkbook() {
+    setBusy('build')
+    setProblem(null)
+    try {
+      const { buildWorkbook, modelFromSheet, downloadWorkbook } = await import(
+        '@/lib/capacity-workbook'
+      )
+      downloadWorkbook(buildWorkbook(modelFromSheet(model.rows)))
+    } catch (e) {
+      setProblem(e instanceof Error ? e.message : String(e))
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  async function onLoad(file: File) {
+    setBusy('read')
+    setProblem(null)
+    setResult(null)
+    setPlan(null)
+    try {
+      const { parseWorkbook, planWorkbookLoad } = await import('@/lib/capacity-workbook')
+      const parsed = parseWorkbook(new Uint8Array(await file.arrayBuffer()))
+      setPlan(
+        planWorkbookLoad(parsed, {
+          departments: model.departments,
+          articles: model.articles,
+          sheet: model.rows,
+        }),
+      )
+      setFileName(file.name)
+    } catch (e) {
+      setProblem(`That file could not be read: ${e instanceof Error ? e.message : String(e)}`)
+    } finally {
+      setBusy(null)
+      // So the same file can be chosen again after a Cancel.
+      if (fileInput.current) fileInput.current.value = ''
+    }
+  }
+
+  function onApply() {
+    if (!plan) return
+    applyWorkbook.mutate(plan.file, {
+      onSuccess: (applied) => {
+        setResult(applied)
+        setPlan(null)
+      },
+    })
+  }
 
   return (
     <div className="space-y-6">
@@ -224,7 +292,58 @@ export function CapacitySheet() {
             />
           </label>
           <p className="text-faint pb-2 text-caption">{active.hint}</p>
+          <div className="ml-auto flex flex-wrap items-end gap-2">
+            <Button
+              variant="quiet"
+              onClick={() => void onBlankWorkbook()}
+              disabled={busy !== null || applyWorkbook.isPending}
+              testId="workbook-blank"
+            >
+              {busy === 'build' ? 'Writing…' : 'Blank workbook'}
+            </Button>
+            <Button
+              variant="quiet"
+              onClick={() => fileInput.current?.click()}
+              disabled={busy !== null || applyWorkbook.isPending}
+              testId="workbook-load"
+            >
+              {busy === 'read' ? 'Reading…' : 'Load a workbook'}
+            </Button>
+            <input
+              ref={fileInput}
+              type="file"
+              accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+              className="hidden"
+              data-testid="workbook-input"
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                if (file) void onLoad(file)
+              }}
+            />
+          </div>
         </div>
+
+        {result ? (
+          <p
+            data-testid="workbook-result"
+            data-rates={result.rates}
+            data-dminus={result.dminus}
+            className="text-clear mb-4 text-caption"
+          >
+            {result.rates} rates and {result.dminus} D-minus figures applied; the
+            schedule re-run.
+          </p>
+        ) : null}
+        {problem ? <p className="text-flag mb-4 text-caption">{problem}</p> : null}
+        {plan ? (
+          <WorkbookPreview
+            plan={plan}
+            fileName={fileName}
+            pending={applyWorkbook.isPending}
+            onApply={onApply}
+            onCancel={() => setPlan(null)}
+          />
+        ) : null}
 
         {!model.articleCodes.length ? (
           <Empty>
@@ -353,6 +472,142 @@ export function CapacitySheet() {
   )
 }
 
+
+/**
+ * What loading the chosen file would do, before it does it.
+ *
+ * Counts rather than a list of 1,440 cells, because the questions a planner
+ * asks of a file are "did it line up?" and "how much changes?" — and the
+ * things worth a second look are the ones it could not place, which are
+ * named. Every figure is also on the element as data, for the checks.
+ */
+function WorkbookPreview({
+  plan,
+  fileName,
+  pending,
+  onApply,
+  onCancel,
+}: {
+  plan: WorkbookPlan
+  fileName: string
+  pending: boolean
+  onApply: () => void
+  onCancel: () => void
+}) {
+  const cells = plan.file.cells.length
+  const short = plan.schedulable.of - plan.schedulable.after
+  const tally = (t: { new: number; changed: number; unchanged: number }) =>
+    `${t.new} new, ${t.changed} changed, ${t.unchanged} unchanged`
+
+  return (
+    <div
+      data-testid="workbook-preview"
+      data-departments-matched={plan.matchedDepartments.length}
+      data-departments-unknown={plan.unknownDepartments.length}
+      data-articles-matched={plan.matchedArticles.length}
+      data-articles-unknown={plan.unknownArticles.length}
+      data-rates-new={plan.rates.new}
+      data-rates-changed={plan.rates.changed}
+      data-rates-unchanged={plan.rates.unchanged}
+      data-dminus-new={plan.dminus.new}
+      data-dminus-changed={plan.dminus.changed}
+      data-dminus-unchanged={plan.dminus.unchanged}
+      data-blanks={plan.blanks}
+      data-kept-rates={plan.keptRates}
+      data-schedulable={plan.schedulable.after}
+      data-routed={plan.schedulable.of}
+      className="border-rule bg-paper/40 mb-4 rounded-[2px] border p-4"
+    >
+      <p className="mb-3 text-small">
+        <strong>{fileName}</strong> — nothing has been written yet. This is what
+        applying it would do.
+      </p>
+      <Table>
+        <tbody>
+          <tr>
+            <Td className="font-semibold">Departments</Td>
+            <Td>
+              {plan.matchedDepartments.length} of{' '}
+              {plan.matchedDepartments.length + plan.unknownDepartments.length} columns
+              matched the route.
+              {plan.unknownDepartments.length ? (
+                <span className="block pt-1">
+                  {plan.unknownDepartments.map((name) => (
+                    <Tag key={name} tone="amber">
+                      {name}
+                    </Tag>
+                  ))}{' '}
+                  <span className="text-mid">
+                    Not on Masters: listed and skipped. A department is never created,
+                    retired or re-ordered here.
+                  </span>
+                </span>
+              ) : null}
+            </Td>
+          </tr>
+          <tr>
+            <Td className="font-semibold">Articles</Td>
+            <Td>
+              {plan.matchedArticles.length} matched by code.
+              {plan.unknownArticles.length ? (
+                <span className="block pt-1">
+                  {plan.unknownArticles.map((code) => (
+                    <Tag key={code} tone="amber">
+                      {code}
+                    </Tag>
+                  ))}{' '}
+                  <span className="text-mid">
+                    Not on Masters: skipped. Add the article on Masters → Articles,
+                    then load again.
+                  </span>
+                </span>
+              ) : null}
+              {plan.duplicateArticles.length ? (
+                <span className="text-mid block pt-1">
+                  On two rows: {plan.duplicateArticles.join(', ')}. The last row wins.
+                </span>
+              ) : null}
+            </Td>
+          </tr>
+          <tr>
+            <Td className="font-semibold">Rates</Td>
+            <Td>{tally(plan.rates)}.</Td>
+          </tr>
+          <tr>
+            <Td className="font-semibold">D-minus</Td>
+            <Td>{tally(plan.dminus)}.</Td>
+          </tr>
+          <tr>
+            <Td className="font-semibold">Blank cells</Td>
+            <Td>
+              {plan.blanks} left exactly as they are
+              {plan.keptRates ? ` (${plan.keptRates} of them hold a rate today)` : ''}.{' '}
+              <span className="text-mid">To remove a step, clear it on the sheet.</span>
+            </Td>
+          </tr>
+          <tr>
+            <Td className="font-semibold">Schedulable</Td>
+            <Td>
+              {plan.schedulable.after} of {plan.schedulable.of} routed articles will be
+              schedulable after loading.{' '}
+              {short > 0 ? (
+                <Tag tone="flag">{short} still missing a D-minus somewhere</Tag>
+              ) : null}
+            </Td>
+          </tr>
+        </tbody>
+      </Table>
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Button onClick={onApply} disabled={pending || cells === 0} testId="workbook-apply">
+          {pending ? 'Applying…' : cells ? `Apply ${cells} cells` : 'Nothing to apply'}
+        </Button>
+        <Button variant="quiet" onClick={onCancel} disabled={pending} testId="workbook-cancel">
+          Cancel
+        </Button>
+      </div>
+    </div>
+  )
+}
 
 /**
  * The route is a single line, so the engine treats whichever department sits at

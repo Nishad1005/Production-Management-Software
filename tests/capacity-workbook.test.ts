@@ -1,7 +1,13 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-// @ts-expect-error — a plain .mjs script module, shared with the CLI tools.
-import { buildWorkbook, parseWorkbook } from '../scripts/lib/capacity-workbook.mjs'
+import {
+  buildWorkbook,
+  modelFromParsed,
+  modelFromSheet,
+  parseWorkbook,
+  planWorkbookLoad,
+  type SheetRow,
+} from '../src/lib/capacity-workbook'
 import { withRollback } from './helpers/db'
 import { applySeed } from './helpers/fixtures'
 
@@ -42,27 +48,18 @@ const roundTrip = () => parseWorkbook(buildWorkbook({ departments: DEPARTMENTS, 
 describe('the capacity workbook', () => {
   it('comes back with the articles it went in with', () => {
     const { articles } = roundTrip()
-    expect(articles.map((a: { code: string }) => a.code)).toEqual([
-      'UD354 SPPL WAL',
-      'DL25107',
-    ])
+    expect(articles.map((a) => a.code)).toEqual(['UD354 SPPL WAL', 'DL25107'])
     expect(articles[0].name).toBe('Betsy Chair — Specter Pearl')
   })
 
   it('reads the departments back off the header row', () => {
     const { departments } = roundTrip()
-    expect(departments.map((d: { name: string }) => d.name)).toEqual([
-      'Ply Cutting',
-      'Machining',
-      'Stitching',
-    ])
+    expect(departments.map((d) => d.name)).toEqual(['Ply Cutting', 'Machining', 'Stitching'])
   })
 
   it('keeps manpower and units in their own columns', () => {
     const { articles } = roundTrip()
-    const stitching = articles[0].cells.find(
-      (c: { department: string }) => c.department === 'Stitching',
-    )
+    const stitching = articles[0].cells.find((c) => c.department === 'Stitching')!
     // The whole point of the round trip. Swapped, this reads 38 people making
     // 12 covers, which is a sentence nobody would question on a screen.
     expect(stitching.manpower).toBe(12)
@@ -71,12 +68,7 @@ describe('the capacity workbook', () => {
 
   it('carries D-minus on its own sheet, against the right department', () => {
     const { articles } = roundTrip()
-    const cells = Object.fromEntries(
-      articles[0].cells.map((c: { department: string; dminus: number | null }) => [
-        c.department,
-        c.dminus,
-      ]),
-    )
+    const cells = Object.fromEntries(articles[0].cells.map((c) => [c.department, c.dminus]))
     expect(cells['Ply Cutting']).toBe(60)
     expect(cells.Stitching).toBe(30)
     expect(cells.Machining).toBeNull()
@@ -84,9 +76,7 @@ describe('the capacity workbook', () => {
 
   it('brings a blank back as blank, not as zero', () => {
     const { articles } = roundTrip()
-    const machining = articles[0].cells.find(
-      (c: { department: string }) => c.department === 'Machining',
-    )
+    const machining = articles[0].cells.find((c) => c.department === 'Machining')!
     // A zero rate would mean "this department can make none of these per day",
     // which schedules as infinity. Nobody-has-said has to survive the file.
     expect(machining.units).toBeNull()
@@ -102,9 +92,7 @@ describe('the capacity workbook', () => {
         articles: [{ code: 'X', name: 'Old sheet', cells: {} }],
       }),
     )
-    expect(articles[0].cells.every((c: { dminus: null }) => c.dminus === null)).toBe(
-      true,
-    )
+    expect(articles[0].cells.every((c) => c.dminus === null)).toBe(true)
   })
 
   it('survives an empty article list rather than writing a broken file', () => {
@@ -113,6 +101,230 @@ describe('the capacity workbook', () => {
     )
     expect(articles).toEqual([])
     expect(departments).toHaveLength(3)
+  })
+
+  it('edits and writes again through the model, losing nothing', () => {
+    // The browser check edits one cell of a downloaded workbook this way.
+    const model = modelFromParsed(roundTrip())
+    model.articles[1].cells!.Stitching = { units: 41, dminus: 34 }
+    const { articles } = parseWorkbook(buildWorkbook(model))
+    const mable = Object.fromEntries(articles[1].cells.map((c) => [c.department, c]))
+    expect(mable.Machining.units).toBe(90)
+    expect(mable.Stitching.units).toBe(41)
+    expect(mable.Stitching.dminus).toBe(34)
+    expect(mable.Stitching.manpower).toBeNull()
+  })
+
+  it('writes what Kram holds, in route order, with incomplete offsets left blank', () => {
+    const rows: SheetRow[] = [
+      row('B', 'STITCH', 'Stitching', 30, { units: 38, manpower: 12, dminus: 30, complete: true }),
+      row('B', 'WOOD', 'Wood', 10, { units: 44, manpower: null, dminus: 70, complete: true }),
+      row('A', 'WOOD', 'Wood', 10, { units: null, manpower: null, dminus: 60, complete: false }),
+      row('A', 'STITCH', 'Stitching', 30, { units: 20, manpower: 3, dminus: null, complete: false }),
+    ]
+    const model = modelFromSheet(rows)
+    expect(model.departments.map((d) => d.name)).toEqual(['Wood', 'Stitching'])
+    expect(model.articles.map((a) => a.code)).toEqual(['A', 'B'])
+    // An incomplete offset is a blank that stops the article scheduling;
+    // sending its leftover number out would turn "still to answer" into
+    // "answered".
+    expect(model.articles[0].cells!.Wood.dminus).toBeNull()
+    expect(model.articles[1].cells!.Wood).toEqual({ manpower: null, units: 44, dminus: 70 })
+  })
+})
+
+function row(
+  article: string,
+  code: string,
+  name: string,
+  position: number,
+  f: { units: number | null; manpower: number | null; dminus: number | null; complete: boolean },
+): SheetRow {
+  return {
+    article_code: article,
+    article_name: `Article ${article}`,
+    department_code: code,
+    department_name: name,
+    route_position: position,
+    units_per_day: f.units,
+    manpower: f.manpower,
+    dminus_days: f.dminus,
+    dminus_complete: f.complete,
+  }
+}
+
+/**
+ * The plan: what loading a file would do, worked out against what Kram holds
+ * before anything is written. Pure, so it is proved here without a database,
+ * on a small factory of three departments and two articles.
+ */
+describe('planning a load', () => {
+  const KRAM = {
+    departments: [
+      { code: 'WOOD', name: 'Wood' },
+      { code: 'FABCUT', name: 'Fabric cutting' },
+      { code: 'STITCH', name: 'Stitching' },
+    ],
+    articles: [
+      { code: 'AARA-LC', name: 'Aara Lounge Chair' },
+      { code: 'MABLE', name: 'Mable Chair' },
+    ],
+    sheet: [
+      row('AARA-LC', 'WOOD', 'Wood', 10, { units: 44, manpower: 5, dminus: 70, complete: true }),
+      row('AARA-LC', 'FABCUT', 'Fabric cutting', 20, { units: null, manpower: null, dminus: null, complete: false }),
+      row('AARA-LC', 'STITCH', 'Stitching', 30, { units: 38, manpower: 12, dminus: 30, complete: true }),
+      row('MABLE', 'WOOD', 'Wood', 10, { units: null, manpower: null, dminus: null, complete: false }),
+      row('MABLE', 'FABCUT', 'Fabric cutting', 20, { units: null, manpower: null, dminus: null, complete: false }),
+      row('MABLE', 'STITCH', 'Stitching', 30, { units: null, manpower: null, dminus: null, complete: false }),
+    ],
+  }
+
+  const planOf = (
+    departments: { name: string }[],
+    articles: { code: string; name: string; cells?: Record<string, { units?: number | null; manpower?: number | null; dminus?: number | null }> }[],
+  ) => planWorkbookLoad(parseWorkbook(buildWorkbook({ departments, articles })), KRAM)
+
+  it('matches departments by name, ignoring capitals and spacing', () => {
+    const plan = planOf(
+      [{ name: ' stitching ' }, { name: 'WOOD' }, { name: 'Fabric  cutting' }],
+      [{ code: 'AARA-LC', name: 'Aara', cells: {} }],
+    )
+    expect(plan.matchedDepartments.map((d) => d.code)).toEqual(['STITCH', 'WOOD', 'FABCUT'])
+    expect(plan.unknownDepartments).toEqual([])
+  })
+
+  it('lists a column it cannot place and writes nothing under it', () => {
+    const plan = planOf(
+      [{ name: 'Wood' }, { name: 'Upholstery' }],
+      [{ code: 'AARA-LC', name: 'Aara', cells: { Upholstery: { units: 99, dminus: 9 } } }],
+    )
+    expect(plan.unknownDepartments).toEqual(['Upholstery'])
+    expect(plan.file.cells).toEqual([])
+    expect(plan.rates).toEqual({ new: 0, changed: 0, unchanged: 0 })
+  })
+
+  it('matches articles by code and lists the ones Kram does not hold', () => {
+    const plan = planOf(
+      [{ name: 'Wood' }],
+      [
+        { code: ' AARA-LC ', name: 'Aara', cells: { Wood: { units: 44 } } },
+        { code: 'NOPE', name: 'Nobody', cells: { Wood: { units: 10 } } },
+      ],
+    )
+    expect(plan.matchedArticles).toEqual(['AARA-LC'])
+    expect(plan.unknownArticles).toEqual(['NOPE'])
+    expect(plan.file.cells.map((c) => c.article_code)).toEqual(['AARA-LC'])
+  })
+
+  it('leaves a blank Units cell exactly as it is, and says how many hold a rate', () => {
+    const plan = planOf(
+      [{ name: 'Wood' }, { name: 'Fabric cutting' }],
+      [{ code: 'AARA-LC', name: 'Aara', cells: {} }],
+    )
+    expect(plan.blanks).toBe(2)
+    expect(plan.keptRates).toBe(1)
+    expect(plan.file.cells).toEqual([])
+  })
+
+  it('tells new from changed from unchanged, for rates and for crews', () => {
+    const plan = planOf(
+      [{ name: 'Wood' }, { name: 'Fabric cutting' }, { name: 'Stitching' }],
+      [
+        {
+          code: 'AARA-LC',
+          name: 'Aara',
+          cells: {
+            Wood: { units: 44, manpower: 5 }, // as it is
+            'Fabric cutting': { units: 20 }, // new
+            Stitching: { units: 38, manpower: 10 }, // the crew changed
+          },
+        },
+      ],
+    )
+    expect(plan.rates).toEqual({ new: 1, changed: 1, unchanged: 1 })
+  })
+
+  it('treats a blank crew over an entered one as unchanged, because the crew is kept', () => {
+    const plan = planOf(
+      [{ name: 'Wood' }],
+      [{ code: 'AARA-LC', name: 'Aara', cells: { Wood: { units: 44 } } }],
+    )
+    expect(plan.rates).toEqual({ new: 0, changed: 0, unchanged: 1 })
+  })
+
+  it('tallies D-minus on its own, including on a cell with no rate', () => {
+    const plan = planOf(
+      [{ name: 'Wood' }, { name: 'Fabric cutting' }, { name: 'Stitching' }],
+      [
+        {
+          code: 'AARA-LC',
+          name: 'Aara',
+          cells: {
+            Wood: { dminus: 70 }, // as it is
+            'Fabric cutting': { dminus: 55 }, // new, on a cell with no rate
+            Stitching: { dminus: 25 }, // changed
+          },
+        },
+      ],
+    )
+    expect(plan.dminus).toEqual({ new: 1, changed: 1, unchanged: 1 })
+    expect(plan.file.cells.find((c) => c.department_code === 'FABCUT')).toEqual({
+      article_code: 'AARA-LC',
+      department_code: 'FABCUT',
+      units: null,
+      manpower: null,
+      dminus: 55,
+    })
+  })
+
+  it('counts the articles that will be schedulable after loading, over the whole factory', () => {
+    // Aara is routed through Wood and Stitching and has both offsets: already
+    // schedulable. Mable is not routed at all, so it is in neither figure —
+    // until the file routes it.
+    const alone = planOf([{ name: 'Wood' }], [{ code: 'AARA-LC', name: 'Aara', cells: {} }])
+    expect(alone.schedulable).toEqual({ after: 1, of: 1 })
+
+    const routed = planOf(
+      [{ name: 'Wood' }],
+      [{ code: 'MABLE', name: 'Mable', cells: { Wood: { units: 30, dminus: 40 } } }],
+    )
+    expect(routed.schedulable).toEqual({ after: 2, of: 2 })
+
+    const undated = planOf(
+      [{ name: 'Wood' }],
+      [{ code: 'MABLE', name: 'Mable', cells: { Wood: { units: 30 } } }],
+    )
+    expect(undated.schedulable).toEqual({ after: 1, of: 2 })
+  })
+
+  it('lets the last of two rows for one code win, and says so', () => {
+    const plan = planOf(
+      [{ name: 'Wood' }],
+      [
+        { code: 'AARA-LC', name: 'Aara', cells: { Wood: { units: 50 } } },
+        { code: 'AARA-LC', name: 'Aara again', cells: { Wood: { units: 60 } } },
+      ],
+    )
+    expect(plan.duplicateArticles).toEqual(['AARA-LC'])
+    expect(plan.file.cells).toEqual([
+      { article_code: 'AARA-LC', department_code: 'WOOD', units: 60, manpower: null, dminus: null },
+    ])
+  })
+
+  it('hands Apply a file in a fixed order, under its own version mark', () => {
+    const plan = planOf(
+      [{ name: 'Stitching' }, { name: 'Wood' }],
+      [
+        { code: 'MABLE', name: 'Mable', cells: { Stitching: { units: 1 }, Wood: { units: 2 } } },
+        { code: 'AARA-LC', name: 'Aara', cells: { Stitching: { units: 3 } } },
+      ],
+    )
+    expect(plan.file.kram_capacity).toBe(1)
+    expect(plan.file.cells.map((c) => `${c.article_code}/${c.department_code}`)).toEqual([
+      'AARA-LC/STITCH',
+      'MABLE/WOOD',
+      'MABLE/STITCH',
+    ])
   })
 })
 
@@ -123,7 +335,9 @@ describe('the capacity workbook', () => {
  * The round trip above proves the two halves of the file agree with each other.
  * This proves they agree with Kram — that a figure typed into the Units column
  * of the Stitching pair arrives as Stitching's rate and not as its crew size,
- * or as Wood's anything.
+ * or as Wood's anything. Cell by cell here, as the grid's own edits do it;
+ * `apply-capacity-workbook.test.ts` proves the one-call function lands the
+ * same rows.
  */
 describe('the workbook into the database', () => {
   it('lands every figure in the cell it was written in', async () => {
@@ -161,7 +375,6 @@ describe('the workbook into the database', () => {
         )
       ).rows[0].dminus_days
 
-      // Exactly what scripts/import-capacity-sheet.mjs does, in the same order.
       for (const cell of articles[0].cells) {
         if (cell.units === null) continue
         await c.query(`select set_capacity_cell('AARA-LC', $1, $2, $3)`, [

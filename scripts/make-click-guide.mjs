@@ -1139,6 +1139,74 @@ await action('capacity-cost', 'Capacity sheet', 'Give an article a cost, and rea
   }
 })
 
+await action('capacity-workbook', 'Capacity sheet', 'Send the sheet out as a workbook, and load it back', async () => {
+  await go('#/capacity', '[data-testid="capacity-grid"]')
+  await resetCapacitySheet()
+  const before = await shot('capacity-workbook', 'before', {
+    around: [title('Capacity sheet'), page.locator('[data-testid="capacity-grid"] tbody tr').first()],
+    maxHeight: 700,
+    marks: [
+      { n: 1, at: page.locator('[data-testid="workbook-blank"]'), where: 'below' },
+      { n: 2, at: page.locator('[data-testid="workbook-load"]'), where: 'below', ring: true },
+    ],
+    notes: ['Blank workbook: the grid as an Excel file, with what is already entered filled in', 'Load a workbook: choose the file PPC sent back'],
+  })
+
+  // The file Kram writes, edited the way PPC would: one rate and one day-count
+  // changed on the Mable chair — and a column and a row Kram does not know.
+  const [download] = await Promise.all([page.waitForEvent('download'), page.click('[data-testid="workbook-blank"]')])
+  const saved = `${outDir}/kram-capacity-sheet.xlsx`
+  await download.saveAs(saved)
+  const { parseWorkbook, buildWorkbook, modelFromParsed } = await import('../src/lib/capacity-workbook.ts')
+  const model = modelFromParsed(parseWorkbook(new Uint8Array(await readFile(saved))))
+  const mable = model.articles.find((a) => a.code === 'DL25107')
+  mable.cells.Stitching = { ...mable.cells.Stitching, units: 41, dminus: 34 }
+  model.departments.push({ name: 'Upholstery' })
+  model.articles.push({ code: 'NOT-IN-KRAM', name: 'Nobody', cells: { Stitching: { units: 10 } } })
+  const edited = `${outDir}/kram-capacity-sheet-edited.xlsx`
+  await writeFile(edited, new Uint8Array(buildWorkbook(model)))
+
+  await page.setInputFiles('[data-testid="workbook-input"]', edited)
+  const preview = page.locator('[data-testid="workbook-preview"]')
+  await preview.waitFor({ timeout: 60_000 })
+  await settle(400)
+  const changed = await preview.getAttribute('data-rates-changed')
+  const unknownColumns = await preview.getAttribute('data-departments-unknown')
+  const previewShot = await shot('capacity-workbook', 'preview', {
+    around: [title('Capacity sheet'), preview],
+    maxHeight: 900,
+    marks: [
+      { n: 1, at: preview.locator('tbody tr').first(), where: 'left', dx: -4 },
+      { n: 2, at: page.locator('[data-testid="workbook-apply"]'), where: 'right', ring: true },
+    ],
+    notes: [`What the file would do: ${changed} rate changed, ${unknownColumns} column Kram does not know — listed and skipped. Nothing is written yet.`, 'Apply — or Cancel, and nothing happens'],
+  })
+
+  await page.click('[data-testid="workbook-apply"]')
+  await page.locator('[data-testid="workbook-result"]').waitFor({ timeout: 120_000 })
+  await settle(600)
+  const sentence = (await page.locator('[data-testid="workbook-result"]').innerText()).trim()
+  await page.fill('input[placeholder="Code or name"]', 'DL25107')
+  await settle(500)
+  const after = await shot('capacity-workbook', 'after', {
+    around: [page.locator('[data-testid="workbook-result"]'), page.locator('[data-testid="capacity-grid"]')],
+    maxHeight: 700,
+    marks: [
+      { n: 1, at: page.locator('[data-testid="workbook-result"]'), where: 'right' },
+      { n: 2, at: page.locator('[data-testid="capacity-grid"] tbody tr').first().locator('td[data-code="STITCH"] button'), where: 'right', ring: true },
+    ],
+    notes: ['What went in, in one line, and the schedule re-run', 'The Mable chair in Stitching now reads 41'],
+  })
+  await rm(saved, { force: true })
+  await rm(edited, { force: true })
+  return {
+    steps: ['Press Blank workbook and send the file to PPC.', 'When it comes back, press Load a workbook and choose it.', 'Read the preview: what matched, what did not, how much changes, and how many articles will plan afterwards.', 'Press Apply.'],
+    images: [before, previewShot, after],
+    changed: `"${sentence}" The file carried one changed rate and one changed day-count on the Mable chair, a column Kram does not have and a product it does not know; the two it knew went in, the two it did not were listed and skipped, and nothing was created.`,
+    why: 'PPC work in Excel, and 1,440 cells are not typed into a screen. Nothing is written until the preview says exactly what will change; a blank cell never removes a step; a column or row Kram does not know is skipped, not invented; and it all goes in at once or not at all, so a file can never be half-loaded.',
+  }
+})
+
 // =============================================================================
 // MASTERS
 // =============================================================================

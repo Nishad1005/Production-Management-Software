@@ -622,6 +622,31 @@ at all, how many pairings exist, and what is still missing. An article with no
 D-minus cannot be scheduled — deliberately, because a silent zero would produce
 an impossible plan that looks entirely normal.
 
+**Blank workbook / Load a workbook.** PPC work in Excel, so the grid can leave as
+a file and come back. **Blank workbook** downloads `kram-capacity-sheet.xlsx` in
+this grid's shape — departments across in route order, articles down, a
+Manpower and a Units column per department, and a second sheet, *D-minus*, with
+one Days column per department — with whatever Kram already holds filled in, so
+a sheet sent back a second time carries the first round's answers. **Load a
+workbook** reads one back and shows a **preview before anything is written**:
+which columns and rows matched, which did not, how many rates and D-minus
+figures are new, changed or unchanged, and how many routed articles will be
+schedulable afterwards. Then **Apply**, or **Cancel**.
+
+- Departments match by name; capitals and spacing do not matter. A column the
+  route does not have is listed and skipped — loading never creates, retires or
+  re-orders a department. Change the route on Masters first.
+- Articles match by code. An unknown code is listed and skipped — add the
+  article on Masters → Articles, then load again.
+- A Units figure sets the rate, and the Manpower beside it the crew. A blank
+  Manpower keeps the crew already entered.
+- **A blank Units cell changes nothing** — it does not remove a step. To take an
+  article out of a department, clear the figure here, on the sheet.
+- A D-minus figure is written wherever one is given.
+- It is all or nothing: if a department or article has changed between the
+  preview and Apply, nothing is written and the banner says why. The schedule
+  re-runs once the file is in.
+
 ### Masters
 
 The figures every schedule run depends on. **Underlined values are editable** —
@@ -645,7 +670,9 @@ only copy that survives. It is also how real figures move between machines, and
 how they will be loaded into the hosted system later.
 
 Loading **merges by code** and never wipes what is already there, so a partly
-filled file is safe to apply.
+filled file is safe to apply. This file is Kram's own; PPC's Excel capacity
+workbook goes in on the **Capacity sheet** — **Load a workbook** — which
+previews what will change before writing it.
 
 **Save everything to a file.** The masters file above carries the figures you
 could type again from a spreadsheet. This one also carries the things you could
@@ -858,6 +885,10 @@ but not handed over.
 **"Add a product we have started making."** → *Masters* → **Articles** →
 **Add an article**, then *Capacity sheet* for its rate in each department and its
 D-minus. It cannot be planned until both are in.
+
+**"PPC have sent the capacity sheet back."** → *Capacity sheet*, **Load a
+workbook**, choose the file, read the preview, **Apply**. To send it out in the
+first place, **Blank workbook** on the same screen.
 
 **"Start again."** → *Command centre*, **Reset demo data**. This wipes everything
 in the browser and reloads the seed. There is no undo.

@@ -109,6 +109,7 @@ async function checkAnonymous(db) {
     ['list_users', {}],
     ['set_dminus', { p_article_code: 'X', p_department_code: 'Y', p_days: 1 }],
     ['import_masters', { p_file: { kram_masters: 1, tables: {} } }],
+    ['apply_capacity_workbook', { p_file: { kram_capacity: 1, cells: [] } }],
     [
       'set_department_dependency',
       { p_department_code: 'X', p_depends_on_code: 'Y', p_enabled: true },

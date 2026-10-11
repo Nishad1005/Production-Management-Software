@@ -154,6 +154,7 @@ describe('anonymous callers', () => {
       for (const call of [
         `select run_schedule()`,
         `select set_dminus('A', 'B', 1)`,
+        `select apply_capacity_workbook('{"kram_capacity":1,"cells":[]}'::jsonb)`,
         `select check_order_acceptance(gen_random_uuid(), 10, current_date)`,
         `select run_what_if('probe')`,
         `select promote_schedule_run(gen_random_uuid())`,
