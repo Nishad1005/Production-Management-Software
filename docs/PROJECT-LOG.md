@@ -2002,7 +2002,10 @@ rules, a pointer from Masters, a common task.
 (`npm run db:push`), the migration first so the live button never pointed at
 a function that was not there; `supabase db push --dry-run` reports the
 remote up to date, and `verify:live` is green with the new function refused
-to the anon key. Then the pages, and `verify:hosted-ui` against the site.
+to the anon key. Then the pages, and `verify:hosted-ui` against the site,
+which gained a read-only step for the one thing no offline run can prove:
+the browser builds the workbook from the live project and the file carries
+all 1,440 cells, 1,044 with a rate — the read behind the button pages.
 
 ### 2026-08-17 — Three asks, and a sheet PPC can actually fill in
 

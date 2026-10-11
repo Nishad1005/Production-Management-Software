@@ -35,7 +35,7 @@
  * ---------------------------------------------------------------------------
  */
 import { spawn } from 'node:child_process'
-import { mkdir } from 'node:fs/promises'
+import { mkdir, readFile } from 'node:fs/promises'
 import { chromium } from 'playwright'
 
 const baseUrl = process.argv[4] ?? 'http://localhost:5173'
@@ -399,6 +399,43 @@ await step('the real route is there', async () => {
   // figures. Every screen has to hold up on it, because it is what U&M see on
   // day one and it stays that way until PPC send the sheet back.
   return `${rows} articles × ${columns - 1} departments, live`
+})
+
+await step('the whole sheet leaves as a workbook', async () => {
+  // Read-only, and the one thing the offline check cannot prove: the file the
+  // browser builds from the hosted project carries every one of the 1,440
+  // cells, which means the read behind it paged. PostgREST stops at a
+  // thousand rows and says nothing; the first generator script handed back a
+  // sheet with the last 440 blank and no error anywhere.
+  await page.goto(`${baseUrl}/#/capacity`, { waitUntil: 'domcontentloaded' })
+  await page.waitForSelector('[data-testid="capacity-grid"] tbody tr', { timeout: 60_000 })
+  await page.waitForTimeout(800)
+  const rows = await page.locator('[data-testid="capacity-grid"] tbody tr').count()
+  const columns = (await page.locator('[data-testid="capacity-grid"] thead th').count()) - 1
+
+  const [download] = await Promise.all([
+    page.waitForEvent('download', { timeout: 60_000 }),
+    page.click('[data-testid="workbook-blank"]'),
+  ])
+  const saved = `${outDir}/kram-capacity-sheet.xlsx`
+  await download.saveAs(saved)
+
+  const { parseWorkbook } = await import('../src/lib/capacity-workbook.ts')
+  const { departments, articles } = parseWorkbook(new Uint8Array(await readFile(saved)))
+  if (departments.length !== columns) {
+    throw new Error(`${departments.length} departments in the file, ${columns} on the grid`)
+  }
+  if (articles.length !== rows) {
+    throw new Error(`${articles.length} articles in the file, ${rows} on the grid`)
+  }
+  const cells = articles.length * departments.length
+  const withUnits = articles.flatMap((a) => a.cells).filter((c) => c.units !== null).length
+  // The hosted project carries a rate on most pairings; a file that reads a
+  // thousand of them and then runs blank would fail this.
+  if (cells > 1000 && withUnits < 1000) {
+    throw new Error(`${withUnits} rates in a file of ${cells} cells — the read stopped short`)
+  }
+  return `${articles.length} × ${departments.length} = ${cells} cells in the file, ${withUnits} with a rate`
 })
 
 await step('an empty plan says so', async () => {
