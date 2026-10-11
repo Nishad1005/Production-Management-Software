@@ -6,7 +6,8 @@ import {
   useSupplierCommitments,
   type CostSummary,
 } from '@/data/money'
-import { Empty, Panel, Table, Tag, Td, Th } from '@/components/ui'
+import { Empty, Panel, Table, Tag, Td, Th, Waiting } from '@/components/ui'
+import { stateOf, waiting } from '@/lib/query-state'
 import { formatDateLong, formatNumber } from '@/components/format'
 
 /**
@@ -25,6 +26,7 @@ export function Money() {
   const [open, setOpen] = useState<string | null>(null)
 
   const rows = weeks.data ?? []
+  const state = stateOf(weeks)
   const total = rows.reduce((n, w) => n + (w.amount ?? 0), 0)
   const unpriced = rows.reduce((n, w) => n + w.unpriced_lines, 0)
   const peak = rows.reduce((m, w) => Math.max(m, w.amount ?? 0), 0)
@@ -34,13 +36,17 @@ export function Money() {
       <Panel
         title="Money out, week by week"
         meta={
-          rows.length
-            ? `₹${formatNumber(total)} across ${rows.length} weeks`
-            : 'nothing committed'
+          waiting(state)
+            ? undefined
+            : rows.length
+              ? `₹${formatNumber(total)} across ${rows.length} weeks`
+              : 'nothing committed'
         }
       >
-        <div data-testid="cash-out">
-          {rows.length === 0 ? (
+        <div data-testid="cash-out" data-state={state}>
+          {waiting(state) ? (
+            <Waiting state={state} error={weeks.error} loading="Pricing the plan…" />
+          ) : rows.length === 0 ? (
             <Empty>
               The plan commits the factory to nothing yet. This fills in once
               articles have a bill of materials and the plan needs something

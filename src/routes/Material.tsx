@@ -5,7 +5,8 @@ import {
   useSetMaterialStock,
   type MaterialShortage,
 } from '@/data/material'
-import { Empty, Panel, Table, Tag, Td, Th } from '@/components/ui'
+import { Empty, Panel, Table, Tag, Td, Th, Waiting } from '@/components/ui'
+import { stateOf, waiting } from '@/lib/query-state'
 import { formatDate, formatDateLong, formatNumber } from '@/components/format'
 import { EditableNumber } from '@/components/edit'
 
@@ -23,6 +24,7 @@ export function Material() {
   const [open, setOpen] = useState<string | null>(null)
 
   const rows = shortage.data ?? []
+  const state = stateOf(shortage)
   const late = rows.filter((r) => r.order_now)
   const short = rows.filter((r) => r.status === 'short')
   const uncounted = rows.filter((r) => r.status === 'not counted')
@@ -31,10 +33,18 @@ export function Material() {
     <div className="space-y-6">
       <Panel
         title="Order now, or it will be late"
-        meta={late.length ? `${late.length} past their ordering date` : 'nothing overdue'}
+        meta={
+          waiting(state)
+            ? undefined
+            : late.length
+              ? `${late.length} past their ordering date`
+              : 'nothing overdue'
+        }
       >
-        <div data-testid="material-order-now">
-          {rows.length === 0 ? (
+        <div data-testid="material-order-now" data-state={state}>
+          {waiting(state) ? (
+            <Waiting state={state} error={shortage.error} loading="Working out what the plan needs…" />
+          ) : rows.length === 0 ? (
             <Empty>
               No material is needed by the current plan. Either nothing is
               scheduled, or no article has a bill of materials yet — that is
@@ -70,8 +80,10 @@ export function Material() {
             : ''
         }
       >
-        <div data-testid="material-stock">
-          {rows.length === 0 ? (
+        <div data-testid="material-stock" data-state={state}>
+          {waiting(state) ? (
+            <Waiting state={state} error={shortage.error} />
+          ) : rows.length === 0 ? (
             <Empty>Nothing to compare until the plan needs something.</Empty>
           ) : (
             <Table>
@@ -222,7 +234,9 @@ function StockRow({
       {open ? (
         <tr>
           <td colSpan={7} className="bg-paper/60 px-3 py-2">
-            {jobs.data?.length ? (
+            {jobs.isPending ? (
+              <p className="text-faint text-caption">Loading…</p>
+            ) : jobs.data?.length ? (
               <div className="space-y-1 text-caption">
                 {jobs.data.map((j, i) => (
                   <div key={i} className="text-mid flex flex-wrap gap-x-4">
@@ -240,7 +254,7 @@ function StockRow({
                 ))}
               </div>
             ) : (
-              <p className="text-faint text-caption">Loading…</p>
+              <p className="text-faint text-caption">Nothing on the plan needs this material.</p>
             )}
           </td>
         </tr>

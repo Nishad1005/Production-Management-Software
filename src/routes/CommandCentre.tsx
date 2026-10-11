@@ -8,7 +8,8 @@ import {
   useResetDemo,
   useRunSchedule,
 } from '@/data/planning'
-import { Button, Empty, Metric, Panel, Table, Tag, Td, Th } from '@/components/ui'
+import { Button, Empty, Metric, Panel, Table, Tag, Td, Th, Waiting } from '@/components/ui'
+import { stateOf, stateOfAll, waiting } from '@/lib/query-state'
 import { useDepartmentNames } from '@/components/names'
 import { useAccess } from '@/lib/access-context'
 import { formatDate, formatDateLong, formatNumber } from '@/components/format'
@@ -42,6 +43,11 @@ export function CommandCentre() {
 
   const busy = runSchedule.isPending || reset.isPending
 
+  // No run is a real answer; the three queries that hang off the run stay
+  // pending forever without one, which is not the same as loading.
+  const noRun = run.isSuccess && run.data === null
+  const state = noRun ? stateOf(run) : stateOfAll(run, kpis, bottlenecks, triage)
+
   return (
     <div className="space-y-6">
       <Panel
@@ -53,7 +59,9 @@ export function CommandCentre() {
                   ? ` · as of ${formatDateLong(run.data.planned_as_of)}`
                   : ''
               } · ${run.data.duration_ms ?? 0} ms`
-            : 'No run yet'
+            : run.isPending
+              ? undefined
+              : 'No run yet'
         }
       >
         <div className="flex flex-wrap items-end justify-between gap-4">
@@ -115,24 +123,24 @@ export function CommandCentre() {
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Metric
           label="Shipment lines"
-          value={formatNumber(kpis.data?.shipment_lines)}
+          value={state === 'loading' ? '…' : formatNumber(kpis.data?.shipment_lines)}
           hint="The scheduling unit, not the order"
         />
         <Metric
           label="Scheduled tasks"
-          value={formatNumber(kpis.data?.tasks)}
+          value={state === 'loading' ? '…' : formatNumber(kpis.data?.tasks)}
           hint="Line × department × component"
         />
         <Metric
           label="Breaches"
-          value={formatNumber(kpis.data?.breaches)}
-          tone={kpis.data?.breaches ? 'flag' : 'clear'}
+          value={state === 'loading' ? '…' : formatNumber(kpis.data?.breaches)}
+          tone={waiting(state) ? 'ink' : kpis.data?.breaches ? 'flag' : 'clear'}
           hint="Tasks that cannot be made as planned"
         />
         <Metric
           label="Flagged days"
-          value={formatNumber(kpis.data?.flagged_days)}
-          tone={kpis.data?.flagged_days ? 'flag' : 'clear'}
+          value={state === 'loading' ? '…' : formatNumber(kpis.data?.flagged_days)}
+          tone={waiting(state) ? 'ink' : kpis.data?.flagged_days ? 'flag' : 'clear'}
           hint="Department-days over capacity"
         />
       </div>
@@ -183,12 +191,18 @@ export function CommandCentre() {
               ))}
             </tbody>
           </Table>
-          {!bottlenecks.data?.length ? <Empty>No run yet.</Empty> : null}
+          <div data-testid="bottlenecks" data-state={state}>
+            {waiting(state) ? (
+              <Waiting state={state} error={run.error ?? bottlenecks.error} />
+            ) : !bottlenecks.data?.length ? (
+              <Empty>No run yet.</Empty>
+            ) : null}
+          </div>
         </Panel>
 
         <Panel
           title="Flag triage"
-          meta={`${triage.data?.length ?? 0} flagged days`}
+          meta={waiting(state) ? undefined : `${triage.data?.length ?? 0} flagged days`}
         >
           <p className="text-mid mb-3 max-w-[60ch] text-caption">
             Sorted by how much time is left, and labelled with what is still
@@ -225,9 +239,13 @@ export function CommandCentre() {
               })}
             </tbody>
           </Table>
-          {!triage.data?.length ? (
-            <Empty>No day is over capacity. Nothing to triage.</Empty>
-          ) : null}
+          <div data-testid="flag-triage" data-state={state}>
+            {waiting(state) ? (
+              <Waiting state={state} error={run.error ?? triage.error} />
+            ) : !triage.data?.length ? (
+              <Empty>No day is over capacity. Nothing to triage.</Empty>
+            ) : null}
+          </div>
           {(triage.data?.length ?? 0) > 12 ? (
             <p className="text-faint mt-3 text-caption">
               Showing the 12 earliest of {triage.data?.length}.{' '}

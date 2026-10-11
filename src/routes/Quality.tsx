@@ -4,7 +4,8 @@ import {
   useQualityByDepartment,
   type ParetoRow,
 } from '@/data/quality'
-import { Empty, Panel, Table, Tag, Td, Th } from '@/components/ui'
+import { Empty, Panel, Table, Tag, Td, Th, Waiting } from '@/components/ui'
+import { stateOf, waiting } from '@/lib/query-state'
 import { formatNumber } from '@/components/format'
 
 /**
@@ -22,6 +23,9 @@ export function Quality() {
   const articles = useQualityByArticle()
 
   const causes = pareto.data ?? []
+  const paretoState = stateOf(pareto)
+  const departmentState = stateOf(departments)
+  const articleState = stateOf(articles)
   const total = causes.reduce((n, c) => n + c.qty, 0)
   const unexplained = causes.find((c) => c.code === 'UNATTRIBUTED')
   const worst = causes.filter((c) => c.code !== 'UNATTRIBUTED').slice(0, 2)
@@ -30,10 +34,18 @@ export function Quality() {
     <div className="space-y-6">
       <Panel
         title="Where the losses come from"
-        meta={total ? `${formatNumber(total)} rejected in all` : 'nothing rejected yet'}
+        meta={
+          waiting(paretoState)
+            ? undefined
+            : total
+              ? `${formatNumber(total)} rejected in all`
+              : 'nothing rejected yet'
+        }
       >
-        <div data-testid="defect-pareto">
-          {causes.length === 0 ? (
+        <div data-testid="defect-pareto" data-state={paretoState}>
+          {waiting(paretoState) ? (
+            <Waiting state={paretoState} error={pareto.error} loading="Counting rejections…" />
+          ) : causes.length === 0 ? (
             <Empty>
               Nothing has been rejected on any declaration yet. Rejections are
               entered beside good output on the Production screen.
@@ -68,10 +80,12 @@ export function Quality() {
 
       <Panel
         title="By department, against the yield its master claims"
-        meta={`${departments.data?.length ?? 0} reporting`}
+        meta={waiting(departmentState) ? undefined : `${departments.data?.length ?? 0} reporting`}
       >
-        <div data-testid="quality-by-department">
-          {departments.data?.length === 0 ? (
+        <div data-testid="quality-by-department" data-state={departmentState}>
+          {waiting(departmentState) ? (
+            <Waiting state={departmentState} error={departments.error} />
+          ) : departments.data?.length === 0 ? (
             <Empty>No department has declared any production yet.</Empty>
           ) : (
             <Table>
@@ -135,9 +149,14 @@ export function Quality() {
         </p>
       </Panel>
 
-      <Panel title="By article" meta={`${articles.data?.length ?? 0} making`}>
-        <div data-testid="quality-by-article">
-          {articles.data?.length === 0 ? (
+      <Panel
+        title="By article"
+        meta={waiting(articleState) ? undefined : `${articles.data?.length ?? 0} making`}
+      >
+        <div data-testid="quality-by-article" data-state={articleState}>
+          {waiting(articleState) ? (
+            <Waiting state={articleState} error={articles.error} />
+          ) : articles.data?.length === 0 ? (
             <Empty>Nothing declared against any article yet.</Empty>
           ) : (
             <Table>

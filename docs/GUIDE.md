@@ -831,6 +831,16 @@ and applies however the request arrives.
 
 ## Reading the numbers
 
+### Loading, empty, and failed
+
+Every panel that states something about the factory — *nothing is late*,
+*no day is over capacity*, *nothing has been started* — says **Loading…**
+until it has the answer, and says the sentence only then. A panel that could
+not load says so in red and adds that this is a statement about the screen,
+not about the factory. An empty panel is therefore always a real finding:
+the question was asked and the answer was "nothing".
+
+
 ### Utilisation
 
 A department's day is 1.00. A department making 80 legs against a 480/day rate

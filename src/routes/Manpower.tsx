@@ -8,7 +8,8 @@ import {
   type OvertimeRow,
 } from '@/data/manpower'
 import { useCurrentRun, useDepartments } from '@/data/planning'
-import { Empty, Panel, Tag } from '@/components/ui'
+import { Empty, Panel, Tag, Waiting } from '@/components/ui'
+import { stateOf, stateOfAll, waiting } from '@/lib/query-state'
 import { formatDateLong, formatNumber, inputClass, todayIso } from '@/components/format'
 
 /**
@@ -37,6 +38,9 @@ export function Manpower() {
 
   const rows = today.data ?? []
   const gaps = overtime.data ?? []
+  const noRun = run.isSuccess && run.data === null
+  const overtimeState = noRun ? stateOf(run) : stateOfAll(run, overtime)
+  const todayState = stateOf(today)
   // Nobody can work overtime on a day that has gone. Those days are real
   // overload and they are why the plan is late, but they are a scheduling
   // problem now, not a staffing one — offering to staff them would be advice
@@ -70,13 +74,17 @@ export function Manpower() {
       <Panel
         title="Where overtime would close the gap"
         meta={
-          ahead.length
-            ? `${needBodies.length} of ${ahead.length} need people`
-            : 'no day ahead over capacity'
+          waiting(overtimeState)
+            ? undefined
+            : ahead.length
+              ? `${needBodies.length} of ${ahead.length} need people`
+              : 'no day ahead over capacity'
         }
       >
-        <div data-testid="manpower-overtime">
-          {ahead.length === 0 ? (
+        <div data-testid="manpower-overtime" data-state={overtimeState}>
+          {waiting(overtimeState) ? (
+            <Waiting state={overtimeState} error={run.error ?? overtime.error} loading="Reading the plan…" />
+          ) : ahead.length === 0 ? (
             <Empty>
               No department is asked for more than it can make on any day still
               to come, so there is no overtime to consider.
@@ -111,10 +119,12 @@ export function Manpower() {
 
       <Panel
         title="Who is in"
-        meta={rows.length ? formatDateLong(date) : 'nothing recorded'}
+        meta={waiting(todayState) ? undefined : rows.length ? formatDateLong(date) : 'nothing recorded'}
       >
-        <div data-testid="manpower-today" className="space-y-2.5">
-          {rows.length === 0 ? (
+        <div data-testid="manpower-today" className="space-y-2.5" data-state={todayState}>
+          {waiting(todayState) ? (
+            <Waiting state={todayState} error={today.error} />
+          ) : rows.length === 0 ? (
             <Empty>
               Nobody has been marked in or out on {formatDateLong(date)}. Until
               somebody is, every department plans on its full establishment.

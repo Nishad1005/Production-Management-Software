@@ -5,7 +5,8 @@ import {
   useHeatmap,
   type HeatmapCell,
 } from '@/data/planning'
-import { Empty, Panel, Table, Td, Th } from '@/components/ui'
+import { Empty, Panel, Table, Td, Th, Waiting } from '@/components/ui'
+import { stateOf, stateOfAll, waiting } from '@/lib/query-state'
 import { formatDateLong, formatNumber } from '@/components/format'
 import {
   eachDay,
@@ -112,6 +113,10 @@ export function Heatmap() {
   }, [heatmap.data])
 
   const nameOf = (code: string) => names.get(code) ?? code
+  // No run is a real answer; the heatmap query stays pending forever without
+  // one, which is not the same as loading.
+  const noRun = run.isSuccess && run.data === null
+  const state = noRun ? stateOf(run) : stateOfAll(run, heatmap)
 
   return (
     <div className="space-y-6">
@@ -131,7 +136,9 @@ export function Heatmap() {
           the time they take can. Anything over 1.00 is flagged.
         </p>
 
-        {!model ? (
+        {waiting(state) ? (
+          <Waiting state={state} error={run.error ?? heatmap.error} loading="Drawing the month…" />
+        ) : !model ? (
           <Empty>No schedule run yet. Run one from the command centre.</Empty>
         ) : (
           <>
@@ -282,7 +289,9 @@ export function Heatmap() {
               ))}
             </tbody>
           </Table>
-          {!detail.data?.length ? (
+          {detail.isPending ? (
+            <Waiting state="loading" loading="Reading the day…" />
+          ) : !detail.data?.length ? (
             <Empty>Nothing planned on this day — the department is idle.</Empty>
           ) : null}
         </Panel>

@@ -1,6 +1,7 @@
 import { useMdDashboard, type Kpi } from '@/data/planning'
 import { useProductionVsPlan, type ProductionVsPlan } from '@/data/wip'
-import { Empty, Panel, Table, Td, Th } from '@/components/ui'
+import { Empty, Panel, Table, Td, Th, Waiting } from '@/components/ui'
+import { stateOf, waiting } from '@/lib/query-state'
 import { formatDate, formatNumber, todayIso } from '@/components/format'
 
 /**
@@ -14,6 +15,7 @@ import { formatDate, formatNumber, todayIso } from '@/components/format'
 export function Dashboard() {
   const kpis = useMdDashboard()
   const rows = kpis.data ?? []
+  const kpiState = stateOf(kpis)
 
   const missing = rows.filter((r) => !r.available)
   const bad = rows.filter((r) => r.status === 'bad')
@@ -23,20 +25,27 @@ export function Dashboard() {
       <Panel
         title="Is the factory on track today?"
         meta={
-          bad.length
-            ? `${bad.length} off target`
-            : rows.length
-              ? 'nothing off target'
-              : ''
+          waiting(kpiState)
+            ? undefined
+            : bad.length
+              ? `${bad.length} off target`
+              : rows.length
+                ? 'nothing off target'
+                : ''
         }
       >
         <div
           data-testid="md-kpis"
+          data-state={kpiState}
           className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
         >
-          {rows.map((kpi) => (
-            <KpiCard key={kpi.key} kpi={kpi} />
-          ))}
+          {waiting(kpiState) ? (
+            <div className="col-span-full">
+              <Waiting state={kpiState} error={kpis.error} loading="Computing the ten figures…" />
+            </div>
+          ) : (
+            rows.map((kpi) => <KpiCard key={kpi.key} kpi={kpi} />)
+          )}
         </div>
 
         {missing.length ? (
@@ -75,18 +84,23 @@ function ProductionAgainstPlan() {
     (r) => r.qty_planned > 0 || r.qty_good > 0 || r.qty_rejected > 0,
   )
   const behind = rows.filter((r) => r.variance < 0)
+  const state = stateOf(vsPlan)
 
   return (
     <Panel
       title="Planned against made"
       meta={
-        rows.length
-          ? `${behind.length} of ${rows.length} short, last ${days} days`
-          : `last ${days} days`
+        waiting(state)
+          ? undefined
+          : rows.length
+            ? `${behind.length} of ${rows.length} short, last ${days} days`
+            : `last ${days} days`
       }
     >
-      <div data-testid="production-vs-plan">
-        {rows.length === 0 ? (
+      <div data-testid="production-vs-plan" data-state={state}>
+        {waiting(state) ? (
+          <Waiting state={state} error={vsPlan.error} loading="Comparing the fortnight…" />
+        ) : rows.length === 0 ? (
           <Empty>
             Nothing was planned or declared in the last {days} days. Output is
             entered on the Production screen, by the department that made it.

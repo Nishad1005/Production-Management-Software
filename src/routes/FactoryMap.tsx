@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { useBottlenecks, useCurrentRun, useRouteGraph } from '@/data/planning'
 import { useMachineStatus } from '@/data/mutations'
-import { Empty, Panel } from '@/components/ui'
+import { Empty, Panel, Waiting } from '@/components/ui'
 import { formatNumber } from '@/components/format'
 
 /**
@@ -79,6 +79,18 @@ export function FactoryMap() {
   const machineOf = new Map(
     (machines.data ?? []).map((m) => [m.department_code, m]),
   )
+
+  if (graph.isPending || graph.isError) {
+    return (
+      <Panel title="The factory, as it flows">
+        <Waiting
+          state={graph.isPending ? 'loading' : 'failed'}
+          error={graph.error}
+          loading="Drawing the route…"
+        />
+      </Panel>
+    )
+  }
 
   if (!model) {
     return (

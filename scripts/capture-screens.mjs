@@ -132,7 +132,9 @@ async function capture({ label, dir, base, signIn }) {
     await page.waitForLoadState('networkidle', { timeout: 60_000 }).catch(() => {})
     await page
       .waitForFunction(
-        () => !/Loading…|Running every check…|Working…/.test(document.body.innerText),
+        () =>
+          !document.querySelector('[data-state="loading"], [data-state="refreshing"]') &&
+          !/Loading…|Running every check…|Working…/.test(document.body.innerText),
         null,
         { timeout: 60_000 },
       )

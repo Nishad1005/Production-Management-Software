@@ -440,8 +440,9 @@ await step('the whole sheet leaves as a workbook', async () => {
 
 await step('an empty plan says so', async () => {
   await page.goto(`${baseUrl}/#/wip`, { waitUntil: 'domcontentloaded' })
-  await page.waitForSelector('text=Ready to stuff', { timeout: 60_000 })
-  await page.waitForTimeout(900)
+  // By state: until the ledger has been read, the panel says it is reading
+  // it, and a sentence that says "nothing started" would be a lie in flight.
+  await page.waitForSelector('[data-testid="wip-running"][data-state="ready"]', { timeout: 60_000 })
 
   // With no orders and no rates there is nothing in progress. That has to read
   // as "nothing here yet" rather than as a broken screen — an empty state is
@@ -451,7 +452,12 @@ await step('an empty plan says so', async () => {
   if (/NaN|undefined|\[object/.test(text)) {
     throw new Error('an empty database is rendering as a defect')
   }
-  return 'empty, and legible'
+  const running = await page.locator('[data-testid="wip-running"]').innerText()
+  const cards = await page.locator('[data-testid="wip-running"] [data-testid^="wip-line"]').count()
+  if (!cards && !/Nothing has been started/.test(running)) {
+    throw new Error(`the In progress panel is ready but says neither: ${running.slice(0, 80)}`)
+  }
+  return cards ? `${cards} lines in progress, legible` : 'empty, said in words, and legible'
 })
 
 await step('sign out', async () => {

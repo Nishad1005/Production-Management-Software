@@ -5,6 +5,7 @@ import { useManpowerDay } from '@/data/manpower'
 import { useMachineStatus } from '@/data/mutations'
 import { useDepartments } from '@/data/planning'
 import { formatNumber, todayIso } from '@/components/format'
+import { stateOfAll, waiting } from '@/lib/query-state'
 
 /**
  * The screen the `kiosk` role has been waiting for since Phase 0.
@@ -68,6 +69,10 @@ export function Display() {
   const crew = people.data?.find((p) => p.department_code === code)
 
   const today = owed.filter((r) => r.days_to_due !== null && r.days_to_due <= 0)
+  // A wall that says "nothing outstanding" while it is still loading is a
+  // wall that lies to a whole department at once.
+  const state = code ? stateOfAll(queue, inbound) : 'loading'
+  const ready = !waiting(state)
 
   return (
     <div className="bg-ink min-h-screen p-6 text-white" data-testid="floor-display">
@@ -98,8 +103,12 @@ export function Display() {
           <h2 className="text-[13px] tracking-[0.18em] text-white/50 uppercase">
             Due today or overdue
           </h2>
-          <div className="mt-3 space-y-2" data-testid="display-today">
-            {today.length === 0 ? (
+          <div className="mt-3 space-y-2" data-testid="display-today" data-state={state}>
+            {!ready ? (
+              <p className="text-[22px] text-white/30">
+                {state === 'failed' ? 'Could not load. That is this screen, not the floor.' : 'Loading…'}
+              </p>
+            ) : today.length === 0 ? (
               <p className="text-[22px] text-white/50">
                 {owed.length
                   ? `Nothing due today. ${owed.length} jobs still ahead.`
@@ -137,8 +146,12 @@ export function Display() {
           <h2 className="text-[13px] tracking-[0.18em] text-white/50 uppercase">
             Waiting on
           </h2>
-          <div className="mt-3 space-y-2" data-testid="display-waiting">
-            {late.length === 0 ? (
+          <div className="mt-3 space-y-2" data-testid="display-waiting" data-state={state}>
+            {!ready ? (
+              <p className="text-[22px] text-white/30">
+                {state === 'failed' ? 'Could not load. That is this screen, not the floor.' : 'Loading…'}
+              </p>
+            ) : late.length === 0 ? (
               <p className="text-[22px] text-white/50">Nothing late into here.</p>
             ) : (
               late.slice(0, 6).map((r) => (

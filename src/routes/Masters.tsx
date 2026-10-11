@@ -34,9 +34,10 @@ import {
   useUpdateDepartment,
   useUpdateShift,
 } from '@/data/mutations'
-import { Button, ColumnName, Empty, Field, Panel, Table, Tag, Td, Th } from '@/components/ui'
+import { Button, ColumnName, Empty, Field, Panel, Table, Tag, Td, Th, Waiting } from '@/components/ui'
 import { Tabs } from '@/components/tabs'
 import { useTab } from '@/lib/useTab'
+import { stateOf, waiting } from '@/lib/query-state'
 import { componentLabel, useDepartmentNames } from '@/components/names'
 import { formatDateLong, formatNumber, inputClass, todayIso } from '@/components/format'
 import { rpc } from '@/lib/backend'
@@ -411,7 +412,11 @@ export function Masters() {
               ))}
             </tbody>
           </Table>
-          {!holidays.data?.length ? <Empty>No holidays declared.</Empty> : null}
+          {holidays.isPending ? (
+            <Waiting state="loading" />
+          ) : !holidays.data?.length ? (
+            <Empty>No holidays declared.</Empty>
+          ) : null}
           <div className="mt-4">
             <Button variant="quiet" onClick={() => setAddingHoliday(true)}>
               Add a holiday
@@ -1171,8 +1176,10 @@ function MachinesPanel() {
         </div>
       ) : null}
 
-      <div data-testid="machines-master">
-        {rows.length === 0 ? (
+      <div data-testid="machines-master" data-state={stateOf(machines)}>
+        {waiting(stateOf(machines)) ? (
+          <Waiting state={stateOf(machines)} error={machines.error} />
+        ) : rows.length === 0 ? (
           <Empty>
             No machines recorded. Every department's capacity is exactly its
             standing rate until they are.

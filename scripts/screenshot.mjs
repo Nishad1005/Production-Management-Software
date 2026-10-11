@@ -592,7 +592,11 @@ await step('parallel feeders', async () => {
 await step('declare production', async () => {
   await go('#/production', 'text=What you were asked for')
   await page.selectOption('[data-testid="production-department"]', 'STITCH')
-  await page.waitForTimeout(800)
+  // The worklist says it is loading until it knows; wait for either answer.
+  await page.waitForSelector(
+    '[data-testid="production-empty"], [data-testid="production-worklist"]',
+    { timeout: 60_000 },
+  )
 
   // The screen opens on today, which the seeded plan does not reach, so it
   // offers the days there *is* work. Clicking one is both the check that the
@@ -600,7 +604,7 @@ await step('declare production', async () => {
   const empty = page.locator('[data-testid="production-empty"]')
   if (await empty.count()) {
     await empty.locator('button').first().click()
-    await page.waitForTimeout(800)
+    await page.waitForSelector('[data-testid="production-worklist"]', { timeout: 60_000 })
   }
 
   const list = page.locator('[data-testid="production-worklist"]')
@@ -898,7 +902,8 @@ await step('department board', async () => {
   // Stapling is fed by two streams, so it has something to wait for. An entry
   // point would show an empty inbound panel and prove nothing.
   await page.selectOption('[data-testid="board-department"]', 'STAPLE')
-  await page.waitForTimeout(1200)
+  await page.waitForSelector('[data-testid="board-queue"][data-state="ready"]', { timeout: 60_000 })
+  await page.waitForSelector('[data-testid="board-inbound"][data-state="ready"]', { timeout: 60_000 })
 
   const owed = await page
     .locator('[data-testid="board-queue"] >> text=/Still to make/i')
@@ -1017,7 +1022,9 @@ await step('provisional banner', async () => {
 
 await step('attention', async () => {
   await go('#/attention', 'text=Needs an answer today')
-  await page.waitForTimeout(700)
+  // By state, not by a timer: the counts read 0 while the checks are running.
+  await page.waitForSelector('[data-testid="attention-critical"][data-state="ready"]', { timeout: 60_000 })
+  await page.waitForSelector('[data-testid="attention-warning"][data-state="ready"]', { timeout: 60_000 })
 
   const critical = Number(
     await page.locator('[data-testid="attention-critical"]').getAttribute('data-count'),
@@ -1112,6 +1119,7 @@ await step('floor display', async () => {
 
 await step('forecast refuses', async () => {
   await go('#/forecast', 'text=How much of this is worth believing')
+  await page.waitForSelector('[data-testid="forecast-readiness"][data-state="ready"]', { timeout: 60_000 })
   await page.waitForTimeout(900)
 
   // The demo has three declarations. Three is not ten, so every rate on this

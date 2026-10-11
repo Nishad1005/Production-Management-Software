@@ -6,7 +6,8 @@ import {
   type QueueRow,
 } from '@/data/wip'
 import { useDepartments } from '@/data/planning'
-import { Empty, Panel, Tag } from '@/components/ui'
+import { Empty, Panel, Tag, Waiting } from '@/components/ui'
+import { stateOfAll, waiting } from '@/lib/query-state'
 import { formatDateLong, formatNumber, inputClass } from '@/components/format'
 
 /**
@@ -47,6 +48,10 @@ export function DepartmentBoard() {
   )
   const notYetDue = outstanding.length - blocking.length
 
+  // Until a department is chosen the two queries are not running at all,
+  // which must read as loading rather than as "nothing is late".
+  const state = !departmentCode ? 'loading' : stateOfAll(queue, inbound)
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end gap-3 sm:gap-4">
@@ -77,11 +82,17 @@ export function DepartmentBoard() {
       <Panel
         title="Holding you up"
         meta={
-          blocking.length ? `${blocking.length} to chase` : 'nothing to chase'
+          waiting(state)
+            ? undefined
+            : blocking.length
+              ? `${blocking.length} to chase`
+              : 'nothing to chase'
         }
       >
-        <div data-testid="board-inbound">
-          {inbound.data?.length === 0 ? (
+        <div data-testid="board-inbound" data-state={state}>
+          {waiting(state) ? (
+            <Waiting state={state} error={inbound.error} loading="Looking upstream…" />
+          ) : inbound.data?.length === 0 ? (
             <Empty>
               Nothing feeds {departmentCode}. It starts on its own, so there is
               never anything to wait for.
@@ -113,10 +124,12 @@ export function DepartmentBoard() {
 
       <Panel
         title="What you owe"
-        meta={open.length ? `${open.length} still open` : 'all clear'}
+        meta={waiting(state) ? undefined : open.length ? `${open.length} still open` : 'all clear'}
       >
-        <div data-testid="board-queue">
-          {open.length === 0 ? (
+        <div data-testid="board-queue" data-state={state}>
+          {waiting(state) ? (
+            <Waiting state={state} error={queue.error} loading="Reading the plan…" />
+          ) : open.length === 0 ? (
             <Empty>
               Nothing outstanding for {departmentCode} on the current plan.
             </Empty>

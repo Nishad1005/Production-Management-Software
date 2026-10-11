@@ -13,7 +13,8 @@ import {
   useDeleteOrder,
   useDeleteShipmentLine,
 } from '@/data/mutations'
-import { Button, Empty, Field, Panel, Table, Tag, Td, Th } from '@/components/ui'
+import { Button, Empty, Field, Panel, Table, Tag, Td, Th, Waiting } from '@/components/ui'
+import { stateOf } from '@/lib/query-state'
 import { formatDateLong, formatNumber, inputClass } from '@/components/format'
 import { Modal, ModalActions } from '@/components/edit'
 
@@ -32,7 +33,10 @@ export function OrderBook() {
 
   return (
     <div className="space-y-6">
-      <Panel title="Order book" meta={`${orders.data?.length ?? 0} orders`}>
+      <Panel
+        title="Order book"
+        meta={orders.isPending ? undefined : `${orders.data?.length ?? 0} orders`}
+      >
         <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
           <p className="text-mid max-w-[70ch] text-caption">
             An order is not a single dated commitment. It ships in phases, and
@@ -118,7 +122,15 @@ export function OrderBook() {
           </tbody>
         </Table>
 
-        {!orders.data?.length ? <Empty>No orders yet.</Empty> : null}
+        <div data-testid="order-book-state" data-state={stateOf(orders)}>
+          {orders.isPending ? (
+            <Waiting state="loading" loading="Reading the book…" />
+          ) : orders.isError ? (
+            <Waiting state="failed" error={orders.error} />
+          ) : !orders.data?.length ? (
+            <Empty>No orders yet.</Empty>
+          ) : null}
+        </div>
 
         <p className="text-faint mt-4 text-caption">
           An exclamation beside the line count means the shipment lines do not

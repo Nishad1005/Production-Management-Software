@@ -5,7 +5,8 @@ import {
   type WipLine,
   type WipRow,
 } from '@/data/wip'
-import { Empty, Panel, Tag } from '@/components/ui'
+import { Empty, Panel, Tag, Waiting } from '@/components/ui'
+import { stateOf, waiting } from '@/lib/query-state'
 import { formatDateLong, formatNumber } from '@/components/format'
 
 /**
@@ -21,25 +22,30 @@ export function Wip() {
   const [open, setOpen] = useState<string | null>(null)
 
   const all = lines.data ?? []
+  const state = stateOf(lines)
   const running = all.filter((l) => l.started && !l.complete)
   const ready = all.filter((l) => l.complete)
-  const waiting = all.filter((l) => !l.started)
+  const unstarted = all.filter((l) => !l.started)
 
   return (
     <div className="space-y-6">
       <Panel
         title="In progress"
         meta={
-          running.length
-            ? `${formatNumber(running.reduce((n, l) => n + l.line_qty, 0))} units across ${running.length}`
-            : 'nothing started'
+          waiting(state)
+            ? undefined
+            : running.length
+              ? `${formatNumber(running.reduce((n, l) => n + l.line_qty, 0))} units across ${running.length}`
+              : 'nothing started'
         }
       >
-        <div data-testid="wip-running">
-          {running.length === 0 ? (
+        <div data-testid="wip-running" data-state={state}>
+          {waiting(state) ? (
+            <Waiting state={state} error={lines.error} loading="Reading the ledger…" />
+          ) : running.length === 0 ? (
             <Empty>
-              Nothing has been started and left unfinished. {waiting.length}{' '}
-              {waiting.length === 1 ? 'line is' : 'lines are'} still to begin.
+              Nothing has been started and left unfinished. {unstarted.length}{' '}
+              {unstarted.length === 1 ? 'line is' : 'lines are'} still to begin.
             </Empty>
           ) : (
             <div className="space-y-2.5">
@@ -65,10 +71,12 @@ export function Wip() {
 
       <Panel
         title="Ready to stuff"
-        meta={ready.length ? `${ready.length} complete` : 'none yet'}
+        meta={waiting(state) ? undefined : ready.length ? `${ready.length} complete` : 'none yet'}
       >
-        <div data-testid="wip-ready">
-          {ready.length === 0 ? (
+        <div data-testid="wip-ready" data-state={state}>
+          {waiting(state) ? (
+            <Waiting state={state} error={lines.error} loading="Reading the ledger…" />
+          ) : ready.length === 0 ? (
             <Empty>
               No shipment line has been through every department yet.
             </Empty>
@@ -121,7 +129,7 @@ function LineCard({
     .sort((a, b) => a.route_position - b.route_position)
 
   return (
-    <div className="border-rule bg-sheet border">
+    <div className="border-rule bg-sheet border" data-testid="wip-line">
       <button
         type="button"
         onClick={onToggle}

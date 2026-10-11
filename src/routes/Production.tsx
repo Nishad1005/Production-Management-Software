@@ -12,7 +12,8 @@ import {
   type WorklistRow,
 } from '@/data/wip'
 import { useDepartments } from '@/data/planning'
-import { Button, Empty, Panel, Table, Tag, Td, Th } from '@/components/ui'
+import { Button, Empty, Panel, Table, Tag, Td, Th, Waiting } from '@/components/ui'
+import { stateOf, waiting } from '@/lib/query-state'
 import { componentLabel, useDepartmentNames } from '@/components/names'
 import { formatDateLong, formatNumber, inputClass, todayIso } from '@/components/format'
 
@@ -42,6 +43,9 @@ export function Production() {
 
   const rows = worklist.data ?? []
   const declared = rows.filter((r) => r.declaration_id).length
+  // Before a department is chosen the worklist is not running, which must
+  // read as loading rather than as "nothing is planned".
+  const worklistState = !departmentCode ? 'loading' : stateOf(worklist)
 
   return (
     <div className="space-y-6">
@@ -94,17 +98,25 @@ export function Production() {
       <Panel
         title="What you were asked for"
         meta={
-          rows.length
-            ? `${declared} of ${rows.length} entered`
-            : formatDateLong(date)
+          waiting(worklistState)
+            ? undefined
+            : rows.length
+              ? `${declared} of ${rows.length} entered`
+              : formatDateLong(date)
         }
       >
-        {rows.length === 0 ? (
-          <div data-testid="production-empty">
+        {waiting(worklistState) ? (
+          <div data-testid="production-waiting" data-state={worklistState}>
+            <Waiting state={worklistState} error={worklist.error} loading="Reading the day's plan…" />
+          </div>
+        ) : rows.length === 0 ? (
+          <div data-testid="production-empty" data-state={worklistState}>
             <Empty>
               Nothing is planned for {departmentCode} on {formatDateLong(date)}.
             </Empty>
-            {days.data?.length ? (
+            {days.isPending ? (
+              <Waiting state="loading" loading="Looking for other days…" />
+            ) : days.data?.length ? (
               <div className="mt-4">
                 <p className="text-mid mb-2 text-caption">
                   Days this department is asked to work:

@@ -8,17 +8,7 @@ import {
   useRunWhatIf,
   useRuns,
 } from '@/data/whatif'
-import {
-  Button,
-  Empty,
-  Field,
-  Metric,
-  Panel,
-  Table,
-  Tag,
-  Td,
-  Th,
-} from '@/components/ui'
+import { Button, Empty, Field, Metric, Panel, Table, Tag, Td, Th, Waiting } from '@/components/ui'
 import { componentLabel, useDepartmentNames } from '@/components/names'
 import {
   BREACH_LABEL,
@@ -366,9 +356,11 @@ export function WhatIf() {
 
           <Panel
             title="What changed"
-            meta={`${changed.data?.length ?? 0} tasks`}
+            meta={changed.isPending ? undefined : `${changed.data?.length ?? 0} tasks`}
           >
-            {changed.data?.length ? (
+            {changed.isPending ? (
+              <Waiting state="loading" loading="Comparing task by task…" />
+            ) : changed.data?.length ? (
               <Table>
                 <thead>
                   <tr>
@@ -425,7 +417,7 @@ export function WhatIf() {
         </>
       ) : null}
 
-      <Panel title="Runs" meta={`${runs.data?.length ?? 0} kept`}>
+      <Panel title="Runs" meta={runs.isPending ? undefined : `${runs.data?.length ?? 0} kept`}>
         <p className="text-mid mb-3 max-w-[80ch] text-caption">
           Every run is kept and none is ever overwritten, so an earlier plan can
           be recovered and compared against what actually happened. Select one to

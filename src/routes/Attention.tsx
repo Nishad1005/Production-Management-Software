@@ -1,6 +1,7 @@
 import { Link } from 'react-router'
 import { useAttention, type Finding } from '@/data/attention'
-import { Empty, Panel, Tag } from '@/components/ui'
+import { Empty, Panel, Tag, Waiting } from '@/components/ui'
+import { stateOf, waiting } from '@/lib/query-state'
 import { humanise, useDepartmentNames } from '@/components/names'
 
 /**
@@ -34,11 +35,7 @@ export function Attention() {
    * have. The panels below therefore never claim quiet until the query has
    * actually come back.
    */
-  const state: 'loading' | 'failed' | 'ready' = attention.isPending
-    ? 'loading'
-    : attention.isError
-      ? 'failed'
-      : 'ready'
+  const state = stateOf(attention)
 
   const critical = rows.filter((r) => r.severity === 'critical')
   const warning = rows.filter((r) => r.severity === 'warning')
@@ -49,7 +46,7 @@ export function Attention() {
       <Panel
         title="Needs an answer today"
         meta={
-          state !== 'ready'
+          waiting(state)
             ? undefined
             : critical.length
               ? `${critical.length} critical`
@@ -61,8 +58,13 @@ export function Attention() {
           data-count={critical.length}
           data-state={state}
         >
-          {state !== 'ready' ? (
-            <Waiting state={state} error={attention.error} />
+          {waiting(state) ? (
+            <Waiting
+              state={state}
+              error={attention.error}
+              loading="Running every check…"
+              failed="The checks did not run."
+            />
           ) : critical.length === 0 ? (
             <Empty>
               Nothing the software can see needs deciding today. That is a real
@@ -81,7 +83,7 @@ export function Attention() {
       <Panel
         title="Worth knowing"
         meta={
-          state !== 'ready'
+          waiting(state)
             ? undefined
             : warning.length
               ? `${warning.length} warnings`
@@ -93,8 +95,13 @@ export function Attention() {
           data-count={warning.length}
           data-state={state}
         >
-          {state !== 'ready' ? (
-            <Waiting state={state} error={attention.error} />
+          {waiting(state) ? (
+            <Waiting
+              state={state}
+              error={attention.error}
+              loading="Running every check…"
+              failed="The checks did not run."
+            />
           ) : warning.length === 0 ? (
             <Empty>Nothing outstanding.</Empty>
           ) : (
@@ -175,28 +182,6 @@ function FindingCard({ row, names }: { row: Finding; names: Map<string, string> 
       >
         Go to the screen that fixes this →
       </Link>
-    </div>
-  )
-}
-
-/**
- * What to say before the answer is known.
- *
- * Deliberately not a spinner that fades into an empty list: on this screen the
- * difference between "checked, nothing wrong" and "not checked yet" is the
- * whole point, so both are stated in words.
- */
-function Waiting({ state, error }: { state: 'loading' | 'failed'; error: unknown }) {
-  if (state === 'loading') {
-    return <Empty>Running every check…</Empty>
-  }
-  return (
-    <div className="border-flag bg-sheet border-l-2 p-3.5 text-small">
-      <div className="text-flag font-semibold">The checks did not run.</div>
-      <div className="text-mid mt-1">
-        Nothing here is a statement about the factory — it is a statement about
-        this screen. {String(error)}
-      </div>
     </div>
   )
 }

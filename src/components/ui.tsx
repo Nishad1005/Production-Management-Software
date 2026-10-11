@@ -270,3 +270,56 @@ export function Field({
 export function Empty({ children }: { children: ReactNode }) {
   return <p className="text-mid text-small py-8 text-center">{children}</p>
 }
+
+/**
+ * Loading, failed and empty are three different things.
+ *
+ * A screen that reads `query.data ?? []` says "nothing here" while the query
+ * is still in flight — and where "nothing here" is a claim about the factory
+ * ("nothing is late", "no day is over capacity") that is the worst kind of
+ * wrong: it looks entirely normal. So a panel that makes a claim works out
+ * where its query stands first, and says the claim only when the answer is
+ * in. The Attention screen learned this on 30 Aug; every panel with a claim
+ * follows it since 11 Oct. The state is also on the element as data, so the
+ * checks can wait for `ready` rather than for a sentence (`refreshing` while a
+ * newer answer is on its way: the panel keeps what it has, the check waits). `stateOf` and
+ * `stateOfAll`, which work the state out, live in src/lib/query-state.ts so
+ * this file exports components and nothing else.
+ */
+import type { QueryState } from '@/lib/query-state'
+/**
+ * What to say before the answer is known.
+ *
+ * Deliberately not a spinner that fades into an empty list: the difference
+ * between "checked, nothing wrong" and "not checked yet" is the whole point,
+ * so both are stated in words. A failure says plainly that it is about the
+ * screen and not about the factory.
+ */
+export function Waiting({
+  state,
+  error,
+  loading = 'Loading…',
+  failed = 'This could not be loaded.',
+}: {
+  state: QueryState
+  error?: unknown
+  loading?: string
+  failed?: string
+}) {
+  if (state !== 'failed') {
+    return (
+      <p data-state="loading" className="text-faint text-small py-8 text-center">
+        {loading}
+      </p>
+    )
+  }
+  return (
+    <div data-state="failed" className="border-flag bg-sheet border-l-2 p-3.5 text-small">
+      <div className="text-flag font-semibold">{failed}</div>
+      <div className="text-mid mt-1">
+        Nothing here is a statement about the factory — it is a statement about
+        this screen. {String(error)}
+      </div>
+    </div>
+  )
+}

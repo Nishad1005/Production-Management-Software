@@ -5,7 +5,8 @@ import {
   useShipmentRisk,
   type Risk,
 } from '@/data/forecast'
-import { Empty, Panel, Table, Tag, Td, Th } from '@/components/ui'
+import { Empty, Panel, Table, Tag, Td, Th, Waiting } from '@/components/ui'
+import { stateOf, waiting } from '@/lib/query-state'
 import { componentLabel, useDepartmentNames } from '@/components/names'
 import { formatDateLong, formatNumber } from '@/components/format'
 
@@ -30,6 +31,7 @@ export function Forecast() {
   const measuredRates = (rates.data ?? []).filter((x) => x.confidence === 'measured')
   const thinRates = (rates.data ?? []).filter((x) => x.confidence !== 'measured')
   const risks = risk.data ?? []
+  const riskState = stateOf(risk)
   const late = risks.filter((x) => x.band === 'likely late')
   const atRisk = risks.filter((x) => x.band === 'at risk')
 
@@ -42,7 +44,7 @@ export function Forecast() {
         <div
           data-testid="forecast-readiness"
           data-declarations={r?.declarations ?? 0}
-          data-state={readiness.isPending ? 'loading' : readiness.isError ? 'failed' : 'ready'}
+          data-state={stateOf(readiness)}
         >
           {/*
             `!r ||` used to fold "still loading" into "nothing declared", and
@@ -109,13 +111,17 @@ export function Forecast() {
       <Panel
         title="Which shipments look like missing their container"
         meta={
-          risks.length
-            ? `${late.length} likely late · ${atRisk.length} at risk`
-            : 'nothing open'
+          waiting(riskState)
+            ? undefined
+            : risks.length
+              ? `${late.length} likely late · ${atRisk.length} at risk`
+              : 'nothing open'
         }
       >
-        <div data-testid="shipment-risk">
-          {risks.length === 0 ? (
+        <div data-testid="shipment-risk" data-state={riskState}>
+          {waiting(riskState) ? (
+            <Waiting state={riskState} error={risk.error} loading="Weighing each shipment…" />
+          ) : risks.length === 0 ? (
             <Empty>No open shipment lines to assess.</Empty>
           ) : (
             <Table>

@@ -401,6 +401,17 @@ as a click timing out on an element that never existed. `Button` takes a
 
 Keep adding to this. Each one was a real dead end.
 
+**`ready` is not `current`: a query with an answer can be fetching a newer
+one.** Every write invalidates every query. A panel mounted on every screen
+(the attention badge) refetches at once; a screen opened afterwards renders
+what it last knew and refetches in the background, and `isPending` is false
+the whole time. The Attention step read 14 critical against a badge of 44 the
+moment its wait moved from a 700 ms timer to `data-state="ready"` — the timer
+had been covering the refetch. `stateOf` reports `refreshing` for that case;
+the panel keeps showing what it has, and a check waits for `ready`. No race:
+TanStack Query's first render after a mount with stale data already reports
+`isFetching`. (11 Oct)
+
 | Symptom | Cause and fix |
 |---|---|
 | `extension "btree_gist" is not available` in PGlite | It ships as a contrib import: `import { btree_gist } from '@electric-sql/pglite/contrib/btree_gist'` and pass via `extensions`. |
@@ -796,17 +807,14 @@ the real workload at 324 orders and ~40,000 tasks.
    constructed-string join — `c.code = a.code || '::' || d.code` — is still
    there and still the wrong shape, but it is no longer what makes the view
    slow and is not worth a migration on its own.
-3. **The loading-versus-empty sweep.** `data ?? []` and `!data ||` render "still
-   loading" and "nothing to show" identically. Harmless where the empty state is
-   a shrug, dangerous where it is a claim — and **about a dozen of them are
-   claims**: *Nothing is late into Assembly*, *Nothing has been rejected on any
-   declaration yet*, *No department has declared any production yet*, *Nothing
-   has been started and left unfinished*. The two worst (Attention, Forecast)
-   were fixed on 30 Aug. `DepartmentBoard` is the next one worth doing, because
-   a HOD reads it daily and it currently says nothing is late before it knows.
-   **And the Command centre (seen 4 Oct):** while its queries are in flight it
-   shows four dashes, *No run yet* and *No day is over capacity. Nothing to
-   triage* — on the landing screen, to a client, on every slow connection.
+3. ~~**The loading-versus-empty sweep.**~~ **Done 11 Oct.** `data ?? []`
+   rendered "still loading" and "nothing to show" identically, and about a
+   dozen of the empty sentences were claims about the factory. Every panel
+   that makes a claim now works out where its query stands (`stateOf` /
+   `stateOfAll` in `src/lib/query-state.ts`, the `Waiting` component in
+   `ui.tsx`, `data-state` on the element) and says the claim only when the
+   answer is in; the Command centre's tiles read "…" and its header says
+   nothing until the run is known. The 11 Oct entry lists the screens.
 4. **Confirm what Supabase's own backups cover** on the project's plan. *Save
    everything to a file* is a copy U&M control, not a replacement for the
    platform's.
@@ -2115,6 +2123,61 @@ Attention, the header reading "as of 11 Oct", the horizon from 12 August
 in the plan, exactly: the sample book, dated August and September with
 nothing declared, has moved forward from today, and the screens say so.
 KRAM/09 regenerated from the site.
+
+### 2026-10-11 — Loading is not empty, on every screen
+
+§8.2 item 3, chosen by Nishad after the engine learned from the floor.
+`query.data ?? []` says "nothing here" while the query is still in flight,
+and on a dozen panels "nothing here" was a claim: *nothing is late into
+Assembly*, *no day is over capacity*, *nothing has been started and left
+unfinished*, *the plan commits the factory to nothing yet*, *no run yet*. On
+PGlite the first load is seconds long; on Supabase it is a round trip per
+view; either way the claim was on screen before the answer. Attention and
+the Forecast's readiness panel had been fixed on 30 Aug and nothing else
+had followed.
+
+**One pattern, lifted from Attention.** `stateOf(query)` and
+`stateOfAll(...queries)` → `loading | failed | ready` (`src/lib/query-state.ts`,
+out of the components file for the fast-refresh rule that moved `useTab`);
+`Waiting` in `ui.tsx` says "Loading…" (or the panel's own words) and, on a
+failure, that the failure is about the screen and not the factory; the
+state sits on the panel's element as `data-state`. A panel's meta says
+nothing until ready — "nothing to chase", "all clear", "0 flagged days" were
+claims too. Where a query hangs off the current run or a chosen department
+it stays pending forever without one, so "no run" and "no department yet"
+are decided first: no run is a real answer, no department chosen is loading.
+
+**The screens**: Command centre (header, four tiles as "…" in ink rather
+than green, bottleneck table, flag triage), My department (both panels),
+the floor display (both panels, in its own type), Quality (three panels),
+WIP (two), Material (two, and the drill-down that said "Loading…" forever on
+an empty result now says what it means), Manpower (two), Money (cash out),
+Dashboard (the ten figures and planned against made), Production (the
+worklist, and "other days" while they are looked for), Load heatmap (no run
+versus loading, and the day's detail), Factory map (loading before "no route
+yet"), Order book, What if (what changed; the runs count), Forecast
+(shipment risk), Masters (holidays, machines). The shrugs — "no articles
+yet", "nothing matches" — were left alone.
+
+**The checks learned to wait for `ready`** instead of a timer: the browser
+check's attention, forecast, production and department-board steps,
+`capture-screens`' settle (no `[data-state="loading"]` left on the page),
+and the hosted check's "an empty plan says so", which now also asserts the
+In-progress panel is ready and says one of its two honest things.
+
+**Ready is not current.** The first browser run failed exactly one step:
+Attention said 14 critical, the badge said 44. Every write invalidates every
+query; the badge is mounted on every screen and had refetched after each
+write, while the Attention screen, mounted fresh, rendered its cached list,
+called it `ready`, and refetched in the background. The 700 ms timer the
+step had replaced was quietly covering that refetch. So a query with an
+answer and a fetch in flight is a fourth state, `refreshing`: the panel
+keeps showing what it has (a flash of "Loading…" over a worklist on every
+declaration would be worse), the attribute says so, and the checks wait for
+`ready`. There is no race in it — TanStack Query's first render after a
+mount with stale data already reports `isFetching`. §5 has the gotcha.
+50 browser checks, 416 tests (ten on the helpers). KRAM/10's open-items
+row is closed. GUIDE gained a short section under *Reading the numbers*.
 
 ### 2026-08-17 — Three asks, and a sheet PPC can actually fill in
 
