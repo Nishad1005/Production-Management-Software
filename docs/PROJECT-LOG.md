@@ -78,7 +78,7 @@ unmodified in the browser, so the demo runs the real engine with no backend.
 `npm run build` produces a static folder.
 
 **Online.** Supabase project `fiqfbbnmksppbpxmhnbv` — *kram*, Mumbai
-(ap-south-1), Postgres 17.6. All sixty-five migrations applied — the sixty-fifth, the capacity workbook function of 11 Oct, on the live project only on Nishad's go (§9).
+(ap-south-1), Postgres 17.6. All sixty-five migrations applied, the last on 11 Oct (§9).
 
 **The plan of record is §8.0** — the concept deck's promises, each marked
 built, partly or not built, and what it waits on. Written 9 Oct.
@@ -1998,9 +1998,11 @@ attributes, applies, reads the cell after a reload, and checks the sheet's
 shape did not grow. KRAM/11 gained the action. GUIDE: the Capacity sheet's
 rules, a pointer from Masters, a common task.
 
-**Not pushed to the live project.** Committed; on Nishad's go the migration
-goes first, from his terminal, then the pages, so the live button never
-points at a function that is not there.
+**Pushed on Nishad's go, early afternoon**, by Nishad from his terminal
+(`npm run db:push`), the migration first so the live button never pointed at
+a function that was not there; `supabase db push --dry-run` reports the
+remote up to date, and `verify:live` is green with the new function refused
+to the anon key. Then the pages, and `verify:hosted-ui` against the site.
 
 ### 2026-08-17 — Three asks, and a sheet PPC can actually fill in
 
