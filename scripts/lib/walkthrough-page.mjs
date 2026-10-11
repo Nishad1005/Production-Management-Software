@@ -220,7 +220,7 @@ export function walkthroughPage({ facts: f, sheet, site }) {
       items: [
         `<strong>The yellow strip</strong> is on every screen. It is the reminder that the speeds are stand-ins. It goes when your real figures are in.`,
         `<strong>The menu.</strong> Every screen is one click from here. This guide walks nine of them, in an order that tells the story.`,
-        `<strong>Run the schedule</strong> re-plans every order from nothing. It takes about 40 seconds. You do not need to press it to look around.`,
+        `<strong>Run the schedule</strong> re-plans every order from nothing. It takes a few seconds. You do not need to press it to look around.`,
         `<strong>Breaches: ${n(f.breaches)}.</strong> Jobs that cannot be finished in the days they have. Beside it, <strong>flagged days: ${n(f.flaggedDays)}</strong> &mdash; days on which a department is asked for more than one day&rsquo;s work.`,
         `<strong>The constraint</strong> is the department under the most pressure overall: ${esc(f.constraint)} here. <em>Peak</em> is its worst single day &mdash; 4.00 means four days of work asked of one day.`,
         `<strong>Flag triage</strong> lists the overloaded days, soonest first, so the nearest problem is at the top.`,
@@ -280,7 +280,7 @@ export function walkthroughPage({ facts: f, sheet, site }) {
         `<strong>One line per quantity on your sheet</strong>, named by the product and its HOD date. Where a product ships twice on one day, as the Edison stool does on 17 October, the two are numbered.`,
         `<strong>First stuffing</strong> is your HOD date: the day everything is counted back from.`,
         `<strong>Breaches</strong> is how many steps of that order do not fit. A dash means every step fits.`,
-        `<strong>Add an order</strong> plans the new order straight away, which takes about 40 seconds. If you try it, start the order number with <span class="k">SAMPLE-</span> so it is cleared out with the rest.`,
+        `<strong>Add an order</strong> plans the new order straight away, which takes a few seconds. If you try it, start the order number with <span class="k">SAMPLE-</span> so it is cleared out with the rest.`,
       ],
       sample: `${n(clean)} of the ${n(f.orders)} dispatches fit completely. The ${n(f.orders - clean)} that do not are ${shortList}.`,
       tell: `We made each quantity its own order because the sheet does not say otherwise. Do several dispatches belong to one customer order?`,
@@ -292,7 +292,7 @@ export function walkthroughPage({ facts: f, sheet, site }) {
       shots: [{ file: 'acceptance', alt: 'The Accept an order screen with its answer' }],
       items: [
         `<strong>Pick a product, a quantity and a dispatch date.</strong>`,
-        `<strong>Press Check.</strong> The answer takes about a minute, because the whole factory is planned again with this order added. Nothing is saved.`,
+        `<strong>Press Check.</strong> The answer takes a few seconds: the whole factory is planned again with this order added. Nothing is saved.`,
         `<strong>The answer in one line:</strong> &ldquo;${esc(a.verdict ?? '')}&rdquo;`,
         `<strong>Which steps, and why.</strong> Every step is listed with its dates. The ones that fail say what is wrong.`,
       ],
@@ -339,7 +339,7 @@ export function walkthroughPage({ facts: f, sheet, site }) {
         `<strong>Say what you are trying</strong>, in your own words.`,
         `<strong>Choose the department.</strong>`,
         `<strong>Choose the change.</strong> A second shift doubles what the department can make. Overtime adds a fifth. Department down takes it to nothing.`,
-        `<strong>Press Run it.</strong> About a minute. The live plan is not touched.`,
+        `<strong>Press Run it.</strong> A few seconds. The live plan is not touched.`,
         `<strong>Before and after.</strong> Breaches go from ${n(w.breachesNow ?? 0)} to ${n(w.breachesThen ?? 0)}, and flagged days from ${n(w.flaggedNow ?? 0)} to ${n(w.flaggedThen ?? 0)}.`,
         `<strong>Department by department.</strong> ${esc(w.department ?? '')} goes from ${n(w.deptBreachesNow ?? 0)} to ${n(w.deptBreachesThen ?? 0)}.`,
       ],
@@ -475,7 +475,7 @@ ${docStyle}
         <li><span><strong>Before anyone arrives,</strong> sign in and leave the Command centre open. Do not press <em>Run the schedule</em>; the plan is already there.</span></li>
         <li><span><strong>Start on paper.</strong> Read out &ldquo;One order, worked by hand&rdquo; above. Once the room has done that sum, every red mark explains itself.</span></li>
         <li><span><strong>Most stops are for looking.</strong> About two minutes each. Read the numbered points; ask the &ldquo;Tell us&rdquo; question and write down what is said.</span></li>
-        <li><span><strong>Stops 6 and 9 are for doing.</strong> Each takes about a minute to answer, which is a good moment to take questions.</span></li>
+        <li><span><strong>Stops 6 and 9 are for doing.</strong> Each answers in a few seconds.</span></li>
         <li><span><strong>Finish on &ldquo;What we need from you&rdquo;</strong> and leave this document behind.</span></li>
       </ol>
     </div>
@@ -493,7 +493,7 @@ ${docStyle}
       <tbody>
         <tr><td class="term">Accept an order &middot; What if</td><td class="def">Both plan a copy and throw it away. The live plan is never touched.</td></tr>
         <tr><td class="term">Click squares, bars and rows</td><td class="def">Looking changes nothing.</td></tr>
-        <tr><td class="term">Run the schedule</td><td class="def">Re-plans from the same figures and gives the same answer. It takes about 40 seconds.</td></tr>
+        <tr><td class="term">Run the schedule</td><td class="def">Re-plans from the same figures and gives the same answer. It takes a few seconds.</td></tr>
       </tbody>
       <thead><tr><th>Think first</th><th>What it does</th></tr></thead>
       <tbody>

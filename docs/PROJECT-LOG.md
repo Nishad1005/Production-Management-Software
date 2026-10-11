@@ -77,7 +77,7 @@ unmodified in the browser, so the demo runs the real engine with no backend.
 `npm run build` produces a static folder.
 
 **Online.** Supabase project `fiqfbbnmksppbpxmhnbv` — *kram*, Mumbai
-(ap-south-1), Postgres 17.6. All sixty-four migrations applied — the sixty-fourth, the engine rewrite of 11 Oct, on the live project only on Nishad's go (§9).
+(ap-south-1), Postgres 17.6. All sixty-four migrations applied, the last on 11 Oct (§9).
 
 **The plan of record is §8.0** — the concept deck's promises, each marked
 built, partly or not built, and what it waits on. Written 9 Oct.
@@ -719,10 +719,10 @@ what-if, optimal sequence, barcode/QR, purchase status.
 The one open mismatch is "stuffing date" (ours) against "delivery deadline"
 (deck) and "HOD" (their sheet), which may be two different dates — §6 item 9.
 
-### 8.1 The engine at U&M's real scale — rewritten 11 Oct, awaiting the go
+### 8.1 The engine at U&M's real scale — rewritten 11 Oct, live
 
-**Done on 11 Oct, locally; on the live project once Nishad says go** (the 11
-Oct entry in §9 has the whole story). The diagnosis below stood — it was the
+**Done on 11 Oct, and on the live project the same morning: 1.4 seconds for
+the 220 tasks that took 36.7** (the 11 Oct entry in §9 has the whole story). The diagnosis below stood — it was the
 number of statements, not the cost of each — and measuring as a planner found
 a second cause the tests could never see. The capacity grid is one statement;
 the three calendar lookups are columns of one pass over the calendar; the
@@ -735,6 +735,7 @@ instead of re-read through a view under row-level security.
 | dense (324 orders, 7 departments) | 13,608 | 5.5 s | 95 s | 4.6 s | 4.5 s |
 | um (994 pairings, 324 orders) | 9,072 | not done in 20 min | — | 10.9 s | 11.3 s |
 | um4 (four components a cell) | 36,288 | — | — | 53 s | 58 s |
+| **the live project**, Supabase Mumbai, the sample order book | 220 | — | 36.7 s | — | **2.7 s, then 1.4 s** |
 
 The live project's 37 seconds was the planner column; the two columns are the
 same now. The plan is identical, cell for cell: `tests/engine-grid-parity`
@@ -1915,11 +1916,24 @@ planner and the tests are the owner; `force_custom_plan` re-plans foreign-key
 checks; a function's `statement_timeout` does not arm on a session that had
 none (the old engine sat in one U&M-scale run for twenty minutes locally).
 
-**Not pushed to the live project.** The migration, the tests, the benchmark
-and this entry are committed; `npm run db:push` waits for Nishad's go, and
-the live `duration_ms` beside 4 Oct's 37 seconds goes here when it has one.
+**Pushed on Nishad's go at 11:20 IST** — by Nishad, from his own terminal:
+the tool this session runs commands through refused `supabase db push` as a
+dangerous action, which is the right instinct and not mine to argue with, so
+he was given the four lines to type and typed them. One migration applied;
+the CLI's warning about Docker is about caching a catalog locally and is the
+absence §3 records. Then `verify:live` as a signed-in planner (every check,
+every view under 600 ms, the engine run included) and `verify:hosted-ui`
+against the site, both green. **The live project's own figure, from
+`run_history`: 2,693 ms for 220 tasks on the first press after the migration
+and 1,418 ms on the next, against 36,671 ms on 9 Oct** — the same plan,
+twenty-five times faster, on the same Supabase instance. The second press was
+made from here as the test user, so the plan's header and the walkthrough's
+pictures carry the new figure; the plan it wrote is the one that was there.
+
 §8.1 says what is left: the run is now bounded by writing its output, and the
 capacity grid's volume is the next lever and a decision rather than a rewrite.
+The documents and the app's one message that said "about a minute" say what
+it is now.
 
 ### 2026-08-17 — Three asks, and a sheet PPC can actually fill in
 

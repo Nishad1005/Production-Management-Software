@@ -145,7 +145,7 @@ ${style}
         <tr><td class="term">The first screen says "No run yet" while loading</td><td class="def">On a slow connection the Command centre shows dashes and an empty-state sentence for a moment before the figures arrive. It looks like a broken system to a first-time viewer.</td><td class="def">To do</td></tr>
         <tr><td class="term">The bulk-load command predates the twenty departments</td><td class="def">The command that loads a filled-in capacity workbook still assumes fourteen departments and would switch the six QC steps off. It must be updated before PPC's real figures are loaded, and it is a command only we can run.</td><td class="def">To do, before real figures</td></tr>
         <tr><td class="term">QC boxes show a speed of ${n(sheet.checkpoint_rate_per_day)}</td><td class="def">That is how a checkpoint is made to take no time. It is correct and looks odd. Worth a word in any demonstration.</td><td class="def">Explain</td></tr>
-        <tr><td class="term">Planning takes about 37 seconds</td><td class="def">Fine for eleven orders. It will not do for U&amp;M's real order book of several hundred, and the fix is a rewrite of the engine's core loop.</td><td class="def">Largest open item</td></tr>
+        <tr><td class="term">Planning takes about 3 seconds</td><td class="def">It took 37 when these numbers first went in. The engine was rewritten on 11 October to build its capacity grid in one pass; the plan it produces is identical, cell for cell, and a real order book of several hundred orders is planned in seconds rather than minutes.</td><td class="def">Done</td></tr>
         <tr><td class="term">The scenario list shows our test runs</td><td class="def">Rows named "verify:live probe" on the What if screen are our own checks. Harmless, and odd to explain.</td><td class="def">Cosmetic</td></tr>
       </tbody>
     </table></div>
@@ -195,7 +195,7 @@ ${style}
     <p>The first says the problem is not a crowded factory: even an empty December cannot
       fit 150 pieces into the days the sheet gives those four steps at ${rate} a day. The
       second says doubling Sanding clears every Sanding problem and nothing else:
-      ${esc(list(stillShort))} are still short. Both took about a minute and changed nothing.</p>
+      ${esc(list(stillShort))} are still short. Both took a few seconds and changed nothing.</p>
   </section>
 
   <!-- ================================================================ -->
@@ -207,7 +207,7 @@ ${style}
 
     <div class="beat">
       <div class="beat__head"><span class="beat__min">Before</span><h3>Set up</h3></div>
-      ${click(`Sign in at kraam.netlify.app and leave the Command centre open. Have KRAM/09 printed, one copy each. Do not press <em>Run the schedule</em>; the plan is already there and the button takes 40 seconds.`)}
+      ${click(`Sign in at kraam.netlify.app and leave the Command centre open. Have KRAM/09 printed, one copy each. You can press <em>Run the schedule</em> if you like; the plan is already there, and the button takes a few seconds.`)}
     </div>
 
     <div class="beat">
@@ -243,9 +243,9 @@ ${style}
 
     <div class="beat">
       <div class="beat__head"><span class="beat__min">28 – 36 min</span><h3>Two live questions</h3></div>
-      ${click(`Accept an order. Choose the Edison stool, ${n(a.qty)}, ${day(a.date)}. Press Check. It takes about a minute: take questions while it runs.`)}
+      ${click(`Accept an order. Choose the Edison stool, ${n(a.qty)}, ${day(a.date)}. Press Check. The answer comes back in a few seconds.`)}
       ${say(`We are asking: can we promise ${n(a.qty)} more for mid-December, when nothing else is planned? The answer: ${esc(a.verdict.toLowerCase())} Sanding, Stitching, Stapling and Packing again. The factory is empty in December; the days the sheet gives those steps are the problem. This is the screen that answers "can we take this order" before anyone promises.`)}
-      ${click(`What if. Type "Sanding with a second shift", choose Sanding, press Second shift, press Run it. About a minute.`)}
+      ${click(`What if. Type "Sanding with a second shift", choose Sanding, press Second shift, press Run it. A few seconds.`)}
       ${say(`We are trying a change without touching the real plan. Doubling Sanding takes the misfits from ${n(w.breachesNow)} to ${n(w.breachesThen)} and clears every Sanding problem. ${esc(list(stillShort))} are still short. This is "what would it take", answered before spending anything.`)}
     </div>
 
@@ -259,13 +259,13 @@ ${style}
     <div class="qa">
       <div><b>Why is everything red?</b> Because every department is set to ${rate} a day. Give us real speeds and most of it goes, or what is left is real.</div>
       <div><b>Why are the dates in August and September?</b> Your dispatches are in October and the longest lead is 57 days. The software counts back from dispatch. On a live order book the dates are ahead.</div>
-      <div><b>Can we change a number and see what happens?</b> Yes, on the Capacity sheet or Masters: click, type, Enter, and it re-plans in 40 seconds. It changes the sample for everyone, which is fine; that is how real figures go in. To try something without changing anything, use What if.</div>
+      <div><b>Can we change a number and see what happens?</b> Yes, on the Capacity sheet or Masters: click, type, Enter, and it re-plans in a few seconds. It changes the sample for everyone, which is fine; that is how real figures go in. To try something without changing anything, use What if.</div>
       <div><b>What if we have time per piece, not pieces per day?</b> Send that with the crew size and shift hours; we convert it.</div>
       <div><b>Why do QC steps show 10,000?</b> A checkpoint is made to take no time by giving it a speed nothing can exceed. It is correct and looks odd; worth hiding in a later version.</div>
       <div><b>Does it handle two shifts, overtime, a machine down?</b> Yes. Shifts and head counts are on Masters, attendance on Manpower, machine downtime on Masters; each changes what a day can make. What if lets you try any of them first.</div>
       <div><b>Can orders come from Panipuri instead of being typed?</b> That is built next, as soon as we have one sample export to build the mapping against.</div>
       <div><b>Who can see what?</b> Each person gets a login and a role; the database enforces what each role may read and write. Which roles see which screens is one of the decisions we need from you.</div>
-      <div><b>Why does planning take 40 seconds?</b> It re-plans every order from nothing and keeps every version. Fine for eleven orders; for several hundred it needs the rewrite that is next on our list.</div>
+      <div><b>Why does planning take a few seconds rather than being instant?</b> It re-plans every order from nothing and keeps every version. It took 40 seconds until 11 October; the engine now does the same work in one pass, and several hundred orders plan in seconds rather than minutes.</div>
       <div><b>Two steps on the same day: is that wrong?</b> Only if one has to finish before the other starts. If they really run side by side, we remove the link between them and the finding goes.</div>
     </div>
   </section>
@@ -301,7 +301,7 @@ ${style}
     <h3>Decide</h3>
     <div class="fns">
       ${fn('Attention', { menu: 'Management, planner', purpose: 'Everything needing an answer, most urgent first.', how: 'Nine checks run as one list: breaches, overloaded days, material past its ordering date, material short, same-day contradictions, machines down, products that cannot be planned, handover mismatches, departments with no shift. Critical when the deadline is within a fortnight. There is deliberately no way to dismiss one.', sample: `${n(f.critical)} critical, ${n(f.warnings)} warnings.` })}
-      ${fn('Accept an order', { menu: 'Merchandiser, planner', purpose: 'Can we take this order? Asked before promising.', how: 'Adds the proposed line to a copy of the book, runs the full engine, reports every step with its dates and verdict, and removes the line again. Nothing is saved. About a minute.', sample: `${n(a.qty)} Edison stools for ${day(a.date)}: ${esc(a.verdict.toLowerCase())}` })}
+      ${fn('Accept an order', { menu: 'Merchandiser, planner', purpose: 'Can we take this order? Asked before promising.', how: 'Adds the proposed line to a copy of the book, runs the full engine, reports every step with its dates and verdict, and removes the line again. Nothing is saved. A few seconds.', sample: `${n(a.qty)} Edison stools for ${day(a.date)}: ${esc(a.verdict.toLowerCase())}` })}
       ${fn('What if', { menu: 'Planner', purpose: 'Try a change on a copy of the plan.', how: 'A capacity multiplier on one department over a window: department down (0), overtime (1.2), second shift (2). Planned as its own run beside the live one, compared department by department and job by job. Can be promoted to become the plan.', sample: `Sanding doubled: ${n(w.breachesNow)} to ${n(w.breachesThen)} breaches, ${n(w.flaggedNow)} to ${n(w.flaggedThen)} flagged days.` })}
       ${fn('Order book', { menu: 'Merchandiser', purpose: 'Every promise, and where new orders are entered.', how: 'An order has shipment lines, each with its own stuffing date; the line is the unit planned. Adding an order re-plans immediately. The breaches column counts the steps of that order that do not fit.', needs: 'Orders typed in until the Panipuri import exists.', sample: `${n(f.orders)} orders, one per quantity cell, named by product and HOD date.` })}
     </div>

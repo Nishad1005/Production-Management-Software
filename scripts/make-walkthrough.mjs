@@ -347,7 +347,7 @@ if (wants('order-book')) {
 
 // --- 6 · accept an order -----------------------------------------------------
 if (wants('acceptance')) {
-  console.log('accept an order (this plans the factory once — about a minute)')
+  console.log('accept an order (this plans the factory once — a few seconds)')
   await go('#/accept', 'text=Can we take this order?')
   await page.waitForFunction(() => document.querySelectorAll('select option').length > 5, null, {
     timeout: 60_000,
@@ -493,7 +493,7 @@ if (wants('what-if')) {
     }
     await earlier.locator('text=Compare').click()
   } else {
-    console.log('what if (one scenario — about a minute, and it stays in the Runs list)')
+    console.log('what if (one scenario — a few seconds, and it stays in the Runs list)')
     await page.click('button:has-text("Run it")')
   }
   await title('What changed').waitFor({ timeout: 200_000 })

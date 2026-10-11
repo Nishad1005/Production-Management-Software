@@ -610,7 +610,7 @@ await action('whatif-run', 'What if', 'Try a change on a copy of the plan', asyn
     notes: ['Before and after, in four tiles', 'Department by department against the live plan'],
   })
   return {
-    steps: ['Name the scenario.', 'Choose the department and the change. Department down means no output at all; overtime adds a fifth; a second shift doubles.', 'Press Run it and wait about a minute on the live system, a second or two here.'],
+    steps: ['Name the scenario.', 'Choose the department and the change. Department down means no output at all; overtime adds a fifth; a second shift doubles.', 'Press Run it. A few seconds on the live system, under a second here.'],
     images: [before, after],
     changed: `Breaches went from ${now} in the live plan to ${then} in the scenario, and ${changed} jobs moved. The live plan was not touched.`,
     why: 'Taking a department out for a fortnight cannot make the plan better, and the screen says exactly how much worse. The same lever answers "would a second shift fix it?" before anyone is hired.',

@@ -11,7 +11,8 @@ import { rpc, select } from '@/lib/backend'
  *
  * Spec §11: "Recomputation runs on order or master change (debounced), on
  * demand, and nightly." Anything that changes the arithmetic re-runs the
- * schedule immediately here — a run costs about a tenth of a second, and a
+ * schedule immediately here — a run costs under a second offline and a few
+ * seconds on the live project (2.7 s for 220 tasks on 11 Oct 2026), and a
  * screen showing a plan that no longer matches its inputs is worse than one
  * that pauses briefly.
  */

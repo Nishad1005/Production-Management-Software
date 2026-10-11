@@ -43,7 +43,7 @@ export function friendlyWriteError(message: string): string {
   if (/lock timeout/i.test(message)) {
     return (
       'Something else is using this data right now — most likely a schedule ' +
-      'run that has not finished. A run takes about a minute. Nothing was ' +
+      'run that has not finished. A run takes a few seconds. Nothing was ' +
       'changed; wait for it to finish and try again.'
     )
   }
