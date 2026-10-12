@@ -94,6 +94,10 @@ for the hosted system. Both use the same views and functions.
 - `npm run clicks`, then `npm run pdf docs/click-guide.html` — every control,
   before and after (KRAM/11), on the demonstration build; no login needed.
   `--only=<id,id>` re-takes named actions and keeps the rest.
+- `npm run journey`, then `npm run pdf docs/order-journey.html` — one order
+  followed from "can we take it?" to the container (KRAM/12), on the
+  demonstration build: it enters the order, declares every department and
+  counts the handovers in, so it never runs against the live project.
 
 **Run `verify:live` after any migration touching privileges, policies or
 functions.** The local suite cannot catch what it catches, twice over now:

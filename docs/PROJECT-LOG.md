@@ -2156,6 +2156,55 @@ in the plan, exactly: the sample book, dated August and September with
 nothing declared, has moved forward from today, and the screens say so.
 KRAM/09 regenerated from the site.
 
+### 2026-10-12 — One order, start to finish (KRAM/12)
+
+Asked for "a user journey from an order that might come in, to that order
+coming into production, till it goes out — that would simply explain how
+this app works to everyone — as a PDF with screenshots, using one of U&M's
+items". KRAM/09 tours nine screens and KRAM/11 shows every control; neither
+follows one order through. So: `docs/order-journey.html`, DBBS/UM/KRAM/12,
+fourteen pages, fifteen pictures, eleven stops.
+
+```
+npm run journey                     # ~10 min on the demonstration build
+npm run pdf docs/order-journey.html
+```
+
+**The order.** 240 of U&M's Betsy Counter Stool (`UT263 SPWL COU`), for
+Nordic Living, container 15 Feb 2027 — the article passes through all
+fourteen departments and carries metal and leather, so every screen on the
+way has something to say. The journey: Accept an order refuses the date the
+customer first asked for and says yes to the one that can be promised; the
+order is entered once; the Schedule shows fourteen bars counted back from
+the container; Material says what to buy and by when; Ply Cutting enters its
+first day; Assembly counts in what Machining sent, two short, and the
+difference is kept; WIP shows the line half-way through its route; the wall
+display for Stitching; a run after the wood side has declared shows those
+departments as *Made* and the rest re-planned from what remains; and when
+the last department has declared, the line is under *Ready to stuff* and the
+dashboard counts the container. A closing table says who at U&M does what,
+on which screen, when.
+
+**Why the demonstration build.** The journey writes — an order, forty-odd
+declarations, fourteen handovers, a run — and nothing touches the live
+project without a go. The demonstration build carries U&M's departments,
+six of their articles and the real route on invented speeds; the first page
+of the document says the dates follow from stand-in figures. A fresh browser
+context rebuilds the demonstration database from the seed, so every run
+starts from the same place and leaves nothing behind.
+
+**How it is made.** `scripts/make-journey.mjs` drives the screens as a user
+would (the department's select, the date field, the Good and Rejected
+boxes, Enter, Count in) and reads every figure the text quotes off the
+screen in the same visit; `scripts/lib/journey-page.mjs` is the words. Each
+department's whole job is declared a day at a time, exactly as the plan
+asked, with one piece over on the last day: the requirement carries yield
+(279.4 shows as 279 on the bar) and a department that declares the rounded
+figure stays a fraction short of *complete* for ever — which is how the
+first run of the script found Ply Cutting and Machining still "in progress"
+at 279 of 279. The pictures are not committed (`docs/journey/` is ignored);
+`make-pdf.mjs` inlines them.
+
 ### 2026-10-12 — Late is the task's own delay; a feeder's is runway
 
 Found in the regenerated KRAM/09, the same afternoon: on *Accept an order*,

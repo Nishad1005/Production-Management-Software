@@ -58,4 +58,6 @@ docs/*.pdf
 # The walkthrough's numbered screenshots, taken by scripts/make-walkthrough.mjs.
 # Renderings of the hosted project at one moment; the script is the source.
 docs/walkthrough/
+# The order journey's pictures (KRAM/12), taken by scripts/make-journey.mjs.
+docs/journey/
 docs/click-guide/
