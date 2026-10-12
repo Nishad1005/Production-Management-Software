@@ -78,7 +78,7 @@ unmodified in the browser, so the demo runs the real engine with no backend.
 `npm run build` produces a static folder.
 
 **Online.** Supabase project `fiqfbbnmksppbpxmhnbv` — *kram*, Mumbai
-(ap-south-1), Postgres 17.6. All sixty-nine migrations applied once `20261012110000` is pushed: it is committed and, as of this writing, not yet on the live project (§9, 12 Oct).
+(ap-south-1), Postgres 17.6. All sixty-nine migrations applied, the last on 12 Oct (§9).
 
 **The plan of record is §8.0** — the concept deck's promises, each marked
 built, partly or not built, and what it waits on. Written 9 Oct.
@@ -2170,7 +2170,12 @@ case reads *late* for that and *runway* for a miss caused by what feeds it.
 With no day given nothing moves: the flag is only set in the depth passes.
 GUIDE's two breach rows and the Schedule paragraph say which word means
 which. On the sample book nothing visible changes — all 220 are behind on
-their own account.
+their own account. **Live the same day**: pushed by Nishad; `verify:live`
+green; the hosted check green at 270 critical. The current run is still the
+morning's (under the new engine it would be the same plan, every job being
+behind on its own account); *Accept an order* is computed afresh and its
+too-narrow steps read Runway again — KRAM/09's stop 6 re-taken against the
+live site, and looked at.
 
 ### 2026-10-12 — Late work keeps its order
 
