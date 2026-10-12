@@ -78,7 +78,7 @@ unmodified in the browser, so the demo runs the real engine with no backend.
 `npm run build` produces a static folder.
 
 **Online.** Supabase project `fiqfbbnmksppbpxmhnbv` — *kram*, Mumbai
-(ap-south-1), Postgres 17.6. All seventy migrations applied once `20261012120000` is pushed: it is committed and, as of this writing, not yet on the live project (§9, 12 Oct, "taken against the plan").
+(ap-south-1), Postgres 17.6. All seventy migrations applied, the last on 12 Oct (§9).
 
 **The plan of record is §8.0** — the concept deck's promises, each marked
 built, partly or not built, and what it waits on. Written 9 Oct.
