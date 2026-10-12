@@ -98,6 +98,11 @@ for the hosted system. Both use the same views and functions.
   followed from "can we take it?" to the container (KRAM/12), on the
   demonstration build: it enters the order, declares every department and
   counts the handovers in, so it never runs against the live project.
+- `npm run mock-run [baseUrl email password] [--items=a,b,c,d,e]
+  [--clear=PREFIX,…]`, then `npm run pdf docs/mock-run.html` — six orders on
+  five items, three days entered as the HODs would, every screen read after
+  each run, and the checks table (KRAM/13). Demonstration build by default;
+  against the live site only on a go, since it writes through every screen.
 
 **Run `verify:live` after any migration touching privileges, policies or
 functions.** The local suite cannot catch what it catches, twice over now:

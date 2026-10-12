@@ -453,6 +453,13 @@ on every screen. `lsof -iTCP:5173 -sTCP:LISTEN` says who; the walkthrough
 now starts vite in its own process group and stops it on exit, whatever ends
 the script. (12 Oct)
 
+**A state marker that is empty once ready is "hidden" to Playwright.**
+`order-book-state` and `bottlenecks` render nothing when the answer is in,
+so a `waitForSelector('…[data-state="ready"]')` — which waits for *visible*
+by default — times out on a correct screen, 122 polls resolving to a hidden
+element. Wait with `{ state: 'attached' }` on any marker that may be empty.
+The mock-run script learned it twice in two runs. (12 Oct)
+
 | Symptom | Cause and fix |
 |---|---|
 | `extension "btree_gist" is not available` in PGlite | It ships as a contrib import: `import { btree_gist } from '@electric-sql/pglite/contrib/btree_gist'` and pass via `extensions`. |
@@ -839,6 +846,16 @@ which was the finding: the number of statements was the cost. Spec §11 sizes
 the real workload at 324 orders and ~40,000 tasks.
 
 ### 8.2 Ours, and small
+
+0. **A day a department has entered is over for that department.** Found by
+   the mock run (12 Oct): the evening run re-plans today's remainder onto
+   today, so the day's planned figure on the grid moves to meet what was
+   made (33 of 65 entered read as "33 of 32, 103%"). The frozen copy and
+   the forward anchor should treat (department, today) as past once a
+   declaration exists for it, with the remainder placed from the next
+   working day; and `attention_behind` should carry "taken against the
+   plan: <reason>" as `attention_breach` does. One migration; three lines
+   first. Until then, targets are read from the morning run.
 
 1. **The Panipuri import module.** Unbuilt, and the only unbuilt *feature* left.
    Blocked on a sample file (§6 item 2) because writing it against a guessed
@@ -2164,6 +2181,75 @@ Attention, the header reading "as of 11 Oct", the horizon from 12 August
 in the plan, exactly: the sample book, dated August and September with
 nothing declared, has moved forward from today, and the screens say so.
 KRAM/09 regenerated from the site.
+
+### 2026-10-12 — Five items, three days: the mock run (KRAM/13)
+
+Asked for "a mock check for five items where you can check everything —
+overlapping orders and such — enter data as HODs, EOD target, actuals, all
+of it, and then a manual of its walkthrough using the same data so we can
+be on the same page". So: `scripts/make-mock-run.mjs`, `npm run mock-run`,
+and `docs/mock-run.html`, DBBS/UM/KRAM/13, seventeen pages, twenty pictures,
+twenty-one checks — eighteen as expected, three not, and the three are the
+findings.
+
+**The run.** Six orders on five items (two on the same weeks and route for
+the overlap, one in two containers, one refused by the check and taken
+anyway with a reason, one a second order of an item already running), each
+checked on Accept an order and entered from the verdict. Then three days on
+the floor, every one through the screens as the HOD would: attendance
+(Stitching 20 of 22 in), end-of-day good and rejected per job in every
+department with mock work planned that day (Machining 60% of target on day
+1, 85% on day 2, caught up on day 3; Sanding rejects four), handovers
+counted in the next morning (Assembly two short, kept), a Stitching machine
+booked down for day 2, a stock count on day 3, a second shift in Stitching
+tried on What if. The schedule is run after each day and the Command
+centre, Attention, the Dashboard (KPIs and the grid cell for the day), WIP
+and the Schedule are read into the facts. The manual lays it out day by
+day with the entries beside the pictures, and ends with twenty-one checks —
+expected, what the screen said, pass or not — so the next run can be
+compared with this one.
+
+**Venue.** The demonstration build first (its six articles are U&M's, on
+invented speeds and D-minus; the mock removes the demo's seed orders so the
+book holds only its own). `--items` and a login point it at the live site —
+on a go, because it writes through every screen; `--clear=SAMPLE-` would
+remove the decayed sample book through the Order book on the way in, which
+is the plan for the live run once the corrected D-minus is loaded (§8).
+
+**Found on the way — one for the engine.** The evening run re-plans
+today's remainder *onto today*. A department that entered half its target
+at the end of the day and ran the schedule saw today's planned figure on
+the grid drop from 220 to 187: the run is told it is today, keeps the days
+before today frozen, and places what remains from today — which is right
+at eight in the morning and wrong at six in the evening, when today is
+over for that department. The mock's check for "Machining short, red"
+reads amber for that reason, and the manual says so. The honest rule is
+per department and day: **a day a department has entered is over for that
+department** — frozen like the days before it, with the remainder placed
+from the next working day. One migration (the frozen copy and the forward
+anchor gain that condition), to be put as three lines. Until then the
+morning run is the one to read targets from. In this run Machining entered
+33 of a 65 target and the evening grid read "made 33 of 32 planned, 103%",
+green — the day's target rewritten to meet what was made, which is the
+exact failure the project's conventions exist to prevent. The second half
+of the same finding: the Schedule after the evening run placed Machining's
+remainder on today again (check 17), not tomorrow.
+
+**A second, smaller one.** A "behind" card on Attention does not carry
+"taken against the plan: <reason>"; only a breach card does, and an order
+taken against the plan on short notice is behind on every step, so its
+reason is on the book and the Schedule but not on the card that chases it
+(check 4). `attention_behind` should say it as `attention_breach` does —
+the same migration as the department-day freeze.
+
+**Also found.** The empty state markers (`order-book-state`,
+`bottlenecks`) are zero-size elements once ready, so a Playwright wait on
+them must be for `attached`, not `visible` — the second script to learn
+it (§5 has the first). The demonstration build's D-minus (eighty working
+days for a stool's first step) means any container under four months out
+is already late, which is why the orders are dated from the item's own
+D-minus and not from a number of weeks; on the live site, with the
+corrected D-minus, the same calibration gives the same shape.
 
 ### 2026-10-12 — Taken against the plan, and planned against made as a picture
 

@@ -60,4 +60,6 @@ docs/*.pdf
 docs/walkthrough/
 # The order journey's pictures (KRAM/12), taken by scripts/make-journey.mjs.
 docs/journey/
+# The mock run's pictures (KRAM/13), taken by scripts/make-mock-run.mjs.
+docs/mock-run/
 docs/click-guide/
