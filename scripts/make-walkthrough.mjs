@@ -89,18 +89,36 @@ if (!(await alive(baseUrl))) {
     process.exit(1)
   }
   console.log('Starting the hosted dev server…')
-  server = spawn('npx', ['vite', '--mode', 'hosted', '--port', '5173'], { stdio: 'ignore' })
+  // Its own process group: npx runs vite as a child of its own, and killing
+  // npx alone left vite listening on 5173 — where the next browser check
+  // found a login page and timed out on every screen (log §5, 12 Oct).
+  server = spawn('npx', ['vite', '--mode', 'hosted', '--port', '5173'], {
+    stdio: 'ignore',
+    detached: true,
+  })
   const by = Date.now() + 60_000
   while (!(await alive(baseUrl))) {
     if (Date.now() > by) {
-      server.kill()
+      stopServer()
       console.error('The dev server never came up. Run `npm run dev:hosted` to see why.')
       process.exit(1)
     }
     await new Promise((r) => setTimeout(r, 400))
   }
 }
-const stopServer = () => server && !server.killed && server.kill()
+let serverStopped = false
+function stopServer() {
+  if (!server || serverStopped) return
+  serverStopped = true
+  try {
+    process.kill(-server.pid)
+  } catch {
+    server.kill()
+  }
+}
+// Whatever ends this script — a thrown timeout included — the server it
+// started goes with it.
+process.on('exit', stopServer)
 
 // --- the browser -------------------------------------------------------------
 /*

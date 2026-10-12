@@ -78,7 +78,7 @@ unmodified in the browser, so the demo runs the real engine with no backend.
 `npm run build` produces a static folder.
 
 **Online.** Supabase project `fiqfbbnmksppbpxmhnbv` — *kram*, Mumbai
-(ap-south-1), Postgres 17.6. All sixty-eight migrations applied, the last on 12 Oct (§9).
+(ap-south-1), Postgres 17.6. All sixty-nine migrations applied once `20261012110000` is pushed: it is committed and, as of this writing, not yet on the live project (§9, 12 Oct).
 
 **The plan of record is §8.0** — the concept deck's promises, each marked
 built, partly or not built, and what it waits on. Written 9 Oct.
@@ -206,7 +206,14 @@ behind because Stitching is, and starts after it. Placed one route depth at a
 time from the entry points, so every feeder is in before the department it
 feeds is asked. Pins are untouched — honoured and reported, never undone —
 and the runway test, which compares against due dates, no longer applies to a
-late task, which is after its feeders by construction.
+late task, which is after its feeders by construction. **The word is the
+task's own delay** (second migration the same day): *late* is reserved for a
+department behind on its own account — its own latest start has passed; a
+department placed after a late feeder that misses its date because of that
+reads *runway*, as it did before, because that is what runway means and the
+Accept-an-order screen was calling a proposed order's too-narrow steps "late,
+re-planned from today". Attention's "behind" cards are therefore departments
+behind on their own account; a feeder's delay is in the breach list.
 
 **Pins are honoured and reported, never undone.** A planner who drags a task has
 made a decision the engine cannot see the reasons for. The reason is mandatory —
@@ -426,6 +433,16 @@ had been covering the refetch. `stateOf` reports `refreshing` for that case;
 the panel keeps showing what it has, and a check waits for `ready`. No race:
 TanStack Query's first render after a mount with stale data already reports
 `isFetching`. (11 Oct)
+
+**Every screen of the browser check times out at once → something else is
+on 5173.** Vite's `--strictPort` start fails quietly in the background and
+the check drives whatever is already listening. On 12 Oct that was the
+walkthrough's hosted-mode server: the script had died on a timeout before
+reaching `stopServer()`, and `server.kill()` would only have killed the
+`npx` wrapper anyway, not the vite it spawned. The check saw a login page
+on every screen. `lsof -iTCP:5173 -sTCP:LISTEN` says who; the walkthrough
+now starts vite in its own process group and stops it on exit, whatever ends
+the script. (12 Oct)
 
 | Symptom | Cause and fix |
 |---|---|
@@ -2138,6 +2155,22 @@ Attention, the header reading "as of 11 Oct", the horizon from 12 August
 in the plan, exactly: the sample book, dated August and September with
 nothing declared, has moved forward from today, and the screens say so.
 KRAM/09 regenerated from the site.
+
+### 2026-10-12 — Late is the task's own delay; a feeder's is runway
+
+Found in the regenerated KRAM/09, the same afternoon: on *Accept an order*,
+a proposed order's steps whose D-minus windows are too narrow read "Late —
+what remains was re-planned from today and still overruns the due date". For
+an order that has not been placed yet. The day before they read Runway, which
+said why. The placement from the entry below is right and stays; the reason
+was wrong. `20261012110000_late_is_its_own_delay.sql`, regenerated from the
+text of its predecessor: `_fwd` carries whether the delay is the task's own
+(its latest start before the first working day from today), and the breach
+case reads *late* for that and *runway* for a miss caused by what feeds it.
+With no day given nothing moves: the flag is only set in the depth passes.
+GUIDE's two breach rows and the Schedule paragraph say which word means
+which. On the sample book nothing visible changes — all 220 are behind on
+their own account.
 
 ### 2026-10-12 — Late work keeps its order
 

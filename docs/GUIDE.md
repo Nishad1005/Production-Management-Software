@@ -220,7 +220,8 @@ in the past, so the bar shows what still has to happen. A department that is
 behind starts the working day after the last department feeding it has
 finished what it still owes — its bar sits after theirs, never alongside — and
 a department that was on time but is fed by one that is behind moves with it.
-If it runs past its deadline the reason reads **Late**.
+If it runs past its deadline the reason reads **Late** when the delay is its
+own, and **Runway** when the delay belongs to what feeds it.
 
 **Drag a bar to reschedule it.** You will be asked why, and the reason is
 required: a pin without one is indistinguishable from a mistake six weeks later.
@@ -862,12 +863,12 @@ is a ratio rather than a count.
 | Reason | Meaning |
 |---|---|
 | **Material** | The work would have to start before material is available. Arithmetically valid, physically impossible. |
-| **Runway** | Fewer working days between this department's deadline and the latest of the departments feeding it than the work needs. **Overtime cannot fix this** — under batch handoff the department physically cannot start earlier. If the department it is waiting for does not really feed it, say so on Masters → What feeds what. |
+| **Runway** | The departments feeding this one finish too late for it to meet its date: fewer working days between their deadlines and this one's than the work needs, or, once work is behind, their work runs past the day this one would have had to start. It is placed after them, so the bar shows where the work would actually land. **Overtime here cannot fix this** — under batch handoff the department physically cannot start earlier. If the department it is waiting for does not really feed it, say so on Masters → What feeds what. |
 | **Pin** | A manual pin has pushed the work past its due date. Reported, not corrected. |
 | **D-minus missing** | The article × department offset has never been entered, so it cannot be scheduled. |
 | **No capacity** | No rate for this component in this department. |
 | **Out of horizon** | The window falls outside the working-day calendar. |
-| **Late** | What remained of the job was re-planned from the day the plan was run — or from the working day after the departments feeding it finish, when they are behind too — and still does not finish by its due date. Nothing is moved backwards: the plan says what can still be done, and Attention says what rate it would take and from which day. |
+| **Late** | The department is behind on its own account: the latest start that would still meet its date has passed. What remained was re-planned from the day the plan was run — after the departments feeding it finish what they still owe — and still does not finish by its due date. Nothing is moved backwards: the plan says what can still be done, and Attention says what rate it would take and from which day. |
 
 ### Order confidence
 

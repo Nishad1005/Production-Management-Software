@@ -503,13 +503,14 @@ describe('late work keeps its order', () => {
     })
   })
 
-  it('a feeder that is on time still holds, and a delay carries down the route', async () => {
+  it('a feeder that is on time still holds, and a delay carries down the route as runway', async () => {
     await withRollback(async (c) => {
       await applySeed(c)
       // Stitching at three covers a day needs thirty-five days. Stuffing sixty
       // days out puts wood exactly on its date and fabric cutting ten days
       // later, both on time, stitching far behind, and assembly — which could
-      // have met its date on its own — behind because stitching is.
+      // have met its date on its own — placed after stitching. Its miss is not
+      // its own delay, so it reads runway, not late.
       await c.query(
         `update component_rates set units_per_day = 3
           where department_id = (select id from departments where code = 'STITCH')
@@ -523,28 +524,30 @@ describe('late work keeps its order', () => {
       expect(at('FABCUT').start! >= MONDAY).toBe(true)
       expect(at('STITCH').reasons).toEqual(['late'])
       expect(at('STITCH').start).toBe(await dayAfter(c, at('FABCUT').end))
-      expect(at('ASSY').reasons).toEqual(['late'])
+      expect(at('ASSY').reasons).toEqual(['runway'])
       expect(at('ASSY').start).toBe(await dayAfter(c, at('STITCH').end))
 
-      // Attention counts the rate from the day the department can start, and
-      // says which day; assembly cannot start before a day past its date.
+      // Attention: stitching is behind on its own account, with the rate it
+      // needs from the day it can start; assembly is not behind, it is a
+      // runway breach, and the breach list says so.
       const { rows: today } = await c.query<{ d: string }>(`select current_date::text as d`)
       const { rows } = await c.query<{ key: string; detail: string }>(
         `select key, detail from attention_behind order by key`,
       )
       const stitch = rows.find((r) => r.key.includes(':STITCH:'))!
-      const assy = rows.find((r) => r.key.includes(':ASSY:'))!
       const stitchStart = at('STITCH').start!
       expect(stitch.detail).toMatch(
         stitchStart > today[0].d
           ? new RegExp(`a day from ${stitchStart} against 3`)
           : /a day from today against 3|the date has passed/,
       )
-      expect(assy.detail).toMatch(
-        today[0].d <= '2026-12-07'
-          ? new RegExp(`^0 of \\d+ made · cannot start before ${at('ASSY').start}, which is past its date`)
-          : /the date has passed/,
+      expect(rows.find((r) => r.key.includes(':ASSY:'))).toBeUndefined()
+      const { rows: breach } = await c.query<{ title: string; detail: string }>(
+        `select title, detail from attention_breach where key like 'breach:%:ASSY'`,
       )
+      expect(breach).toHaveLength(1)
+      expect(breach[0].title).toMatch(/^ASSY cannot make /)
+      expect(breach[0].detail).toMatch(/^runway · ships 2027-01-01/)
     })
   })
 
