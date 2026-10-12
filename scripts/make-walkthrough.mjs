@@ -61,6 +61,10 @@ const baseUrl = baseArg ?? 'http://localhost:5173'
 const outDir = `${repoRoot}docs/walkthrough`
 const factsFile = `${outDir}/facts.json`
 const only = [...flags].find((f) => f.startsWith('--only='))?.slice(7).split(',')
+// A breach reason as the screens print it. Never one reason by name: the
+// sample has read Runway, then Late, and will read something else again
+// once real figures are in. The page quotes whichever is in the picture.
+const REASON_LABEL = 'text=/^(Late|Runway|Material|Pin|Out of horizon|D-minus missing|No capacity)$/'
 
 if (!email || !password) {
   console.error(
@@ -276,10 +280,7 @@ if (wants('schedule')) {
   // The first reason the open order shows, whatever it is: since the plan
   // learned to call work late, the sample's labels read Late where they read
   // Runway. The page quotes the one in the picture.
-  const label = groups
-    .first()
-    .locator('text=/^(Late|Runway|Material|Pin|Out of horizon|D-minus missing|No capacity)$/')
-    .first()
+  const label = groups.first().locator(REASON_LABEL).first()
   facts.scheduleReason = (await label.innerText()).trim()
   // The department labels down the left are plain text; the fifth row of the
   // first order is Sanding, the first production step the sample cannot fit.
@@ -389,12 +390,15 @@ if (wants('acceptance')) {
     ),
   }
   const flagged = page.locator('tbody tr').filter({ hasNotText: /Clear/ })
+  if (await flagged.count()) {
+    facts.accept.reason = (await flagged.first().locator('td').last().locator(REASON_LABEL).first().innerText()).trim()
+  }
   await mark([
     { n: 1, at: page.locator('select'), where: 'inside-right', dx: -34 },
     { n: 2, at: page.locator('button:has-text("Check")'), where: 'above', ring: true },
     { n: 3, at: verdict.first(), where: 'left', dx: -6 },
     ...((await flagged.count())
-      ? [{ n: 4, at: flagged.first().locator('td').last().locator('text=/^Runway$/i'), where: 'right' }]
+      ? [{ n: 4, at: flagged.first().locator('td').last().locator(REASON_LABEL), where: 'right' }]
       : []),
   ])
   const top = await topOf(title('Can we take this order?'), 30)

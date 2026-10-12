@@ -78,7 +78,7 @@ unmodified in the browser, so the demo runs the real engine with no backend.
 `npm run build` produces a static folder.
 
 **Online.** Supabase project `fiqfbbnmksppbpxmhnbv` — *kram*, Mumbai
-(ap-south-1), Postgres 17.6. All sixty-eight migrations applied once `20261012100000` is pushed: it is committed and, as of this writing, not yet on the live project (§9, 12 Oct).
+(ap-south-1), Postgres 17.6. All sixty-eight migrations applied, the last on 12 Oct (§9).
 
 **The plan of record is §8.0** — the concept deck's promises, each marked
 built, partly or not built, and what it waits on. Written 9 Oct.
@@ -2186,12 +2186,18 @@ carrying down, a pinned feeder, a fork where the later feeder decides); two
 older tests that assumed Stitching starts on the run day now check the entry
 point. 422 tests.
 
-**What it will do to the live project** once pushed and run: the late bars on
-the sample book form a chain down each order's route instead of a stack on
-the run day; the later departments move further out, so more of them end past
-their dates and the Late count can only rise; the heatmap's load spreads over
-the coming weeks instead of piling onto the first days. That is the truthful
-shape of a book nobody has worked. KRAM/09 regenerates after the run.
+**Live, 12 Oct.** Pushed by Nishad on the go; `verify:live` green; Run
+pressed once on the Command centre (the engine in 2.0 s, as of 12 Oct). On
+that run, checked against the real route edges from a signed-in script: of
+the 979 (late department, department upstream of it with work left) pairs
+on the sample book, **979 start after the upstream one ends**. On the two
+old-engine runs from 11 Oct, **0 of 907** did — every late department began
+on the run day. All 220 tasks are late now (214 before): the six that had
+fitted on their own are behind because what feeds them is. The chain ends on
+28 Nov. Attention reads 270 critical. `schedule_gantt` carries every run and
+the client filters by `run_id` — a script that reads it without the filter
+counts every run ever made, which is how a first snapshot read 2,420 tasks
+for a 220-task book. KRAM/09 regenerated against the run.
 
 ### 2026-10-11 — Loading is not empty, on every screen
 

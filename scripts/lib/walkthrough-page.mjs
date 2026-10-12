@@ -252,7 +252,7 @@ export function walkthroughPage({ facts: f, sheet, site }) {
         `<strong>Each bar is one department&rsquo;s work</strong>, from the day it starts to the day it must finish. The thin black line on the bar is the deadline from your sheet.`,
         `<strong>A red bar cannot be done in time.</strong> This one is ${esc(sheet.departments[4].name)}.`,
         f.scheduleReason === 'Late'
-          ? `<strong>The reason is at the end of the row.</strong> <em>Late</em> means what remains of this step was re-planned from the day the plan was run and still cannot finish by its date. The sample&rsquo;s dispatches have passed with nothing recorded as made, so the plan has moved that work forward to today and says so.`
+          ? `<strong>The reason is at the end of the row.</strong> <em>Late</em> means what remains of this step was re-planned from the day the plan was run &mdash; after the departments feeding it finish what they still owe, so the bars run one after another down the route &mdash; and still cannot finish by its date. The sample&rsquo;s dispatches have passed with nothing recorded as made, so the plan has moved all of that work forward and says so.`
           : `<strong>The reason is at the end of the row.</strong> <em>${esc(f.scheduleReason ?? 'Runway')}</em> ${f.scheduleReason === 'Runway' || !f.scheduleReason ? 'means the step before it finishes too late to leave this one enough working days.' : 'is why this step cannot be done as planned.'}`,
         `<strong>Tick &ldquo;Breaches only&rdquo;</strong> to hide everything that is fine and see just the problems.`,
       ],
