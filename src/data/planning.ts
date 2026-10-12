@@ -205,6 +205,9 @@ export type OrderRow = {
   unallocated_qty: number
   next_stuffing: string | null
   breaches: number
+  accepted_against_plan: boolean
+  acceptance_note: string | null
+  breaches_at_acceptance: number | null
 }
 
 export function useOrders(runId: string | undefined) {

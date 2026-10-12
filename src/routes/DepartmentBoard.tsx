@@ -2,13 +2,16 @@ import { useEffect, useState } from 'react'
 import {
   useDepartmentInbound,
   useDepartmentQueue,
+  useProductionVsPlan,
   type InboundRow,
   type QueueRow,
 } from '@/data/wip'
 import { useDepartments } from '@/data/planning'
 import { Empty, Panel, Tag, Waiting } from '@/components/ui'
-import { stateOfAll, waiting } from '@/lib/query-state'
-import { formatDateLong, formatNumber, inputClass } from '@/components/format'
+import { BarPairs } from '@/components/charts'
+import { gridFromRows, workingDaysBack } from '@/lib/plan-vs-made'
+import { stateOf, stateOfAll, waiting } from '@/lib/query-state'
+import { formatDateLong, formatNumber, inputClass, todayIso } from '@/components/format'
 
 /**
  * One department's board, specified by U&M in their own words: "what are the
@@ -51,6 +54,18 @@ export function DepartmentBoard() {
   // Until a department is chosen the two queries are not running at all,
   // which must read as loading rather than as "nothing is late".
   const state = !departmentCode ? 'loading' : stateOfAll(queue, inbound)
+
+  // The department's own fortnight, planned against made, as bars. Read
+  // from the same view the Dashboard uses and cut down to this department.
+  const workingDays = workingDaysBack(todayIso(), 14)
+  const fortnight = useProductionVsPlan(workingDays[0], todayIso())
+  const fortnightState = !departmentCode ? 'loading' : stateOf(fortnight)
+  const cells = departmentCode
+    ? (gridFromRows(fortnight.data ?? [], workingDays).cells.get(departmentCode) ?? [])
+    : []
+  const anyDay = cells.some((c) => c.state !== 'none')
+  const departmentName =
+    departments.data?.find((d) => d.code === departmentCode)?.name ?? departmentCode ?? ''
 
   return (
     <div className="space-y-6">
@@ -142,6 +157,36 @@ export function DepartmentBoard() {
                 />
               ))}
             </div>
+          )}
+        </div>
+      </Panel>
+
+      <Panel
+        title="The last 14 days"
+        meta={
+          waiting(fortnightState)
+            ? undefined
+            : anyDay
+              ? `${cells.filter((c) => c.state === 'met').length} of ${cells.filter((c) => c.planned > 0).length} planned days met`
+              : 'nothing yet'
+        }
+      >
+        <div data-testid="board-last-days" data-state={fortnightState}>
+          {waiting(fortnightState) ? (
+            <Waiting state={fortnightState} error={fortnight.error} loading="Reading the fortnight…" />
+          ) : !anyDay ? (
+            <Empty>
+              Nothing was planned or declared for {departmentName} in the last 14 working days.
+            </Empty>
+          ) : (
+            <>
+              <BarPairs cells={cells} name={departmentName} code={departmentCode ?? ''} />
+              <p className="text-faint mt-2 text-caption">
+                Grey is what the plan asked for each day; the coloured bar beside it is what was
+                declared — green when it met the plan, amber when it came close, red when it did
+                not. Rejected pieces sit on top in pale amber.
+              </p>
+            </>
           )}
         </div>
       </Panel>

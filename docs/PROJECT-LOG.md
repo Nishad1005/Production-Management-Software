@@ -78,7 +78,7 @@ unmodified in the browser, so the demo runs the real engine with no backend.
 `npm run build` produces a static folder.
 
 **Online.** Supabase project `fiqfbbnmksppbpxmhnbv` — *kram*, Mumbai
-(ap-south-1), Postgres 17.6. All sixty-nine migrations applied, the last on 12 Oct (§9).
+(ap-south-1), Postgres 17.6. All seventy migrations applied once `20261012120000` is pushed: it is committed and, as of this writing, not yet on the live project (§9, 12 Oct, "taken against the plan").
 
 **The plan of record is §8.0** — the concept deck's promises, each marked
 built, partly or not built, and what it waits on. Written 9 Oct.
@@ -214,6 +214,15 @@ reads *runway*, as it did before, because that is what runway means and the
 Accept-an-order screen was calling a proposed order's too-narrow steps "late,
 re-planned from today". Attention's "behind" cards are therefore departments
 behind on their own account; a feeder's delay is in the breach list.
+
+**An order can be taken against the plan, and the decision is kept (12 Oct).**
+U&M sometimes accept an order the plan says cannot be made. The verdict on
+Accept an order is advice: *Take it anyway* carries the checked line to the
+Order book's form, which asks why, and the reason sits on the order — in the
+book, on the Schedule's header, on the Attention card (the breach is still
+listed; it is still real). An order taken against the plan with no reason is
+refused by `create_order`: a decision with no reason is indistinguishable
+from a mistake six weeks later, which is the pins' rule.
 
 **Pins are honoured and reported, never undone.** A planner who drags a task has
 made a decision the engine cannot see the reasons for. The reason is mandatory —
@@ -645,7 +654,7 @@ Note the task count is lower than the spec's ~40,000 estimate; three components
 across seven departments gives 21 pairs. The row count matches. Worth checking
 against the real route.
 
-**Browser** — `npm run screenshot` drives eighteen screens plus thirty-two
+**Browser** — `npm run screenshot` drives eighteen screens plus thirty-three
 interactions in headless Chromium and fails on any console error. It checks the
 D-minus edit survives a reload, which is what proves it reached the database
 rather than only React state. Fifty steps, three of them at other viewports — two phones and a 1920×1080 wall.
@@ -2155,6 +2164,51 @@ Attention, the header reading "as of 11 Oct", the horizon from 12 August
 in the plan, exactly: the sample book, dated August and September with
 nothing declared, has moved forward from today, and the screens say so.
 KRAM/09 regenerated from the site.
+
+### 2026-10-12 — Taken against the plan, and planned against made as a picture
+
+Two points from Nishad after reading KRAM/12. **"U&M sometimes accept an
+order even when the plan says it is not possible."** The software allowed
+it — the Order book takes any order, the Schedule shows the breaches,
+Attention lists them, What if explores remedies — but nothing recorded that
+it was a decision, the merchandiser re-typed the order they had just
+checked, and KRAM/12's stop 2 read as if one only accepts on Yes. Now (§4):
+*Take it anyway* / *Add it to the book* under the verdict on Accept an order
+carries the checked line to the Order book's form in the address
+(`#/orders?add=1&article=…&qty=…&stuffing=…&breaches=N`); the form asks
+"why we are taking it", required when the check failed; `orders` gains
+`accepted_against_plan`, `acceptance_note`, `breaches_at_acceptance`;
+`create_order` is re-created with the three (new signature, old dropped)
+and refuses a reasonless one; `order_book` carries them, the row and the
+Schedule header wear a grey *Taken against the plan* tag with the reason on
+hover, and `attention_breach`'s detail ends "· taken against the plan:
+<reason>". Migration `20261012120000_taken_against_the_plan.sql`. Three
+tests in `tests/api.test.ts`; a browser step "take it anyway" straight on
+from the refused 5,000-unit check.
+
+**"Where can we see what is made at the end of the day against what was
+planned, as a chart?"** It was the Dashboard's "Planned against made" table
+(department × day, from `production_vs_plan`), the day's jobs on
+Production, and WIP's cumulative counts — no picture. Units are not additive
+across departments, so no factory-wide bar: the panel now opens with a
+**grid** — one row per department in route order, one column per working day
+of the last fourteen (Sundays out, local dates), each cell its own made ÷
+planned: green met, amber 70–99%, red under, striped made-with-nothing-
+planned, grey nothing — the Load heatmap's idiom; clicking a row draws that
+department's fortnight as **bar pairs** (planned grey, made coloured, rejected
+on top) and cuts the table to it. **My department** gains "The last 14 days",
+the same bars for the chosen department. The Production header reads "made
+19 of 19 planned" once anything is in. `src/lib/plan-vs-made.ts` (the
+shaping, unit-tested in `tests/plan-vs-made.test.ts`),
+`src/components/charts.tsx` (SVG and CSS, no library; the grid carries
+`data-dense-grid` like the heatmap, so the thumb-size check knows 24px rows
+are a decision). No SQL. Browser check: the dashboard step asserts the grid
+(14 columns, a chosen department's bars, the table cut to it) and the board
+step the fortnight panel.
+
+430 tests, 51 browser checks. GUIDE: Accept an order, Order
+book, Dashboard, My department. KRAM/12 stop 1 says what *Take it anyway*
+does and its picture marks the button; the document regenerated.
 
 ### 2026-10-12 — One order, start to finish (KRAM/12)
 

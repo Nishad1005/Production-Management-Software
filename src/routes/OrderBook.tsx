@@ -1,4 +1,5 @@
 import { Fragment, useState } from 'react'
+import { useSearchParams } from 'react-router'
 import {
   useArticles,
   useCurrentRun,
@@ -30,6 +31,24 @@ export function OrderBook() {
   const deleteOrder = useDeleteOrder()
   const [expanded, setExpanded] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
+
+  // Accept an order hands the checked line over in the address, so the
+  // merchandiser does not type it twice: article, quantity, date, and how
+  // many steps the check said could not be made.
+  const [params, setParams] = useSearchParams()
+  const prefill: Prefill | null =
+    params.get('add') === '1'
+      ? {
+          articleId: params.get('article') ?? '',
+          qty: params.get('qty') ?? '',
+          stuffingDate: params.get('stuffing') ?? '',
+          breaches: Number(params.get('breaches') ?? 0) || 0,
+        }
+      : null
+  const closeAdd = () => {
+    setAdding(false)
+    if (prefill) setParams({}, { replace: true })
+  }
 
   return (
     <div className="space-y-6">
@@ -68,7 +87,26 @@ export function OrderBook() {
                   }
                   className="hover:bg-paper cursor-pointer"
                 >
-                  <Td className="font-semibold">{o.erp_order_no}</Td>
+                  <Td className="font-semibold">
+                    {o.erp_order_no}
+                    {o.accepted_against_plan ? (
+                      <span
+                        className="ml-2 align-middle"
+                        data-testid="order-against-plan"
+                        title={
+                          o.acceptance_note
+                            ? `Taken against the plan: ${o.acceptance_note}${
+                                o.breaches_at_acceptance
+                                  ? ` (${o.breaches_at_acceptance} steps could not be made when it was entered)`
+                                  : ''
+                              }`
+                            : 'Taken against the plan'
+                        }
+                      >
+                        <Tag tone="mid">Taken against the plan</Tag>
+                      </span>
+                    ) : null}
+                  </Td>
                   <Td>{o.customer_name}</Td>
                   <Td>{o.article_code}</Td>
                   <Td align="right">{formatNumber(o.total_qty)}</Td>
@@ -139,7 +177,7 @@ export function OrderBook() {
         </p>
       </Panel>
 
-      {adding ? <AddOrder onClose={() => setAdding(false)} /> : null}
+      {adding || prefill ? <AddOrder onClose={closeAdd} prefill={prefill} /> : null}
     </div>
   )
 }
@@ -297,7 +335,9 @@ function LineFields({
   )
 }
 
-function AddOrder({ onClose }: { onClose: () => void }) {
+type Prefill = { articleId: string; qty: string; stuffingDate: string; breaches: number }
+
+function AddOrder({ onClose, prefill }: { onClose: () => void; prefill: Prefill | null }) {
   const customers = useCustomers()
   const articles = useArticles()
   const create = useCreateOrder()
@@ -308,10 +348,14 @@ function AddOrder({ onClose }: { onClose: () => void }) {
 
   const [erpOrderNo, setErpOrderNo] = useState('')
   const [customerId, setCustomerId] = useState('')
-  const [articleId, setArticleId] = useState('')
+  const [articleId, setArticleId] = useState(prefill?.articleId ?? '')
   const [confidence, setConfidence] = useState('confirmed')
-  const [qty, setQty] = useState('200')
-  const [stuffingDate, setStuffingDate] = useState('')
+  const [qty, setQty] = useState(prefill?.qty || '200')
+  const [stuffingDate, setStuffingDate] = useState(prefill?.stuffingDate ?? '')
+  // Why we are taking it. Required when the check said it cannot be made as
+  // the plan stands: a decision with no reason is a mistake six weeks later.
+  const againstPlan = (prefill?.breaches ?? 0) > 0
+  const [note, setNote] = useState('')
   const [containerRef, setContainerRef] = useState('')
   const [materialReadyDate, setMaterialReadyDate] = useState('')
   const [deliveryDate, setDeliveryDate] = useState('')
@@ -355,6 +399,9 @@ function AddOrder({ onClose }: { onClose: () => void }) {
               containerRef,
               materialReadyDate: materialReadyDate || null,
               deliveryDate: deliveryDate || null,
+              acceptedAgainstPlan: againstPlan,
+              acceptanceNote: note || null,
+              breachesAtAcceptance: prefill?.breaches ?? null,
             },
             { onSuccess: onClose },
           )
@@ -447,6 +494,26 @@ function AddOrder({ onClose }: { onClose: () => void }) {
             deliveryDate={deliveryDate}
             setDeliveryDate={setDeliveryDate}
           />
+        </div>
+
+        <div className="mt-4">
+          <Field label={againstPlan ? 'Why we are taking it' : 'A note on accepting it (optional)'}>
+            <input
+              className={inputClass}
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder={againstPlan ? 'Customer insists; overtime in stitching agreed' : ''}
+              required={againstPlan}
+              data-testid="acceptance-note"
+            />
+          </Field>
+          {againstPlan ? (
+            <p className="text-amber mt-2 text-caption" data-testid="against-plan-warning">
+              The check said {prefill!.breaches} {prefill!.breaches === 1 ? 'step' : 'steps'} cannot be
+              made to this date. The order goes in anyway, the plan will show where it breaks, and
+              this reason stays on the order.
+            </p>
+          ) : null}
         </div>
 
         <p className="text-mid mt-4 max-w-[65ch] text-caption">

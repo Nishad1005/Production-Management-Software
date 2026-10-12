@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router'
 import { useAcceptanceCheck, useArticles } from '@/data/planning'
 import { friendlyWriteError } from '@/lib/queryClient'
 import { Button, Field, Panel, Table, Tag, Td, Th } from '@/components/ui'
@@ -16,6 +17,7 @@ export function Acceptance() {
   const articles = useArticles()
   const check = useAcceptanceCheck()
   const names = useDepartmentNames()
+  const navigate = useNavigate()
 
   const [articleId, setArticleId] = useState('')
   const [qty, setQty] = useState('250')
@@ -102,6 +104,21 @@ export function Acceptance() {
                 ? 'Kram reports the shortfall. Whether to run overtime, resequence, subcontract or move the date is a production decision resting on material, cash and the customer relationship — none of which the system can see.'
                 : 'Scheduled against everything already committed, with no day pushed over capacity.'}
             </p>
+            {/* The decision is theirs, and it is one click from here: the
+                checked line goes to the Order book's form as it was checked,
+                and a line taken against the plan asks for its reason there. */}
+            <div className="mt-3">
+              <Button
+                testId="accept-anyway"
+                onClick={() =>
+                  navigate(
+                    `/orders?add=1&article=${encodeURIComponent(chosenArticle)}&qty=${encodeURIComponent(qty)}&stuffing=${encodeURIComponent(stuffingDate)}&breaches=${breaches.length}`,
+                  )
+                }
+              >
+                {breaches.length ? 'Take it anyway' : 'Add it to the book'}
+              </Button>
+            </div>
           </div>
 
           <Table>

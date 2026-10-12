@@ -246,6 +246,11 @@ shipment line is scheduled independently from its own stuffing date** — a
 backward schedules.
 
 - **Add an order** creates the order and its first shipment line together.
+  Arriving from *Accept an order* it comes pre-filled, and a line the check
+  refused asks **why we are taking it**.
+- A grey **Taken against the plan** tag beside the order number means exactly
+  that; hover it for the reason and how many steps the check said could not
+  be made when it was entered. The same tag sits on the Schedule's header.
 - **Add a shipment line** adds another phase to an existing order.
 - An **!** beside the line count means the lines do not add up to the order
   total. That is a warning, not an error — the first of three phases is a
@@ -266,6 +271,13 @@ break and why, and then removes it again — nothing is added to the order book.
 
 Everything else in the system finds problems after the commitment. This finds
 them before.
+
+The verdict is advice, not a lock. **Take it anyway** (or **Add it to the book**
+when it fits) carries the checked line to the Order book's form as it was
+checked, so nothing is typed twice. A line taken against the plan asks **why
+we are taking it**, and the reason stays on the order: in the book, on the
+Schedule's header and on the Attention card, so that three weeks later the
+breach reads as a decision somebody made rather than a surprise.
 
 Quantities shown are inflated for yield: each department must make enough that
 the shipped quantity survives every loss downstream of it.
@@ -320,12 +332,18 @@ The MD's screen. Ten figures, each with its target, and the ones that cannot be
 computed yet say what they are waiting for instead of showing a zero — a zero
 would be read as a fact.
 
-**Planned against made** sits underneath: every department's last fortnight, what
-the plan asked for beside what was declared, and the difference. A day where
-something was made that nobody planned appears just as plainly as a day where
-nothing was made at all. The planned figure is the plan **as it stood on that
-day**: once a day has passed, its plan is fixed and a later run does not
-rewrite it.
+**Planned against made** sits underneath: every department's last fourteen
+working days, what the plan asked for beside what was declared, and the
+difference. It opens as a **grid** — one row per department, one square per
+day — coloured by how the day went: green made what was planned, amber seventy
+per cent or more, red under that, striped when something was made that nobody
+planned, and plain grey when nothing happened either way. Hover a square for
+the figures. **Click a department** and its fortnight is drawn as bars — grey
+for planned, coloured for made, rejected pieces on top in pale amber — with
+its days alone in the table below. There is no factory-wide bar on purpose:
+legs, covers and chairs cannot be added together. The planned figure is the
+plan **as it stood on that day**: once a day has passed, its plan is fixed and
+a later run does not rewrite it.
 
 ---
 
@@ -348,6 +366,12 @@ It lists only what is **late or due within the week**. Anything further out is
 counted in a line underneath rather than shown, because a feeder that has not
 started on work due in three months is not holding you up, and burying six real
 problems under fifty imaginary ones is how a screen stops being read.
+
+**The last 14 days** is your own fortnight as bars: for each working day, grey
+for what the plan asked of you and a coloured bar for what you declared —
+green when it met the plan, amber when it came close, red when it did not —
+with rejected pieces on top. It is the same picture the Dashboard draws when
+the MD clicks your department.
 
 If nothing feeds your department, it says so: you start on your own and there is
 never anything to wait for.

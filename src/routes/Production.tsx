@@ -43,6 +43,10 @@ export function Production() {
 
   const rows = worklist.data ?? []
   const declared = rows.filter((r) => r.declaration_id).length
+  // The header in pieces once anything is in: "made 19 of 19 planned" is the
+  // end-of-day sentence a department head wants, and entries are not pieces.
+  const plannedToday = rows.reduce((n, r) => n + r.qty_planned, 0)
+  const madeToday = rows.reduce((n, r) => n + (r.declaration_id ? r.qty_good : 0), 0)
   // Before a department is chosen the worklist is not running, which must
   // read as loading rather than as "nothing is planned".
   const worklistState = !departmentCode ? 'loading' : stateOf(worklist)
@@ -101,7 +105,9 @@ export function Production() {
           waiting(worklistState)
             ? undefined
             : rows.length
-              ? `${declared} of ${rows.length} entered`
+              ? declared
+                ? `made ${formatNumber(madeToday)} of ${formatNumber(plannedToday)} planned · ${declared} of ${rows.length} entered`
+                : `${declared} of ${rows.length} entered`
               : formatDateLong(date)
         }
       >

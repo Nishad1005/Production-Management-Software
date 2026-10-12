@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react'
-import { useCurrentRun, useGantt, type GanttRow } from '@/data/planning'
+import { useCurrentRun, useGantt, useOrders, type GanttRow } from '@/data/planning'
 import { useCreatePin, usePins, useReleasePin } from '@/data/mutations'
 import { Empty, Field, Panel, Table, Tag, Td, Th } from '@/components/ui'
 import {
@@ -23,6 +23,15 @@ const COLS = 'grid-cols-[150px_1fr] sm:grid-cols-[230px_1fr]'
 export function Gantt() {
   const run = useCurrentRun()
   const gantt = useGantt(run.data?.id)
+  // An order taken against the plan says so on its header, from the book.
+  const orders = useOrders(run.data?.id)
+  const againstPlan = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const o of orders.data ?? []) {
+      if (o.accepted_against_plan) map.set(o.erp_order_no, o.acceptance_note ?? '')
+    }
+    return map
+  }, [orders.data])
   const pins = usePins()
   const releasePin = useReleasePin()
   const names = useDepartmentNames()
@@ -189,6 +198,7 @@ export function Gantt() {
               <OrderGroup
                 key={group.key}
                 group={group}
+                againstPlan={againstPlan.get(group.header.erp_order_no) ?? null}
                 open={open.has(group.key)}
                 onToggle={() => toggle(group.key)}
                 scale={scale}
@@ -347,6 +357,7 @@ function Gridlines({ marks }: { marks: Marks }) {
  */
 function OrderGroup({
   group,
+  againstPlan,
   open,
   onToggle,
   scale,
@@ -356,6 +367,8 @@ function OrderGroup({
   onRelease,
 }: {
   group: { key: string; header: GanttRow; tasks: GanttRow[] }
+  /** The reason the order was taken against the plan; null when it was not. */
+  againstPlan: string | null
   open: boolean
   onToggle: () => void
   scale: Scale
@@ -396,6 +409,15 @@ function OrderGroup({
             {breaches ? (
               <span className="ml-2 align-middle">
                 <Tag tone="flag">{breaches} cannot be made in time</Tag>
+              </span>
+            ) : null}
+            {againstPlan !== null ? (
+              <span
+                className="ml-2 align-middle"
+                data-testid="gantt-against-plan"
+                title={againstPlan ? `Taken against the plan: ${againstPlan}` : 'Taken against the plan'}
+              >
+                <Tag tone="mid">Taken against the plan</Tag>
               </span>
             ) : null}
             <span className="text-mid block text-caption">

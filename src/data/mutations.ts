@@ -83,6 +83,11 @@ export type NewOrder = {
   deliveryDate?: string | null
   containerRef?: string | null
   materialReadyDate?: string | null
+  // Taken knowing the plan could not make it as it stood: U&M do, and the
+  // decision and its reason belong on the order (12 Oct 2026).
+  acceptedAgainstPlan?: boolean
+  acceptanceNote?: string | null
+  breachesAtAcceptance?: number | null
 }
 
 export function useCreateOrder() {
@@ -97,6 +102,9 @@ export function useCreateOrder() {
       p_delivery_date: o.deliveryDate || null,
       p_container_ref: o.containerRef || null,
       p_material_ready_date: o.materialReadyDate || null,
+      p_accepted_against_plan: o.acceptedAgainstPlan ?? false,
+      p_acceptance_note: o.acceptanceNote?.trim() || null,
+      p_breaches_at_acceptance: o.breachesAtAcceptance ?? null,
     })
   })
 }

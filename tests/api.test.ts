@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import type pg from 'pg'
-import { withClient, withRollback } from './helpers/db'
+import { attempt, withClient, withRollback } from './helpers/db'
 import { applySeed } from './helpers/fixtures'
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url))
@@ -191,6 +191,86 @@ describe('order writes', () => {
         [rows[0].id],
       )
       expect(Number(after[0].line_count)).toBe(2)
+    })
+  })
+
+  // Taking an order against the plan is allowed and recorded (12 Oct 2026):
+  // U&M do it, and a decision with no reason is a mistake six weeks later.
+  it('keeps why an order was taken against the plan, and refuses one with no reason', async () => {
+    await withRollback(async (c) => {
+      await applySeed(c)
+      await c.query(`insert into customers (code, name) values ('C1', 'Test customer')`)
+      const { rows } = await c.query<{ id: string }>(
+        `select create_order('SO-2',
+           (select id from customers where code = 'C1'),
+           (select id from articles where code = 'AARA-LC'),
+           5000, '2027-03-01'::date,
+           p_accepted_against_plan => true,
+           p_acceptance_note => 'Customer insists; overtime in stitching agreed',
+           p_breaches_at_acceptance => 3) as id`,
+      )
+      const { rows: book } = await c.query<{
+        accepted_against_plan: boolean
+        acceptance_note: string
+        breaches_at_acceptance: number
+      }>(
+        `select accepted_against_plan, acceptance_note, breaches_at_acceptance
+           from order_book where order_id = $1`,
+        [rows[0].id],
+      )
+      expect(book[0]).toEqual({
+        accepted_against_plan: true,
+        acceptance_note: 'Customer insists; overtime in stitching agreed',
+        breaches_at_acceptance: 3,
+      })
+
+      const message = await attempt(
+        c,
+        `select create_order('SO-3',
+           (select id from customers where code = 'C1'),
+           (select id from articles where code = 'AARA-LC'),
+           10, '2027-03-01'::date,
+           p_accepted_against_plan => true, p_acceptance_note => '   ')`,
+      )
+      expect(message).toMatch(/needs a reason/)
+
+      // An ordinary order carries none of it.
+      const { rows: plain } = await c.query<{ id: string }>(
+        `select create_order('SO-4',
+           (select id from customers where code = 'C1'),
+           (select id from articles where code = 'AARA-LC'),
+           10, '2027-03-01'::date) as id`,
+      )
+      const { rows: plainBook } = await c.query<{ accepted_against_plan: boolean; acceptance_note: string | null }>(
+        `select accepted_against_plan, acceptance_note from order_book where order_id = $1`,
+        [plain[0].id],
+      )
+      expect(plainBook[0]).toEqual({ accepted_against_plan: false, acceptance_note: null })
+    })
+  })
+
+  it('says on the Attention card that the breach was a decision', async () => {
+    await withRollback(async (c) => {
+      await applySeed(c)
+      await c.query(`insert into customers (code, name) values ('C1', 'Test customer')`)
+      // Five thousand chairs through a department making thirty covers a day
+      // cannot fit however far out the date is: a breach that is not 'late'.
+      await c.query(
+        `select create_order('SO-5',
+           (select id from customers where code = 'C1'),
+           (select id from articles where code = 'AARA-LC'),
+           5000, '2027-03-01'::date,
+           p_accepted_against_plan => true,
+           p_acceptance_note => 'Taken for the relationship') as id`,
+      )
+      await c.query(`select run_schedule()`)
+      const { rows } = await c.query<{ detail: string }>(
+        `select detail from attention_breach where key like 'breach:SO-5:%'`,
+      )
+      expect(rows.length).toBeGreaterThan(0)
+      for (const r of rows) {
+        expect(r.detail).toMatch(/ · taken against the plan: Taken for the relationship$/)
+      }
     })
   })
 })

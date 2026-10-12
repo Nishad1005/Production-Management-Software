@@ -190,6 +190,11 @@
     .doc { border-right: 1px solid transparent; }
   }
 </style>
+<style>
+  /* A stop with seven things to say under its picture: the picture gives up
+     a little height so the page keeps its last two boxes. */
+  @media print { figure.shot--fit img { max-height: 112mm; } }
+</style>
 
 <div class="doc">
 
@@ -204,7 +209,7 @@
     <dl class="stamp">
       <dt>Ref</dt><dd>DBBS/UM/KRAM/12 &middot; Rev A &middot; for U&amp;M Designs</dd>
       <dt>The order</dt><dd>SO/26-27/0501 &middot; Betsy Counter Stool — Specter Pearl &middot; 240 pieces &middot; container 15 Feb 2027</dd>
-      <dt>Pictures taken</dt><dd>12 Oct 2026, 10:34 IST, from the demonstration build</dd>
+      <dt>Pictures taken</dt><dd>12 Oct 2026, 14:28 IST, from the demonstration build</dd>
     </dl>
   </header>
 
@@ -247,11 +252,11 @@
       <span class="stop__where">Menu &rarr; Accept an order</span>
     </div>
     <div class="stop__body">
-      <figure class="shot"><img src="journey/accept-no.png" alt="The Accept an order screen refusing the first date" /><figcaption>The date the customer first asked for: 23 Nov 2026</figcaption></figure>
-      <ol class="marks"><li><span class="n">1</span><span><strong>Pick the article.</strong> Betsy Counter Stool — Specter Pearl, from your own article list.</span></li><li><span class="n">2</span><span><strong>The quantity</strong>: 240 pieces.</span></li><li><span class="n">3</span><span><strong>The container date</strong> the customer wants. The software calls it the <em>stuffing date</em>: the day the container is loaded. Every other date is counted back from it.</span></li><li><span class="n">4</span><span><strong>Press Check.</strong> The whole factory is planned again with this order in it, and then put back exactly as it was. Nothing is saved.</span></li><li><span class="n">5</span><span><strong>The answer in one line:</strong> &ldquo;11 of 14 steps cannot be made to this date.&rdquo;</span></li><li><span class="n">6</span><span><strong>Which steps, and why.</strong> Every department is listed with the day it would have to start and the day it must finish. The ones that cannot say what is wrong: <em>Late</em> means it would have had to start before today to make that date; <em>Runway</em> means the department before it finishes too late to leave it enough days.</span></li></ol>
+      <figure class="shot shot--fit"><img src="journey/accept-no.png" alt="The Accept an order screen refusing the first date" /><figcaption>The date the customer first asked for: 23 Nov 2026</figcaption></figure>
+      <ol class="marks"><li><span class="n">1</span><span><strong>Pick the article.</strong> Betsy Counter Stool — Specter Pearl, from your own article list.</span></li><li><span class="n">2</span><span><strong>The quantity</strong>: 240 pieces.</span></li><li><span class="n">3</span><span><strong>The container date</strong> the customer wants. The software calls it the <em>stuffing date</em>: the day the container is loaded. Every other date is counted back from it.</span></li><li><span class="n">4</span><span><strong>Press Check.</strong> The whole factory is planned again with this order in it, and then put back exactly as it was. Nothing is saved.</span></li><li><span class="n">5</span><span><strong>The answer in one line:</strong> &ldquo;11 of 14 steps cannot be made to this date.&rdquo;</span></li><li><span class="n">6</span><span><strong>Which steps, and why.</strong> Every department is listed with the day it would have to start and the day it must finish. The ones that cannot say what is wrong: <em>Late</em> means it would have had to start before today to make that date; <em>Runway</em> means the department before it finishes too late to leave it enough days.</span></li><li><span class="n">7</span><span><strong>Take it anyway.</strong> The verdict is advice, not a lock. If the customer cannot wait, this carries the order to the book as it was checked and asks why you are taking it; the reason stays on the order, and the plan shows where it will break so the shortfall can be worked on from day one.</span></li></ol>
       <div class="pair">
         <div class="sample"><div class="sample__t">In the picture</div><p>23 Nov 2026 is too soon: 11 of the 14 steps cannot be done in the days they would have. Your sheet finishes the first step nearly three months before the container, so a container six weeks out means those steps should already have started.</p></div>
-        <div class="tell"><div class="tell__t">Who does this, and when</div><p>Merchandising, while the customer is still on the phone. It takes a few seconds and changes nothing, so it can be tried with three dates in a row.</p></div>
+        <div class="tell"><div class="tell__t">Who does this, and when</div><p>Merchandising, while the customer is still on the phone. It takes a few seconds and changes nothing, so it can be tried with three dates in a row. Taking an order the plan cannot make is still U&amp;M's call; the software records the call and shows the cost.</p></div>
       </div>
     </div>
   </article>
@@ -344,7 +349,7 @@
     </div>
     <div class="stop__body">
       <figure class="shot"><img src="journey/handover.png" alt="Assembly counting in what Ply Cutting handed over" /></figure>
-      <ol class="marks"><li><span class="n">1</span><span><strong>Who sent it, and when.</strong> Ply Cutting declared these pieces; they now sit at Assembly's door.</span></li><li><span class="n">2</span><span><strong>They made</strong> 19.</span></li><li><span class="n">3</span><span><strong>You received.</strong> Enter what is actually there. Here 17.</span></li><li><span class="n">4</span><span><strong>The difference is kept</strong>: &ldquo;2 SHORT&rdquo;. It is not smoothed over and it is not an argument; it is a record.</span></li><li><span class="n">5</span><span><strong>Count in.</strong> From now on the software knows Assembly has the pieces, and what it owes the department after it.</span></li></ol>
+      <ol class="marks"><li><span class="n">1</span><span><strong>Who sent it, and when.</strong> Machining declared these pieces; they now sit at Assembly's door.</span></li><li><span class="n">2</span><span><strong>They made</strong> 65.</span></li><li><span class="n">3</span><span><strong>You received.</strong> Enter what is actually there. Here 63.</span></li><li><span class="n">4</span><span><strong>The difference is kept</strong>: &ldquo;2 SHORT&rdquo;. It is not smoothed over and it is not an argument; it is a record.</span></li><li><span class="n">5</span><span><strong>Count in.</strong> From now on the software knows Assembly has the pieces, and what it owes the department after it.</span></li></ol>
       <div class="pair">
         <div class="sample"><div class="sample__t">In the picture</div><p>Two sides to every handover: the department that made it says so, the department that receives it counts it. Where both agree, nothing happens. Where they differ, the difference is on record with both names on it.</p></div>
         <div class="tell"><div class="tell__t">Who does this, and when</div><p>The receiving department, first thing in the shift, standing up, usually on a phone.</p></div>
@@ -407,8 +412,8 @@
       <span class="stop__where">Menu &rarr; WIP &rarr; Dashboard</span>
     </div>
     <div class="stop__body">
-      <figure class="shot"><img src="journey/wip-ready.png" alt="The WIP screen with the order under Ready to stuff" /><figcaption>WIP</figcaption></figure><figure class="shot"><img src="journey/dashboard.png" alt="The MD dashboard with the containers-ready figure" /><figcaption>Dashboard</figcaption></figure>
-      <ol class="marks"><li><span class="n">1</span><span><strong>Ready to stuff.</strong> The order moves here the moment every department has declared the whole job: 100%, 14 of 14 departments.</span></li><li><span class="n">2</span><span><strong>The same strip</strong>, all green.</span></li><li><span class="n">3</span><span><strong>Containers ready</strong> on the MD's dashboard counts it: 1. Beside it, the nine figures the dashboard was asked for, all of them from the same entries the departments made along the way.</span></li></ol>
+      <figure class="shot"><img src="journey/wip-ready.png" alt="The WIP screen with the order under Ready to stuff" /><figcaption>WIP</figcaption></figure><figure class="shot shot--fit"><img src="journey/dashboard.png" alt="The MD dashboard with the containers-ready figure and the planned-against-made grid" /><figcaption>Dashboard</figcaption></figure>
+      <ol class="marks"><li><span class="n">1</span><span><strong>Ready to stuff.</strong> The order moves here the moment every department has declared the whole job: 100%, 14 of 14 departments.</span></li><li><span class="n">2</span><span><strong>The same strip</strong>, all green.</span></li><li><span class="n">3</span><span><strong>Containers ready</strong> on the MD's dashboard counts it: 1. Beside it, the nine figures the dashboard was asked for, all of them from the same entries the departments made along the way.</span></li><li><span class="n">4</span><span><strong>Planned against made.</strong> Under the figures, every department's last fourteen working days as one row of squares: green made what was planned, amber most of it, red short, striped made with nothing planned. The days this order was entered are in it. Click a department and its fortnight is drawn as bars.</span></li></ol>
       <div class="pair">
         <div class="sample"><div class="sample__t">In the picture</div><p>From the customer's first question to this screen, nobody typed a date. The dates came from your sheet's day-counts and the speeds; the progress came from two numbers a day per department. The container date was kept.</p></div>
         <div class="tell"><div class="tell__t">Who does this, and when</div><p>Packing declares the last job; dispatch reads the list. What left the factory is the one thing not yet recorded, and is next.</p></div>
@@ -442,6 +447,6 @@
 
   <footer>
     <span>DBBS/UM/KRAM/12 &middot; Rev A</span>
-    <span>Pictures from the demonstration build, 12 Oct 2026, 10:34 IST</span>
+    <span>Pictures from the demonstration build, 12 Oct 2026, 14:28 IST</span>
   </footer>
 </div>

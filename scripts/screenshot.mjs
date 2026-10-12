@@ -107,6 +107,36 @@ await step('acceptance check', async () => {
   return '5,000 units on short notice correctly refused'
 })
 
+// --- taking it anyway is allowed, and recorded with its reason --------------
+
+await step('take it anyway', async () => {
+  // A realistic line on the same short notice — 320, not the 5,000 above,
+  // which would make every re-plan after it crawl in the browser's database
+  // and time the next four steps out. Still refused: the date is too soon.
+  await page.fill('input[type=number]', '320')
+  await page.click('button:has-text("Check")')
+  await page.waitForSelector('text=/320 units stuffing/i', { timeout: 60_000 })
+  await page.waitForSelector('text=Not as it stands', { timeout: 60_000 })
+  // The button carries the checked line to the Order book's form, which asks why.
+  await page.click('[data-testid="accept-anyway"]')
+  await page.waitForSelector('text=Creates its first shipment line', { timeout: 60_000 })
+  const qty = await page.locator('form input[type=number]').first().inputValue()
+  if (qty !== '320') throw new Error(`the form did not carry the quantity over: ${qty}`)
+  await page.waitForSelector('[data-testid="against-plan-warning"]', { timeout: 10_000 })
+  await page.fill('input[placeholder="SO/26-27/0500"]', 'SO/26-27/0998')
+  await page.fill('[data-testid="acceptance-note"]', 'Customer insists; overtime in stitching agreed')
+  await page.click('button:has-text("Add order")')
+  const row = page.locator('tbody tr:has-text("SO/26-27/0998")').first()
+  await row.waitFor({ timeout: 60_000 })
+  const tag = row.locator('[data-testid="order-against-plan"]')
+  if (!(await tag.count())) throw new Error('the order carries no "taken against the plan" tag')
+  const why = await tag.getAttribute('title')
+  if (!/overtime in stitching/.test(why ?? '')) throw new Error(`the reason is not on the order: ${why}`)
+  // And the address is clean again, so a reload does not reopen the form.
+  if (/add=1/.test(page.url())) throw new Error('the form\'s address lingered after adding')
+  return 'the refused line went into the book with its reason, and the book says so'
+})
+
 // --- adding an order writes and re-runs the schedule ------------------------
 
 await step('add an order', async () => {
@@ -891,8 +921,34 @@ await step('md dashboard', async () => {
   )
   if (!made) throw new Error('every row shows nothing made — the join is not joining')
 
+  // The picture above the table: a department-by-day grid, and one
+  // department's bars when its row is clicked, with the table cut to it.
+  const grid = page.locator('[data-testid="plan-vs-made-grid"]')
+  if ((await grid.getAttribute('data-days')) !== '14') {
+    throw new Error(`the grid has ${await grid.getAttribute('data-days')} day columns, not 14`)
+  }
+  const gridRows = Number(await grid.getAttribute('data-departments'))
+  if (!gridRows) throw new Error('the grid has no department rows')
+  const states = await grid.locator('[data-state]').evaluateAll((cells) =>
+    [...new Set(cells.map((c) => c.getAttribute('data-state')))],
+  )
+  if (!states.some((st) => st === 'met' || st === 'behind' || st === 'short' || st === 'unplanned')) {
+    throw new Error(`every cell is empty: ${states.join(', ')}`)
+  }
+  const firstRow = grid.locator('button[data-code]').first()
+  const code = await firstRow.getAttribute('data-code')
+  const name = (await firstRow.innerText()).trim()
+  await firstRow.click()
+  await page.waitForSelector(`[data-testid="plan-vs-made-chosen"][data-code="${code}"]`, { timeout: 30_000 })
+  await page.waitForSelector(`[data-testid="plan-vs-made-bars"][data-department="${code}"]`, { timeout: 30_000 })
+  const other = await vsPlan.evaluate(
+    (el, n) => [...el.querySelectorAll('tbody tr')].filter((tr) => tr.children[1]?.textContent?.trim() !== n).length,
+    name,
+  )
+  if (other) throw new Error(`${other} rows of other departments remain after choosing ${name}`)
+
   await page.screenshot({ path: `${outDir}/dashboard.png`, fullPage: true })
-  return "nine KPIs, the one without data says so, and plan against made"
+  return `nine KPIs, the one without data says so, plan against made as a grid of ${gridRows} × 14, and ${name}'s bars`
 })
 
 // --- the department's own board ---------------------------------------------
@@ -923,8 +979,17 @@ await step('department board', async () => {
     throw new Error('the board is not separating late work from not-yet-due')
   }
 
+  // The department's own fortnight, as bars or as a plain "nothing yet" —
+  // never a blank, never a claim while it is still loading.
+  await page.waitForSelector('[data-testid="board-last-days"][data-state="ready"]', { timeout: 60_000 })
+  const fortnight = page.locator('[data-testid="board-last-days"]')
+  const hasBars = await fortnight.locator('[data-testid="plan-vs-made-bars"]').count()
+  if (!hasBars && !/Nothing was planned or declared/.test(await fortnight.innerText())) {
+    throw new Error('the fortnight panel is neither bars nor an honest nothing')
+  }
+
   await page.screenshot({ path: `${outDir}/board.png`, fullPage: true })
-  return 'feeders named, late work separated from not-yet-due'
+  return `feeders named, late work separated from not-yet-due, the fortnight as ${hasBars ? 'bars' : 'nothing yet'}`
 })
 
 // --- machines: booking downtime takes the department's day down -------------

@@ -198,10 +198,13 @@ await mark([
   { n: 4, at: page.locator('button:has-text("Check")'), where: 'above', ring: true },
   { n: 5, at: verdictLine.first(), where: 'left', dx: -6 },
   { n: 6, at: flaggedRows.first().locator('td').last().locator('span').first(), where: 'right', dx: 4 },
+  { n: 7, at: page.locator('[data-testid="accept-anyway"]'), where: 'right', dx: 4 },
 ])
 {
+  // Five rows: with the button marked as well, the page has seven things to
+  // say and the picture has to leave room for them.
   const rows = page.locator('tbody tr')
-  const n = Math.min(9, (await rows.count()) - 1)
+  const n = Math.min(4, (await rows.count()) - 1)
   await shot('accept-no', await topOf(title('Can we take this order?'), 30), await bottomOf(rows.nth(n), 6))
 }
 await page.fill('input[type=date]', STUFFING)
@@ -639,8 +642,17 @@ await go('#/dashboard', '[data-testid="md-kpis"][data-state="ready"]')
   const read = (label) => text.match(new RegExp(`${label}\\s*\\n\\s*([^\\n]+)`, 'i'))?.[1].trim() ?? ''
   facts.dashboard = { containersReady: read('Containers ready'), ordersRunning: read('Orders running'), delayed: read('Delayed orders') }
   const tile = kpis.locator('.label', { hasText: /Containers ready/i }).first()
-  await mark([{ n: 1, at: tile, where: 'left', dx: -2, ring: true }])
-  await shot('dashboard', await topOf(title('Is the factory on track today?'), 30), await bottomOf(kpis, 10))
+  // And the fortnight below it: the grid of made against planned, which is
+  // where this order's days were entered.
+  await page.waitForSelector('[data-testid="production-vs-plan"][data-state="ready"]', { timeout: 60_000 })
+  const grid = page.locator('[data-testid="plan-vs-made-grid"]')
+  await grid.waitFor({ timeout: 30_000 })
+  facts.dashboard.gridDepartments = Number(await grid.getAttribute('data-departments'))
+  await mark([
+    { n: 1, at: tile, where: 'left', dx: -2, ring: true },
+    { n: 2, at: grid, where: 'top-left', dx: -6, dy: -2 },
+  ])
+  await shot('dashboard', await topOf(title('Is the factory on track today?'), 30), await bottomOf(grid, 44))
 }
 
 await browser.close()

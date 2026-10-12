@@ -1,6 +1,9 @@
+import { useMemo, useState } from 'react'
 import { useMdDashboard, type Kpi } from '@/data/planning'
 import { useProductionVsPlan, type ProductionVsPlan } from '@/data/wip'
 import { Empty, Panel, Table, Td, Th, Waiting } from '@/components/ui'
+import { BarPairs, PlanVsMadeGrid, PlanVsMadeLegend } from '@/components/charts'
+import { gridFromRows, workingDaysBack } from '@/lib/plan-vs-made'
 import { stateOf, waiting } from '@/lib/query-state'
 import { formatDate, formatNumber, todayIso } from '@/components/format'
 
@@ -70,14 +73,14 @@ export function Dashboard() {
  * where it came apart.
  */
 function ProductionAgainstPlan() {
-  const days = 14
-  // Local, not UTC. The production screen records against the local date, and a
-  // range ending on UTC-today drops everything entered after midnight here —
-  // which reads on screen as a factory that made nothing.
+  // Fourteen working days, Sundays out. Local, not UTC: the production screen
+  // records against the local date, and a range ending on UTC-today drops
+  // everything entered after midnight here — which reads on screen as a
+  // factory that made nothing.
   const to = todayIso()
-  const from = new Date(new Date(to).getTime() - days * 86_400_000)
-    .toISOString()
-    .slice(0, 10)
+  const workingDays = useMemo(() => workingDaysBack(to, 14), [to])
+  const days = workingDays.length
+  const from = workingDays[0]
 
   const vsPlan = useProductionVsPlan(from, to)
   const rows = (vsPlan.data ?? []).filter(
@@ -85,6 +88,14 @@ function ProductionAgainstPlan() {
   )
   const behind = rows.filter((r) => r.variance < 0)
   const state = stateOf(vsPlan)
+
+  // The picture: one row per department, one cell per day, and one
+  // department's bars when a row is chosen. Units are not additive across
+  // departments, so there is no factory-wide bar.
+  const grid = useMemo(() => gridFromRows(vsPlan.data ?? [], workingDays), [vsPlan.data, workingDays])
+  const [selected, setSelected] = useState<string | null>(null)
+  const chosen = selected ? grid.departments.find((d) => d.code === selected) : undefined
+  const shown = chosen ? rows.filter((r) => r.department_code === chosen.code) : rows
 
   return (
     <Panel
@@ -106,23 +117,44 @@ function ProductionAgainstPlan() {
             entered on the Production screen, by the department that made it.
           </Empty>
         ) : (
-          <Table>
-            <thead>
-              <tr>
-                <Th>Day</Th>
-                <Th>Department</Th>
-                <Th align="right">Planned</Th>
-                <Th align="right">Made</Th>
-                <Th align="right">Rejected</Th>
-                <Th align="right">Variance</Th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <Row key={`${r.work_date}-${r.department_code}`} row={r} />
-              ))}
-            </tbody>
-          </Table>
+          <div className="space-y-4">
+            <PlanVsMadeGrid grid={grid} selected={selected} onSelect={setSelected} />
+            <PlanVsMadeLegend />
+            {chosen ? (
+              <div data-testid="plan-vs-made-chosen" data-code={chosen.code} className="space-y-2">
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <span className="text-small font-semibold">{chosen.name}, the last {days} working days</span>
+                  <button
+                    type="button"
+                    className="text-blue text-caption hover:underline"
+                    onClick={() => setSelected(null)}
+                  >
+                    Every department
+                  </button>
+                </div>
+                <BarPairs cells={grid.cells.get(chosen.code) ?? []} name={chosen.name} code={chosen.code} />
+              </div>
+            ) : (
+              <p className="text-faint text-caption">Click a department for its bars and its days alone.</p>
+            )}
+            <Table>
+              <thead>
+                <tr>
+                  <Th>Day</Th>
+                  <Th>Department</Th>
+                  <Th align="right">Planned</Th>
+                  <Th align="right">Made</Th>
+                  <Th align="right">Rejected</Th>
+                  <Th align="right">Variance</Th>
+                </tr>
+              </thead>
+              <tbody>
+                {shown.map((r) => (
+                  <Row key={`${r.work_date}-${r.department_code}`} row={r} />
+                ))}
+              </tbody>
+            </Table>
+          </div>
         )}
       </div>
     </Panel>

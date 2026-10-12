@@ -53,7 +53,7 @@ function stop({ no, menu, title, shots, items, picture, who }) {
       ${shots
         .map(
           (s) =>
-            `<figure class="shot${s.tall ? ' shot--tall' : ''}"><img src="journey/${s.file}.png" alt="${esc(s.alt)}" />${
+            `<figure class="shot${s.tall ? ' shot--tall' : ''}${s.fit ? ' shot--fit' : ''}"><img src="journey/${s.file}.png" alt="${esc(s.alt)}" />${
               s.caption ? `<figcaption>${s.caption}</figcaption>` : ''
             }</figure>`,
         )
@@ -95,7 +95,7 @@ export function journeyPage({ facts: f }) {
       menu: 'Accept an order',
       title: 'The customer asks. Can we take it?',
       shots: [
-        { file: 'accept-no', alt: 'The Accept an order screen refusing the first date', caption: `The date the customer first asked for: ${day(f.tooSoon)}` },
+        { file: 'accept-no', alt: 'The Accept an order screen refusing the first date', caption: `The date the customer first asked for: ${day(f.tooSoon)}`, fit: true },
       ],
       items: [
         `<strong>Pick the article.</strong> ${article}, from your own article list.`,
@@ -104,9 +104,10 @@ export function journeyPage({ facts: f }) {
         `<strong>Press Check.</strong> The whole factory is planned again with this order in it, and then put back exactly as it was. Nothing is saved.`,
         `<strong>The answer in one line:</strong> &ldquo;${esc(f.tooSoonVerdict ?? '')}&rdquo;`,
         `<strong>Which steps, and why.</strong> Every department is listed with the day it would have to start and the day it must finish. The ones that cannot say what is wrong: <em>Late</em> means it would have had to start before today to make that date; <em>Runway</em> means the department before it finishes too late to leave it enough days.`,
+        `<strong>Take it anyway.</strong> The verdict is advice, not a lock. If the customer cannot wait, this carries the order to the book as it was checked and asks why you are taking it; the reason stays on the order, and the plan shows where it will break so the shortfall can be worked on from day one.`,
       ],
       picture: `${day(f.tooSoon)} is too soon: ${n(f.tooSoonSteps)} of the ${n(f.steps)} steps cannot be done in the days they would have. Your sheet finishes the first step ${f.plan?.length ? 'nearly three months' : 'months'} before the container, so a container six weeks out means those steps should already have started.`,
-      who: `Merchandising, while the customer is still on the phone. It takes a few seconds and changes nothing, so it can be tried with three dates in a row.`,
+      who: `Merchandising, while the customer is still on the phone. It takes a few seconds and changes nothing, so it can be tried with three dates in a row. Taking an order the plan cannot make is still U&amp;M's call; the software records the call and shows the cost.`,
     }),
     stop({
       no: 2,
@@ -250,12 +251,13 @@ export function journeyPage({ facts: f }) {
       title: 'Ready to stuff',
       shots: [
         { file: 'wip-ready', alt: 'The WIP screen with the order under Ready to stuff', caption: 'WIP' },
-        { file: 'dashboard', alt: 'The MD dashboard with the containers-ready figure', caption: 'Dashboard' },
+        { file: 'dashboard', alt: 'The MD dashboard with the containers-ready figure and the planned-against-made grid', caption: 'Dashboard', fit: true },
       ],
       items: [
         `<strong>Ready to stuff.</strong> The order moves here the moment every department has declared the whole job: ${esc(ready.percent ?? '')}%, ${esc(ready.departments ?? '')}.`,
         `<strong>The same strip</strong>, all green.`,
         `<strong>Containers ready</strong> on the MD's dashboard counts it: ${esc(dash.containersReady ?? '')}. Beside it, the nine figures the dashboard was asked for, all of them from the same entries the departments made along the way.`,
+        `<strong>Planned against made.</strong> Under the figures, every department's last fourteen working days as one row of squares: green made what was planned, amber most of it, red short, striped made with nothing planned. The days this order was entered are in it. Click a department and its fortnight is drawn as bars.`,
       ],
       picture: `From the customer's first question to this screen, nobody typed a date. The dates came from your sheet's day-counts and the speeds; the progress came from two numbers a day per department. The container date was kept.`,
       who: `Packing declares the last job; dispatch reads the list. What left the factory is the one thing not yet recorded, and is next.`,
@@ -267,6 +269,11 @@ export function journeyPage({ facts: f }) {
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
 ${docStyle}
+<style>
+  /* A stop with seven things to say under its picture: the picture gives up
+     a little height so the page keeps its last two boxes. */
+  @media print { figure.shot--fit img { max-height: 112mm; } }
+</style>
 
 <div class="doc">
 
