@@ -297,6 +297,7 @@ export function walkthroughPage({ facts: f, sheet, site }) {
         `<strong>Press Check.</strong> The answer takes a few seconds: the whole factory is planned again with this order added. Nothing is saved.`,
         `<strong>The answer in one line:</strong> &ldquo;${esc(a.verdict ?? '')}&rdquo;`,
         `<strong>Which steps, and why.</strong> Every step is listed with its dates. The ones that fail say what is wrong.`,
+        `<strong>Take it anyway.</strong> The verdict is advice. If the order is taken regardless, this button carries it to the Order book as checked and asks why; the reason stays on the order, in the book and on the Schedule.`,
       ],
       sample: `We asked for ${n(a.qty ?? 0)} more ${esc(product)}s for ${day(a.date ?? '2026-01-01')}, when nothing else is planned. It is still refused, at ${list((a.failing ?? []).map((c) => esc(deptName.get(c) ?? c)))}. So the factory is not crowded: the days the sheet gives those steps are fewer than ${n(a.qty ?? 0)} pieces need at ${rate} a day.`,
       tell: `Who answers &ldquo;can we take this order?&rdquo; today, and how long does it take them?`,
