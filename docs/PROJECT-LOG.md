@@ -892,6 +892,11 @@ the real workload at 324 orders and ~40,000 tasks.
 4. **Confirm what Supabase's own backups cover** on the project's plan. *Save
    everything to a file* is a copy U&M control, not a replacement for the
    platform's.
+5. **Schedule markers readable on hover** (14 Oct, asked; three lines given,
+   no go yet). The deadline, container-day and today marks are explained in
+   the legend but say nothing when hovered — the deadline mark is
+   `pointer-events-none` so a drag is not swallowed. A wider transparent
+   hit area under the bar, with a title naming the mark and its date.
 
 ### 8.3 Ours, before U&M's own people have accounts
 
@@ -931,9 +936,15 @@ all.
    before writing. The first version, which hard-coded the fourteen-department
    route and would have retired the six checkpoint departments, is gone. What
    is owed is unchanged: the workbook itself, the six answers, and the rates.
+   **14 Oct: what is asked may change.** If the computed D-minus is chosen
+   (14 Oct entry, not yet decided), what is owed is the **rates** per
+   article per department and **handover days** per department — about
+   twenty numbers — and the per-article D-minus correction Nishad was going
+   to send is not needed.
 8a. **D-minus: calendar or working days?** The engine counts calendar days
    back from the container and snaps to the previous working day; the
-   sample sheet reads that way too. One question at the PPC session (14 Oct).
+   sample sheet reads that way too. One question at the PPC session (14 Oct)
+   — moot if D-minus is computed per order.
 9. **The what-feeds-what table**, `DBBS/UM/KRAM/02` — and inside it the one
    concrete question: **does Machining feed Ply Cutting?** (§6 item 0.) No
    longer shouting from the Attention screen, and not answered either.
@@ -2201,48 +2212,306 @@ in the plan, exactly: the sample book, dated August and September with
 nothing declared, has moved forward from today, and the screens say so.
 KRAM/09 regenerated from the site.
 
-### 2026-10-14 — The Schedule scrolls, and nothing leaves its track
+### 2026-10-11 — Loading is not empty, on every screen
 
-Nishad, with a screenshot of the live Schedule: "it's not looking good,
-there are some lines", and "make it scrollable horizontally, as the heat
-map is". The lines were container-day markers. The track began at the
-earliest planned start — for late work, today — so an order whose container
-day had already passed (3 Oct, 10 Oct on the sample book) had its marker
-at a negative position, drawn off the left edge of the track and across the
-"20 cannot be made in time" tag. The same screen squeezed the whole span
-into the panel at a few pixels a day.
+§8.2 item 3, chosen by Nishad after the engine learned from the floor.
+`query.data ?? []` says "nothing here" while the query is still in flight,
+and on a dozen panels "nothing here" was a claim: *nothing is late into
+Assembly*, *no day is over capacity*, *nothing has been started and left
+unfinished*, *the plan commits the factory to nothing yet*, *no run yet*. On
+PGlite the first load is seconds long; on Supabase it is a round trip per
+view; either way the claim was on screen before the answer. Attention and
+the Forecast's readiness panel had been fixed on 30 Aug and nothing else
+had followed.
 
-**The change** (`Gantt.tsx` only; no migration, no data). The track
-covers every date on the page — start, end, deadline and container day of
-every row — with three days either side, so a passed container day is a
-point on the track to the left of today; the dates decide the track, never
-the other way round. Twenty pixels a day for the whole horizon, a short one
-stretched to fill the panel; the rows sit in a scroll container (75vh,
-both axes), the label column a CSS variable on it and the track a fixed
-width, with the label cells `sticky left` and the ruler `sticky top`.
-Opens with today a quarter in. The past is shaded on every track. Every
-track is `overflow-hidden` — the airtight part Nishad asked for: a date
-that somehow fell outside is cut at the edge, never drawn across a label.
-An order whose container day has gone is tagged *Container day passed*
-beside its number, so the marker shows where and the tag says what. The
-labels are tidied into number, tags, details. GUIDE's Schedule section
-says all this.
+**One pattern, lifted from Attention.** `stateOf(query)` and
+`stateOfAll(...queries)` → `loading | failed | ready` (`src/lib/query-state.ts`,
+out of the components file for the fast-refresh rule that moved `useTab`);
+`Waiting` in `ui.tsx` says "Loading…" (or the panel's own words) and, on a
+failure, that the failure is about the screen and not the factory; the
+state sits on the panel's element as `data-state`. A panel's meta says
+nothing until ready — "nothing to chase", "all clear", "0 flagged days" were
+claims too. Where a query hangs off the current run or a chosen department
+it stays pending forever without one, so "no run" and "no department yet"
+are decided first: no run is a real answer, no department chosen is loading.
 
-**Checked.** A new browser step, *schedule scrolls*: the container is
-wider than its panel, every container-day marker's `offsetLeft` is inside
-its track, today is within the visible part on opening, and the track's
-`data-from..data-to` covers the earliest and latest `data-stuffing` on
-the page. The demonstration book has no passed container day — the track
-starts in August because one order's late work sits there — so the step
-first adds an order stuffed ten days ago through the Order book, then
-requires it tagged *Container day passed* with its marker on the track:
-the exact defect, observable. Eleven container days on a track from
-August 2026 to March 2027 at 20px a day, about 4,200px in a 1,300px panel.
-The drag step scrolls the bar into view first and caps the drag at 300px,
-because a fifth of the track is now a month. 52 of 52; typecheck clean.
-The page-level "nothing scrolls sideways" check is untouched: the scroll
-is inside the panel, as the heatmap's is.
+**The screens**: Command centre (header, four tiles as "…" in ink rather
+than green, bottleneck table, flag triage), My department (both panels),
+the floor display (both panels, in its own type), Quality (three panels),
+WIP (two), Material (two, and the drill-down that said "Loading…" forever on
+an empty result now says what it means), Manpower (two), Money (cash out),
+Dashboard (the ten figures and planned against made), Production (the
+worklist, and "other days" while they are looked for), Load heatmap (no run
+versus loading, and the day's detail), Factory map (loading before "no route
+yet"), Order book, What if (what changed; the runs count), Forecast
+(shipment risk), Masters (holidays, machines). The shrugs — "no articles
+yet", "nothing matches" — were left alone.
 
+**The checks learned to wait for `ready`** instead of a timer: the browser
+check's attention, forecast, production and department-board steps,
+`capture-screens`' settle (no `[data-state="loading"]` left on the page),
+and the hosted check's "an empty plan says so", which now also asserts the
+In-progress panel is ready and says one of its two honest things.
+
+**Ready is not current.** The first browser run failed exactly one step:
+Attention said 14 critical, the badge said 44. Every write invalidates every
+query; the badge is mounted on every screen and had refetched after each
+write, while the Attention screen, mounted fresh, rendered its cached list,
+called it `ready`, and refetched in the background. The 700 ms timer the
+step had replaced was quietly covering that refetch. So a query with an
+answer and a fetch in flight is a fourth state, `refreshing`: the panel
+keeps showing what it has (a flash of "Loading…" over a worklist on every
+declaration would be worse), the attribute says so, and the checks wait for
+`ready`. There is no race in it — TanStack Query's first render after a
+mount with stale data already reports `isFetching`. §5 has the gotcha.
+50 browser checks, 416 tests (ten on the helpers). KRAM/10's open-items
+row is closed. GUIDE gained a short section under *Reading the numbers*.
+
+### 2026-10-12 — Late work keeps its order
+
+Item 4 of the 12 Oct ranking (§8), chosen by Nishad. Since the plan learned
+from the floor, a job that is behind has been re-planned forward from today —
+and every such job started on the same day. The forward placement anchored on
+`p_today` alone, and the runway test compares a task's start with its
+feeders' *due dates*, which for work that is behind are in the past, so it
+never fired. The sample book showed it plainly: 214 late tasks, all starting
+on the run day, Assembly on chairs whose covers Stitching also started that
+morning. A factory is behind by default, so this was the first thing real
+declarations would have exposed.
+
+**The rule** (§4): a task is behind when the latest start that still meets
+its date is before the first day it can actually begin — the first working
+day from today, or the working day after the last department upstream of it
+ends, whichever is later. Decided one route depth at a time from the entry
+points, so every feeder has its end before the department it feeds is asked.
+Upstream is the closure, restricted to departments with something left to
+make on the same line: a skipped department does not break the chain, a
+feeder that declared the whole job holds nothing, one that has not declared
+does. A feeder's delay carries down the route — a department that was on time
+on its own account is behind because its feeder is, and starts after it. Pins
+are untouched. The runway test no longer applies to a late task, which is
+after its feeders by construction.
+
+**One migration**, `20261012100000_late_work_keeps_its_order.sql`,
+regenerated from the text of its predecessor: backward placement lands in a
+table (`_pb`), forward placement in passes into another (`_fwd`) — pins
+first, then the depths — and `_final` reads both. `attention_behind`
+counts the rate a department needs from the day it can actually start and
+says which day ("needs 4 a day from 13 Nov against 3"; "cannot start before
+24 Dec, which is past its date"). No client code. GUIDE: Schedule, Late,
+What feeds what, Attention.
+
+**Measured.** Dumps on the sparse and dense fixtures with no day given are
+byte-identical before and after. As a planner, dense 4.1 s with a day and
+4.1 s without; um4 (four components a cell) 51 s with and 51 s without,
+against the 53 s recorded on 11 Oct. One cold pass with a day read 63 s and
+did not reproduce in three further runs (4.3 s, 4.1 s, 4.3 s); it followed
+the previous bench's Postgres shutdown, which was still writing its
+checkpoint. `bench:engine` gained `--today=<date>` so the depth passes can
+be timed at all. Six new tests under "late work keeps its order" (the chain,
+a finished feeder, an undeclared one, an on-time feeder with the delay
+carrying down, a pinned feeder, a fork where the later feeder decides); two
+older tests that assumed Stitching starts on the run day now check the entry
+point. 422 tests.
+
+**Live, 12 Oct.** Pushed by Nishad on the go; `verify:live` green; Run
+pressed once on the Command centre (the engine in 2.0 s, as of 12 Oct). On
+that run, checked against the real route edges from a signed-in script: of
+the 979 (late department, department upstream of it with work left) pairs
+on the sample book, **979 start after the upstream one ends**. On the two
+old-engine runs from 11 Oct, **0 of 907** did — every late department began
+on the run day. All 220 tasks are late now (214 before): the six that had
+fitted on their own are behind because what feeds them is. The chain ends on
+28 Nov. Attention reads 270 critical. `schedule_gantt` carries every run and
+the client filters by `run_id` — a script that reads it without the filter
+counts every run ever made, which is how a first snapshot read 2,420 tasks
+for a 220-task book. KRAM/09 regenerated against the run.
+
+### 2026-10-12 — Late is the task's own delay; a feeder's is runway
+
+Found in the regenerated KRAM/09, the same afternoon: on *Accept an order*,
+a proposed order's steps whose D-minus windows are too narrow read "Late —
+what remains was re-planned from today and still overruns the due date". For
+an order that has not been placed yet. The day before they read Runway, which
+said why. The placement from the entry below is right and stays; the reason
+was wrong. `20261012110000_late_is_its_own_delay.sql`, regenerated from the
+text of its predecessor: `_fwd` carries whether the delay is the task's own
+(its latest start before the first working day from today), and the breach
+case reads *late* for that and *runway* for a miss caused by what feeds it.
+With no day given nothing moves: the flag is only set in the depth passes.
+GUIDE's two breach rows and the Schedule paragraph say which word means
+which. On the sample book nothing visible changes — all 220 are behind on
+their own account. **Live the same day**: pushed by Nishad; `verify:live`
+green; the hosted check green at 270 critical. The current run is still the
+morning's (under the new engine it would be the same plan, every job being
+behind on its own account); *Accept an order* is computed afresh and its
+too-narrow steps read Runway again — KRAM/09's stop 6 re-taken against the
+live site, and looked at.
+
+### 2026-10-12 — One order, start to finish (KRAM/12)
+
+Asked for "a user journey from an order that might come in, to that order
+coming into production, till it goes out — that would simply explain how
+this app works to everyone — as a PDF with screenshots, using one of U&M's
+items". KRAM/09 tours nine screens and KRAM/11 shows every control; neither
+follows one order through. So: `docs/order-journey.html`, DBBS/UM/KRAM/12,
+fourteen pages, fifteen pictures, eleven stops.
+
+```
+npm run journey                     # ~10 min on the demonstration build
+npm run pdf docs/order-journey.html
+```
+
+**The order.** 240 of U&M's Betsy Counter Stool (`UT263 SPWL COU`), for
+Nordic Living, container 15 Feb 2027 — the article passes through all
+fourteen departments and carries metal and leather, so every screen on the
+way has something to say. The journey: Accept an order refuses the date the
+customer first asked for and says yes to the one that can be promised; the
+order is entered once; the Schedule shows fourteen bars counted back from
+the container; Material says what to buy and by when; Ply Cutting enters its
+first day; Assembly counts in what Machining sent, two short, and the
+difference is kept; WIP shows the line half-way through its route; the wall
+display for Stitching; a run after the wood side has declared shows those
+departments as *Made* and the rest re-planned from what remains; and when
+the last department has declared, the line is under *Ready to stuff* and the
+dashboard counts the container. A closing table says who at U&M does what,
+on which screen, when.
+
+**Why the demonstration build.** The journey writes — an order, forty-odd
+declarations, fourteen handovers, a run — and nothing touches the live
+project without a go. The demonstration build carries U&M's departments,
+six of their articles and the real route on invented speeds; the first page
+of the document says the dates follow from stand-in figures. A fresh browser
+context rebuilds the demonstration database from the seed, so every run
+starts from the same place and leaves nothing behind.
+
+**How it is made.** `scripts/make-journey.mjs` drives the screens as a user
+would (the department's select, the date field, the Good and Rejected
+boxes, Enter, Count in) and reads every figure the text quotes off the
+screen in the same visit; `scripts/lib/journey-page.mjs` is the words. Each
+department's whole job is declared a day at a time, exactly as the plan
+asked, with one piece over on the last day: the requirement carries yield
+(279.4 shows as 279 on the bar) and a department that declares the rounded
+figure stays a fraction short of *complete* for ever — which is how the
+first run of the script found Ply Cutting and Machining still "in progress"
+at 279 of 279. The pictures are not committed (`docs/journey/` is ignored);
+`make-pdf.mjs` inlines them.
+
+### 2026-10-12 — Taken against the plan, and planned against made as a picture
+
+Two points from Nishad after reading KRAM/12. **"U&M sometimes accept an
+order even when the plan says it is not possible."** The software allowed
+it — the Order book takes any order, the Schedule shows the breaches,
+Attention lists them, What if explores remedies — but nothing recorded that
+it was a decision, the merchandiser re-typed the order they had just
+checked, and KRAM/12's stop 2 read as if one only accepts on Yes. Now (§4):
+*Take it anyway* / *Add it to the book* under the verdict on Accept an order
+carries the checked line to the Order book's form in the address
+(`#/orders?add=1&article=…&qty=…&stuffing=…&breaches=N`); the form asks
+"why we are taking it", required when the check failed; `orders` gains
+`accepted_against_plan`, `acceptance_note`, `breaches_at_acceptance`;
+`create_order` is re-created with the three (new signature, old dropped)
+and refuses a reasonless one; `order_book` carries them, the row and the
+Schedule header wear a grey *Taken against the plan* tag with the reason on
+hover, and `attention_breach`'s detail ends "· taken against the plan:
+<reason>". Migration `20261012120000_taken_against_the_plan.sql`. Three
+tests in `tests/api.test.ts`; a browser step "take it anyway" straight on
+from the refused 5,000-unit check.
+
+**"Where can we see what is made at the end of the day against what was
+planned, as a chart?"** It was the Dashboard's "Planned against made" table
+(department × day, from `production_vs_plan`), the day's jobs on
+Production, and WIP's cumulative counts — no picture. Units are not additive
+across departments, so no factory-wide bar: the panel now opens with a
+**grid** — one row per department in route order, one column per working day
+of the last fourteen (Sundays out, local dates), each cell its own made ÷
+planned: green met, amber 70–99%, red under, striped made-with-nothing-
+planned, grey nothing — the Load heatmap's idiom; clicking a row draws that
+department's fortnight as **bar pairs** (planned grey, made coloured, rejected
+on top) and cuts the table to it. **My department** gains "The last 14 days",
+the same bars for the chosen department. The Production header reads "made
+19 of 19 planned" once anything is in. `src/lib/plan-vs-made.ts` (the
+shaping, unit-tested in `tests/plan-vs-made.test.ts`),
+`src/components/charts.tsx` (SVG and CSS, no library; the grid carries
+`data-dense-grid` like the heatmap, so the thumb-size check knows 24px rows
+are a decision). No SQL. Browser check: the dashboard step asserts the grid
+(14 columns, a chosen department's bars, the table cut to it) and the board
+step the fortnight panel.
+
+430 tests, 51 browser checks. GUIDE: Accept an order, Order
+book, Dashboard, My department. KRAM/12 stop 1 says what *Take it anyway*
+does and its picture marks the button; the document regenerated.
+
+### 2026-10-12 — Five items, three days: the mock run (KRAM/13)
+
+Asked for "a mock check for five items where you can check everything —
+overlapping orders and such — enter data as HODs, EOD target, actuals, all
+of it, and then a manual of its walkthrough using the same data so we can
+be on the same page". So: `scripts/make-mock-run.mjs`, `npm run mock-run`,
+and `docs/mock-run.html`, DBBS/UM/KRAM/13, seventeen pages, twenty pictures,
+twenty-one checks — eighteen as expected, three not, and the three are the
+findings.
+
+**The run.** Six orders on five items (two on the same weeks and route for
+the overlap, one in two containers, one refused by the check and taken
+anyway with a reason, one a second order of an item already running), each
+checked on Accept an order and entered from the verdict. Then three days on
+the floor, every one through the screens as the HOD would: attendance
+(Stitching 20 of 22 in), end-of-day good and rejected per job in every
+department with mock work planned that day (Machining 60% of target on day
+1, 85% on day 2, caught up on day 3; Sanding rejects four), handovers
+counted in the next morning (Assembly two short, kept), a Stitching machine
+booked down for day 2, a stock count on day 3, a second shift in Stitching
+tried on What if. The schedule is run after each day and the Command
+centre, Attention, the Dashboard (KPIs and the grid cell for the day), WIP
+and the Schedule are read into the facts. The manual lays it out day by
+day with the entries beside the pictures, and ends with twenty-one checks —
+expected, what the screen said, pass or not — so the next run can be
+compared with this one.
+
+**Venue.** The demonstration build first (its six articles are U&M's, on
+invented speeds and D-minus; the mock removes the demo's seed orders so the
+book holds only its own). `--items` and a login point it at the live site —
+on a go, because it writes through every screen; `--clear=SAMPLE-` would
+remove the decayed sample book through the Order book on the way in, which
+is the plan for the live run once the corrected D-minus is loaded (§8).
+
+**Found on the way — one for the engine.** The evening run re-plans
+today's remainder *onto today*. A department that entered half its target
+at the end of the day and ran the schedule saw today's planned figure on
+the grid drop from 220 to 187: the run is told it is today, keeps the days
+before today frozen, and places what remains from today — which is right
+at eight in the morning and wrong at six in the evening, when today is
+over for that department. The mock's check for "Machining short, red"
+reads amber for that reason, and the manual says so. The honest rule is
+per department and day: **a day a department has entered is over for that
+department** — frozen like the days before it, with the remainder placed
+from the next working day. One migration (the frozen copy and the forward
+anchor gain that condition), to be put as three lines. Until then the
+morning run is the one to read targets from. In this run Machining entered
+33 of a 65 target and the evening grid read "made 33 of 32 planned, 103%",
+green — the day's target rewritten to meet what was made, which is the
+exact failure the project's conventions exist to prevent. The second half
+of the same finding: the Schedule after the evening run placed Machining's
+remainder on today again (check 17), not tomorrow.
+
+**A second, smaller one.** A "behind" card on Attention does not carry
+"taken against the plan: <reason>"; only a breach card does, and an order
+taken against the plan on short notice is behind on every step, so its
+reason is on the book and the Schedule but not on the card that chases it
+(check 4). `attention_behind` should say it as `attention_breach` does —
+the same migration as the department-day freeze.
+
+**Also found.** The empty state markers (`order-book-state`,
+`bottlenecks`) are zero-size elements once ready, so a Playwright wait on
+them must be for `attached`, not `visible` — the second script to learn
+it (§5 has the first). The demonstration build's D-minus (eighty working
+days for a stool's first step) means any container under four months out
+is already late, which is why the orders are dated from the item's own
+D-minus and not from a number of weeks; on the live site, with the
+corrected D-minus, the same calibration gives the same shape.
+
+### 2026-10-14 — Quantity pulls the chain
 
 Nishad's question: "a product having 300 quantity and one having 1,000 —
 their D-minus will differ." Before changing anything the whole flow was
@@ -2359,304 +2628,123 @@ migration (§8.2 item 0) rather than a push of its own.
 day; the guide did not say which. U&M's sheet almost certainly means
 calendar days. Added to the questions for the PPC session (§8.4).
 
-### 2026-10-12 — Five items, three days: the mock run (KRAM/13)
+### 2026-10-14 — The Schedule scrolls, and nothing leaves its track
 
-Asked for "a mock check for five items where you can check everything —
-overlapping orders and such — enter data as HODs, EOD target, actuals, all
-of it, and then a manual of its walkthrough using the same data so we can
-be on the same page". So: `scripts/make-mock-run.mjs`, `npm run mock-run`,
-and `docs/mock-run.html`, DBBS/UM/KRAM/13, seventeen pages, twenty pictures,
-twenty-one checks — eighteen as expected, three not, and the three are the
-findings.
+Nishad, with a screenshot of the live Schedule: "it's not looking good,
+there are some lines", and "make it scrollable horizontally, as the heat
+map is". The lines were container-day markers. The track began at the
+earliest planned start — for late work, today — so an order whose container
+day had already passed (3 Oct, 10 Oct on the sample book) had its marker
+at a negative position, drawn off the left edge of the track and across the
+"20 cannot be made in time" tag. The same screen squeezed the whole span
+into the panel at a few pixels a day.
 
-**The run.** Six orders on five items (two on the same weeks and route for
-the overlap, one in two containers, one refused by the check and taken
-anyway with a reason, one a second order of an item already running), each
-checked on Accept an order and entered from the verdict. Then three days on
-the floor, every one through the screens as the HOD would: attendance
-(Stitching 20 of 22 in), end-of-day good and rejected per job in every
-department with mock work planned that day (Machining 60% of target on day
-1, 85% on day 2, caught up on day 3; Sanding rejects four), handovers
-counted in the next morning (Assembly two short, kept), a Stitching machine
-booked down for day 2, a stock count on day 3, a second shift in Stitching
-tried on What if. The schedule is run after each day and the Command
-centre, Attention, the Dashboard (KPIs and the grid cell for the day), WIP
-and the Schedule are read into the facts. The manual lays it out day by
-day with the entries beside the pictures, and ends with twenty-one checks —
-expected, what the screen said, pass or not — so the next run can be
-compared with this one.
+**The change** (`Gantt.tsx` only; no migration, no data). The track
+covers every date on the page — start, end, deadline and container day of
+every row — with three days either side, so a passed container day is a
+point on the track to the left of today; the dates decide the track, never
+the other way round. Twenty pixels a day for the whole horizon, a short one
+stretched to fill the panel; the rows sit in a scroll container (75vh,
+both axes), the label column a CSS variable on it and the track a fixed
+width, with the label cells `sticky left` and the ruler `sticky top`.
+Opens with today a quarter in. The past is shaded on every track. Every
+track is `overflow-hidden` — the airtight part Nishad asked for: a date
+that somehow fell outside is cut at the edge, never drawn across a label.
+An order whose container day has gone is tagged *Container day passed*
+beside its number, so the marker shows where and the tag says what. The
+labels are tidied into number, tags, details. GUIDE's Schedule section
+says all this.
 
-**Venue.** The demonstration build first (its six articles are U&M's, on
-invented speeds and D-minus; the mock removes the demo's seed orders so the
-book holds only its own). `--items` and a login point it at the live site —
-on a go, because it writes through every screen; `--clear=SAMPLE-` would
-remove the decayed sample book through the Order book on the way in, which
-is the plan for the live run once the corrected D-minus is loaded (§8).
+**Checked.** A new browser step, *schedule scrolls*: the container is
+wider than its panel, every container-day marker's `offsetLeft` is inside
+its track, today is within the visible part on opening, and the track's
+`data-from..data-to` covers the earliest and latest `data-stuffing` on
+the page. The demonstration book has no passed container day — the track
+starts in August because one order's late work sits there — so the step
+first adds an order stuffed ten days ago through the Order book, then
+requires it tagged *Container day passed* with its marker on the track:
+the exact defect, observable. Eleven container days on a track from
+August 2026 to March 2027 at 20px a day, about 4,200px in a 1,300px panel.
+The drag step scrolls the bar into view first and caps the drag at 300px,
+because a fifth of the track is now a month. 52 of 52; typecheck clean.
+The page-level "nothing scrolls sideways" check is untouched: the scroll
+is inside the panel, as the heatmap's is.
 
-**Found on the way — one for the engine.** The evening run re-plans
-today's remainder *onto today*. A department that entered half its target
-at the end of the day and ran the schedule saw today's planned figure on
-the grid drop from 220 to 187: the run is told it is today, keeps the days
-before today frozen, and places what remains from today — which is right
-at eight in the morning and wrong at six in the evening, when today is
-over for that department. The mock's check for "Machining short, red"
-reads amber for that reason, and the manual says so. The honest rule is
-per department and day: **a day a department has entered is over for that
-department** — frozen like the days before it, with the remainder placed
-from the next working day. One migration (the frozen copy and the forward
-anchor gain that condition), to be put as three lines. Until then the
-morning run is the one to read targets from. In this run Machining entered
-33 of a 65 target and the evening grid read "made 33 of 32 planned, 103%",
-green — the day's target rewritten to meet what was made, which is the
-exact failure the project's conventions exist to prevent. The second half
-of the same finding: the Schedule after the evening run placed Machining's
-remainder on today again (check 17), not tomorrow.
+### 2026-10-14 — D-minus: from a figure PPC types to one the engine prints (discussed, not decided)
 
-**A second, smaller one.** A "behind" card on Attention does not carry
-"taken against the plan: <reason>"; only a breach card does, and an order
-taken against the plan on short notice is behind on every step, so its
-reason is on the book and the Schedule but not on the card that chases it
-(check 4). `attention_behind` should say it as `attention_breach` does —
-the same migration as the department-day freeze.
+Nishad, after the pull went live: "what is the best way to calculate the
+number of days required? Sometimes 500 pieces come and sometimes 1,000. If
+we have the pieces a department can make, the shipping date and the
+quantity, can we use that to plot the D-minus for an order?" — and then,
+"I'm still a bit confused; how does our D-minus tie in?"
 
-**Also found.** The empty state markers (`order-book-state`,
-`bottlenecks`) are zero-size elements once ready, so a Playwright wait on
-them must be for `attached`, not `visible` — the second script to learn
-it (§5 has the first). The demonstration build's D-minus (eighty working
-days for a stool's first step) means any container under four months out
-is already late, which is why the orders are dated from the item's own
-D-minus and not from a number of weeks; on the live site, with the
-corrected D-minus, the same calibration gives the same shape.
+**What is true since this morning.** Days needed already come from quantity
+÷ the article-wise rate, day by day; the window ends on the D-minus date or
+earlier if the next department needs the days; the pull propagates. So the
+D-minus is only a *latest finish* now. What it still carries, mixed in, is
+the time between departments that is not production — drying after
+finishing, inspection, moving the lot, a margin before packing — which a
+rate cannot give.
 
-### 2026-10-12 — Taken against the plan, and planned against made as a picture
+**The recommendation given.** Turn D-minus from an input into an output.
+Inputs become the rate per article per department (the Capacity sheet's
+*units per day*, which U&M has a section for) and **handover days per
+department** (about twenty numbers, independent of article and quantity:
+"once you finish a lot, how many days before the next department can start
+on it?"). From those the engine works back from the container — Ex-factory
+on the date, Packing needs quantity ÷ rate, so it must start by a date, so
+QC must finish the day before, and so on up the route — and prints a
+D-minus *per order* per department. For 300 stools Packing reads "by D-9";
+for 1,000 of the same stool "by D-26". That is the difference U&M describe
+("their D-minus will differ"), computed instead of remembered, which is
+why the sheet is wrong: it was always a calculation done by a person. The
+sheet's D-minus view becomes a printout; Accept an order already shows the
+dates per department for the quantity asked; a one-page "how this order
+should run" per order falls out of it. A pin keeps the way to tighten a
+date by hand. One migration, the sheet's view, the printable page.
 
-Two points from Nishad after reading KRAM/12. **"U&M sometimes accept an
-order even when the plan says it is not possible."** The software allowed
-it — the Order book takes any order, the Schedule shows the breaches,
-Attention lists them, What if explores remedies — but nothing recorded that
-it was a decision, the merchandiser re-typed the order they had just
-checked, and KRAM/12's stop 2 read as if one only accepts on Yes. Now (§4):
-*Take it anyway* / *Add it to the book* under the verdict on Accept an order
-carries the checked line to the Order book's form in the address
-(`#/orders?add=1&article=…&qty=…&stuffing=…&breaches=N`); the form asks
-"why we are taking it", required when the check failed; `orders` gains
-`accepted_against_plan`, `acceptance_note`, `breaches_at_acceptance`;
-`create_order` is re-created with the three (new signature, old dropped)
-and refuses a reasonless one; `order_book` carries them, the row and the
-Schedule header wear a grey *Taken against the plan* tag with the reason on
-hover, and `attention_breach`'s detail ends "· taken against the plan:
-<reason>". Migration `20261012120000_taken_against_the_plan.sql`. Three
-tests in `tests/api.test.ts`; a browser step "take it anyway" straight on
-from the refused 5,000-unit check.
+**Two cautions said.** A rate is "doing nothing else", so overlapping
+orders are both planned at full rate and the heatmap flags the days over —
+placing a new order in the days that are *left* (finite capacity) is the
+step after this one. And every date is only as good as the rates; at the
+stand-in 40 a day each answer is a placeholder.
 
-**"Where can we see what is made at the end of the day against what was
-planned, as a chart?"** It was the Dashboard's "Planned against made" table
-(department × day, from `production_vs_plan`), the day's jobs on
-Production, and WIP's cumulative counts — no picture. Units are not additive
-across departments, so no factory-wide bar: the panel now opens with a
-**grid** — one row per department in route order, one column per working day
-of the last fourteen (Sundays out, local dates), each cell its own made ÷
-planned: green met, amber 70–99%, red under, striped made-with-nothing-
-planned, grey nothing — the Load heatmap's idiom; clicking a row draws that
-department's fortnight as **bar pairs** (planned grey, made coloured, rejected
-on top) and cuts the table to it. **My department** gains "The last 14 days",
-the same bars for the chosen department. The Production header reads "made
-19 of 19 planned" once anything is in. `src/lib/plan-vs-made.ts` (the
-shaping, unit-tested in `tests/plan-vs-made.test.ts`),
-`src/components/charts.tsx` (SVG and CSS, no library; the grid carries
-`data-dense-grid` like the heatmap, so the thumb-size check knows 24px rows
-are a decision). No SQL. Browser check: the dashboard step asserts the grid
-(14 columns, a chosen department's bars, the table cut to it) and the board
-step the fortnight panel.
+**What this does to the data owed (§8.4).** The per-article D-minus
+correction Nishad was going to send stops being the thing to chase. Two
+things replace it: the real rates, and the handover days per department.
+The calendar-versus-working-days question (8a) is moot if D-minus is
+computed.
 
-430 tests, 51 browser checks. GUIDE: Accept an order, Order
-book, Dashboard, My department. KRAM/12 stop 1 says what *Take it anyway*
-does and its picture marks the button; the document regenerated.
+**Status: not decided.** Three lines are ready; waiting for the go. Until
+then the engine runs as it has since this morning, which is safe: a
+D-minus that is too late is harmless (the pull covers it), one that is too
+early costs — it forces work earlier than needed and can refuse an order
+that fits — and that is the case the computed D-minus removes.
 
-### 2026-10-12 — One order, start to finish (KRAM/12)
+**Also asked, same evening, with a screenshot of an opened line.** "There
+are vertical lines before the red bars, and a cutoff line on the date —
+what are they? Can we hover and get a reading?" They are the three marks
+in the legend: the thin black line in each department row is that
+department's deadline from the D-minus; the black mark in the order's strip
+is the container day; the blue line is today. On the sample book the
+container days (3 Oct, 10 Oct) have passed, so every deadline sits in
+August and September and all the work is placed from today in red — the
+picture of an order that was late before Kram saw it. The deadline marker
+cannot be hovered: it is `pointer-events-none` so that a one-pixel line
+inside a bar does not swallow the drag (an earlier defect). Proposed as
+three lines: a hover reading on every marker through a wider, transparent
+hit area drawn *under* the bar, so the bar still wins the drag; the
+reading says which it is and the date. §8.2 item 5.
 
-Asked for "a user journey from an order that might come in, to that order
-coming into production, till it goes out — that would simply explain how
-this app works to everyone — as a PDF with screenshots, using one of U&M's
-items". KRAM/09 tours nine screens and KRAM/11 shows every control; neither
-follows one order through. So: `docs/order-journey.html`, DBBS/UM/KRAM/12,
-fourteen pages, fifteen pictures, eleven stops.
-
-```
-npm run journey                     # ~10 min on the demonstration build
-npm run pdf docs/order-journey.html
-```
-
-**The order.** 240 of U&M's Betsy Counter Stool (`UT263 SPWL COU`), for
-Nordic Living, container 15 Feb 2027 — the article passes through all
-fourteen departments and carries metal and leather, so every screen on the
-way has something to say. The journey: Accept an order refuses the date the
-customer first asked for and says yes to the one that can be promised; the
-order is entered once; the Schedule shows fourteen bars counted back from
-the container; Material says what to buy and by when; Ply Cutting enters its
-first day; Assembly counts in what Machining sent, two short, and the
-difference is kept; WIP shows the line half-way through its route; the wall
-display for Stitching; a run after the wood side has declared shows those
-departments as *Made* and the rest re-planned from what remains; and when
-the last department has declared, the line is under *Ready to stuff* and the
-dashboard counts the container. A closing table says who at U&M does what,
-on which screen, when.
-
-**Why the demonstration build.** The journey writes — an order, forty-odd
-declarations, fourteen handovers, a run — and nothing touches the live
-project without a go. The demonstration build carries U&M's departments,
-six of their articles and the real route on invented speeds; the first page
-of the document says the dates follow from stand-in figures. A fresh browser
-context rebuilds the demonstration database from the seed, so every run
-starts from the same place and leaves nothing behind.
-
-**How it is made.** `scripts/make-journey.mjs` drives the screens as a user
-would (the department's select, the date field, the Good and Rejected
-boxes, Enter, Count in) and reads every figure the text quotes off the
-screen in the same visit; `scripts/lib/journey-page.mjs` is the words. Each
-department's whole job is declared a day at a time, exactly as the plan
-asked, with one piece over on the last day: the requirement carries yield
-(279.4 shows as 279 on the bar) and a department that declares the rounded
-figure stays a fraction short of *complete* for ever — which is how the
-first run of the script found Ply Cutting and Machining still "in progress"
-at 279 of 279. The pictures are not committed (`docs/journey/` is ignored);
-`make-pdf.mjs` inlines them.
-
-### 2026-10-12 — Late is the task's own delay; a feeder's is runway
-
-Found in the regenerated KRAM/09, the same afternoon: on *Accept an order*,
-a proposed order's steps whose D-minus windows are too narrow read "Late —
-what remains was re-planned from today and still overruns the due date". For
-an order that has not been placed yet. The day before they read Runway, which
-said why. The placement from the entry below is right and stays; the reason
-was wrong. `20261012110000_late_is_its_own_delay.sql`, regenerated from the
-text of its predecessor: `_fwd` carries whether the delay is the task's own
-(its latest start before the first working day from today), and the breach
-case reads *late* for that and *runway* for a miss caused by what feeds it.
-With no day given nothing moves: the flag is only set in the depth passes.
-GUIDE's two breach rows and the Schedule paragraph say which word means
-which. On the sample book nothing visible changes — all 220 are behind on
-their own account. **Live the same day**: pushed by Nishad; `verify:live`
-green; the hosted check green at 270 critical. The current run is still the
-morning's (under the new engine it would be the same plan, every job being
-behind on its own account); *Accept an order* is computed afresh and its
-too-narrow steps read Runway again — KRAM/09's stop 6 re-taken against the
-live site, and looked at.
-
-### 2026-10-12 — Late work keeps its order
-
-Item 4 of the 12 Oct ranking (§8), chosen by Nishad. Since the plan learned
-from the floor, a job that is behind has been re-planned forward from today —
-and every such job started on the same day. The forward placement anchored on
-`p_today` alone, and the runway test compares a task's start with its
-feeders' *due dates*, which for work that is behind are in the past, so it
-never fired. The sample book showed it plainly: 214 late tasks, all starting
-on the run day, Assembly on chairs whose covers Stitching also started that
-morning. A factory is behind by default, so this was the first thing real
-declarations would have exposed.
-
-**The rule** (§4): a task is behind when the latest start that still meets
-its date is before the first day it can actually begin — the first working
-day from today, or the working day after the last department upstream of it
-ends, whichever is later. Decided one route depth at a time from the entry
-points, so every feeder has its end before the department it feeds is asked.
-Upstream is the closure, restricted to departments with something left to
-make on the same line: a skipped department does not break the chain, a
-feeder that declared the whole job holds nothing, one that has not declared
-does. A feeder's delay carries down the route — a department that was on time
-on its own account is behind because its feeder is, and starts after it. Pins
-are untouched. The runway test no longer applies to a late task, which is
-after its feeders by construction.
-
-**One migration**, `20261012100000_late_work_keeps_its_order.sql`,
-regenerated from the text of its predecessor: backward placement lands in a
-table (`_pb`), forward placement in passes into another (`_fwd`) — pins
-first, then the depths — and `_final` reads both. `attention_behind`
-counts the rate a department needs from the day it can actually start and
-says which day ("needs 4 a day from 13 Nov against 3"; "cannot start before
-24 Dec, which is past its date"). No client code. GUIDE: Schedule, Late,
-What feeds what, Attention.
-
-**Measured.** Dumps on the sparse and dense fixtures with no day given are
-byte-identical before and after. As a planner, dense 4.1 s with a day and
-4.1 s without; um4 (four components a cell) 51 s with and 51 s without,
-against the 53 s recorded on 11 Oct. One cold pass with a day read 63 s and
-did not reproduce in three further runs (4.3 s, 4.1 s, 4.3 s); it followed
-the previous bench's Postgres shutdown, which was still writing its
-checkpoint. `bench:engine` gained `--today=<date>` so the depth passes can
-be timed at all. Six new tests under "late work keeps its order" (the chain,
-a finished feeder, an undeclared one, an on-time feeder with the delay
-carrying down, a pinned feeder, a fork where the later feeder decides); two
-older tests that assumed Stitching starts on the run day now check the entry
-point. 422 tests.
-
-**Live, 12 Oct.** Pushed by Nishad on the go; `verify:live` green; Run
-pressed once on the Command centre (the engine in 2.0 s, as of 12 Oct). On
-that run, checked against the real route edges from a signed-in script: of
-the 979 (late department, department upstream of it with work left) pairs
-on the sample book, **979 start after the upstream one ends**. On the two
-old-engine runs from 11 Oct, **0 of 907** did — every late department began
-on the run day. All 220 tasks are late now (214 before): the six that had
-fitted on their own are behind because what feeds them is. The chain ends on
-28 Nov. Attention reads 270 critical. `schedule_gantt` carries every run and
-the client filters by `run_id` — a script that reads it without the filter
-counts every run ever made, which is how a first snapshot read 2,420 tasks
-for a 220-task book. KRAM/09 regenerated against the run.
-
-### 2026-10-11 — Loading is not empty, on every screen
-
-§8.2 item 3, chosen by Nishad after the engine learned from the floor.
-`query.data ?? []` says "nothing here" while the query is still in flight,
-and on a dozen panels "nothing here" was a claim: *nothing is late into
-Assembly*, *no day is over capacity*, *nothing has been started and left
-unfinished*, *the plan commits the factory to nothing yet*, *no run yet*. On
-PGlite the first load is seconds long; on Supabase it is a round trip per
-view; either way the claim was on screen before the answer. Attention and
-the Forecast's readiness panel had been fixed on 30 Aug and nothing else
-had followed.
-
-**One pattern, lifted from Attention.** `stateOf(query)` and
-`stateOfAll(...queries)` → `loading | failed | ready` (`src/lib/query-state.ts`,
-out of the components file for the fast-refresh rule that moved `useTab`);
-`Waiting` in `ui.tsx` says "Loading…" (or the panel's own words) and, on a
-failure, that the failure is about the screen and not the factory; the
-state sits on the panel's element as `data-state`. A panel's meta says
-nothing until ready — "nothing to chase", "all clear", "0 flagged days" were
-claims too. Where a query hangs off the current run or a chosen department
-it stays pending forever without one, so "no run" and "no department yet"
-are decided first: no run is a real answer, no department chosen is loading.
-
-**The screens**: Command centre (header, four tiles as "…" in ink rather
-than green, bottleneck table, flag triage), My department (both panels),
-the floor display (both panels, in its own type), Quality (three panels),
-WIP (two), Material (two, and the drill-down that said "Loading…" forever on
-an empty result now says what it means), Manpower (two), Money (cash out),
-Dashboard (the ten figures and planned against made), Production (the
-worklist, and "other days" while they are looked for), Load heatmap (no run
-versus loading, and the day's detail), Factory map (loading before "no route
-yet"), Order book, What if (what changed; the runs count), Forecast
-(shipment risk), Masters (holidays, machines). The shrugs — "no articles
-yet", "nothing matches" — were left alone.
-
-**The checks learned to wait for `ready`** instead of a timer: the browser
-check's attention, forecast, production and department-board steps,
-`capture-screens`' settle (no `[data-state="loading"]` left on the page),
-and the hosted check's "an empty plan says so", which now also asserts the
-In-progress panel is ready and says one of its two honest things.
-
-**Ready is not current.** The first browser run failed exactly one step:
-Attention said 14 critical, the badge said 44. Every write invalidates every
-query; the badge is mounted on every screen and had refetched after each
-write, while the Attention screen, mounted fresh, rendered its cached list,
-called it `ready`, and refetched in the background. The 700 ms timer the
-step had replaced was quietly covering that refetch. So a query with an
-answer and a fetch in flight is a fourth state, `refreshing`: the panel
-keeps showing what it has (a flash of "Loading…" over a worklist on every
-declaration would be worse), the attribute says so, and the checks wait for
-`ready`. There is no race in it — TanStack Query's first render after a
-mount with stale data already reports `isFetching`. §5 has the gotcha.
-50 browser checks, 416 tests (ten on the helpers). KRAM/10's open-items
-row is closed. GUIDE gained a short section under *Reading the numbers*.
+**And the record itself.** Asked whether every conversation is recorded
+and the documents are current. Decisions and why live in §4, dead ends in
+§5, open items in §6 and §8, the session-by-session account here in §9,
+and the manual in GUIDE.md; not transcripts, the decisions. Checked today:
+the afternoon's D-minus discussion was in chat only until this entry; the
+morning's "quantity pulls the chain" entry had lost its heading to the
+evening's Schedule entry (an edit anchored on it); and the entries since
+11 Oct had been prepended newest first against the section's own rule.
+All three put right.
 
 ### 2026-08-17 — Three asks, and a sheet PPC can actually fill in
 
