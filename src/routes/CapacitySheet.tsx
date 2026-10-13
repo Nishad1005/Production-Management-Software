@@ -610,10 +610,12 @@ function WorkbookPreview({
 }
 
 /**
- * The route is a single line, so the engine treats whichever department sits at
- * the previous position as the one that must finish first. When a D-minus says
- * otherwise, it holds work back behind something not yet due and raises breaches
- * that are not real — on a screen whose whole job is raising breaches.
+ * A department starts after everything feeding it has finished. When a D-minus
+ * says the feeder is due *later* than the department it feeds, the engine (since
+ * 14 Oct) pulls the feeder's finish earlier than its own D-minus to honour the
+ * later deadline — real work moved for a figure that is wrong, on a screen whose
+ * whole job is getting the figures right. Before that it held the work back and
+ * raised runway breaches that were not real.
  *
  * Reported, never corrected. Two figures a person entered disagree, and which of
  * them is wrong is not ours to decide.
@@ -633,8 +635,10 @@ function RouteConflicts({ rows }: { rows: RouteConflict[] }) {
         {biting.length ? (
           <>
             {' '}
-            <strong>{biting.length}</strong> of these affect scheduling now and
-            will show as runway breaches that are not real.
+            <strong>{biting.length}</strong> of these affect scheduling now: the
+            feeder is pulled earlier than its own D-minus to honour the later
+            deadline, which costs it days it may not have, and the Schedule says
+            &ldquo;N days earlier&rdquo; on it.
           </>
         ) : (
           ' None of them affects scheduling yet, because the articles do not pass through both departments.'
@@ -664,7 +668,7 @@ function RouteConflicts({ rows }: { rows: RouteConflict[] }) {
               </Td>
               <Td align="right">
                 {r.affects_scheduling ? (
-                  <Tag tone="flag">Causing breaches</Tag>
+                  <Tag tone="amber">Pulling the feeder earlier</Tag>
                 ) : (
                   <Tag tone="mid">Not routed through both</Tag>
                 )}

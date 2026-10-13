@@ -1067,7 +1067,7 @@ await action('capacity-conflict', 'Capacity sheet', 'Enter a day-count the route
   await editor().fill('70')
   await editor().press('Enter')
   await page.waitForSelector('text=A department is due before something that feeds it', { timeout: 60_000 })
-  await page.waitForSelector('text=Causing breaches', { timeout: 60_000 })
+  await page.waitForSelector('text=Pulling the feeder earlier', { timeout: 60_000 })
   await settle()
   const warning = panelWith('A department is due before something that feeds it')
   const during = await shot('capacity-conflict', 'warning', {
@@ -1090,8 +1090,8 @@ await action('capacity-conflict', 'Capacity sheet', 'Enter a day-count the route
   return {
     steps: [`Under D-minus, click sanding’s cell and type 70. Assembly feeds sanding and is at D-${assy}, so sanding would be due before assembly had finished.`, 'Read the warning panel that appears above the grid.', `Type ${was.replace(/\D/g, '')} again.`],
     images: [before, during, after],
-    changed: `The warning "A department is due before something that feeds it" appeared, marked "Causing breaches": sanding at D-70 against assembly at D-${assy}. Correcting the figure cleared it rather than leaving it to be dismissed.`,
-    why: 'The software will not guess which of the two numbers is wrong. While the contradiction stands, the engine holds the work behind something not yet due and reports breaches that are not real, so it says so loudly.',
+    changed: `The warning "A department is due before something that feeds it" appeared, marked "Pulling the feeder earlier": sanding at D-70 against assembly at D-${assy}. Correcting the figure cleared it rather than leaving it to be dismissed.`,
+    why: 'The software will not guess which of the two numbers is wrong. While the contradiction stands, the engine pulls the feeder earlier than its own D-minus to honour the later deadline — real work moved for a figure that is wrong — so it says so loudly.',
   }
 })
 

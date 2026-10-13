@@ -492,7 +492,7 @@ await step('route order guard', async () => {
   await page.waitForSelector('text=A department is due before something that feeds it', {
     timeout: 60_000,
   })
-  await page.waitForSelector('text=Causing breaches', { timeout: 60_000 })
+  await page.waitForSelector('text=Pulling the feeder earlier', { timeout: 60_000 })
   await page.screenshot({ path: `${outDir}/route-conflict.png`, fullPage: true })
 
   // Correcting it clears the warning rather than leaving it to be dismissed.

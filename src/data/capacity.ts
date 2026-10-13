@@ -147,10 +147,10 @@ export type RouteConflict = {
 }
 
 /**
- * Departments whose D-minus contradicts the route order — the later one has to
- * finish first. The engine compares each department against whichever sits at
- * the previous position, so this is what produces runway breaches that are not
- * real.
+ * Departments whose D-minus contradicts the route order — the one due later has
+ * to finish first. The engine honours the later deadline by pulling the feeder
+ * earlier than its own D-minus (14 Oct), so this is what moves real work for a
+ * figure that is wrong.
  */
 export function useRouteConflicts() {
   return useQuery({

@@ -829,9 +829,10 @@ function RouteDependencyGrid() {
       ) : null}
 
       <p className="text-faint mt-3 max-w-[80ch] text-caption">
-        This drives two things. A department is held back until everything
-        feeding it is due — so a feeder wired into the wrong place produces
-        runway breaches that are not real. And yield compounds along these edges,
+        This drives two things. A department starts after everything feeding it
+        has finished — so a feeder wired into the wrong place has real work pulled
+        earlier than its D-minus for nothing, and the Schedule says &ldquo;N days
+        earlier&rdquo; where it does. And yield compounds along these edges,
         so a component is only inflated by the losses of the departments its
         material actually passes through.
       </p>

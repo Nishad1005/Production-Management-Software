@@ -795,10 +795,10 @@ alongside each other, and that is how most of a furniture factory works.
 
 This drives two things:
 
-- A department is held back until everything feeding it is due — and, once
-  work is behind, until they have actually finished. Wire a feeder into the
-  wrong place and it produces runway breaches that are not real, and holds
-  back work that could have started.
+- A department starts after everything feeding it has finished. Wire a
+  feeder into the wrong place and the engine pulls real work earlier than its
+  D-minus for nothing — the Schedule says "N days earlier" where it does —
+  and a feeder that is behind holds back work that could have started.
 - Yield compounds along these edges, so a component is only inflated by the
   losses of the departments its material actually passes through. A wooden leg
   charged for stitching is a leg you make and never need.

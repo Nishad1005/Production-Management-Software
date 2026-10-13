@@ -406,6 +406,16 @@ if (wants('acceptance')) {
         .filter((r) => !/Clear/i.test(r.lastElementChild?.textContent ?? ''))
         .map((r) => r.firstElementChild?.textContent?.trim()),
     ),
+    // Steps planned to finish earlier than their D-minus so the step after
+    // them has the days the quantity needs (since 14 Oct): name and days.
+    pulled: await page.evaluate(() =>
+      [...document.querySelectorAll('tbody tr')]
+        .map((r) => ({
+          name: r.firstElementChild?.textContent?.trim(),
+          days: Number(r.querySelector('[data-testid="accept-pulled"]')?.dataset.days ?? 0),
+        }))
+        .filter((p) => p.days > 0),
+    ),
   }
   const flagged = page.locator('tbody tr').filter({ hasNotText: /Clear/ })
   if (await flagged.count()) {

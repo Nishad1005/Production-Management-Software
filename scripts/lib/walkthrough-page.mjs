@@ -209,6 +209,10 @@ export function walkthroughPage({ facts: f, sheet, site }) {
   const clean = (f.orderBreaches ?? []).filter((o) => o.breaches === 0).length
   const w = f.whatIf ?? {}
   const a = f.accept ?? {}
+  // A refusal names Take it anyway; a Yes names Add it to the book, and
+  // the steps the engine planned earlier than their day-count (14 Oct).
+  const refused = (a.failing ?? []).length > 0
+  const pulled = a.pulled ?? []
   const cell = f.heatCell ?? {}
 
   const tour = [
@@ -297,9 +301,14 @@ export function walkthroughPage({ facts: f, sheet, site }) {
         `<strong>Press Check.</strong> The answer takes a few seconds: the whole factory is planned again with this order added. Nothing is saved.`,
         `<strong>The answer in one line:</strong> &ldquo;${esc(a.verdict ?? '')}&rdquo;`,
         `<strong>Which steps, and why.</strong> Every step is listed with its dates. The ones that fail say what is wrong.`,
-        `<strong>Take it anyway.</strong> The verdict is advice. If the order is taken regardless, this button carries it to the Order book as checked and asks why; the reason stays on the order, in the book and on the Schedule.`,
+        `<strong>&ldquo;Finishes N days earlier than its D-minus.&rdquo;</strong> A step that says this is planned to finish before your day-count says it must, so that the step after it has the days the quantity needs. It is not a problem: a day-count is a latest, and a bigger order simply starts earlier.`,
+        refused
+          ? `<strong>Take it anyway.</strong> The verdict is advice. If the order is taken regardless, this button carries it to the Order book as checked and asks why; the reason stays on the order, in the book and on the Schedule.`
+          : `<strong>Add it to the book.</strong> A Yes carries the order to the Order book with one press. A No offers <em>Take it anyway</em> instead: the verdict is advice, and an order taken regardless goes in as checked, with the reason asked for and kept on the order, in the book and on the Schedule.`,
       ],
-      sample: `We asked for ${n(a.qty ?? 0)} more ${esc(product)}s for ${day(a.date ?? '2026-01-01')}, when nothing else is planned. It is still refused, at ${list((a.failing ?? []).map((c) => esc(deptName.get(c) ?? c)))}. So the factory is not crowded: the days the sheet gives those steps are fewer than ${n(a.qty ?? 0)} pieces need at ${rate} a day.`,
+      sample: refused
+        ? `We asked for ${n(a.qty ?? 0)} more ${esc(product)}s for ${day(a.date ?? '2026-01-01')}, when nothing else is planned. It is still refused, at ${list((a.failing ?? []).map((c) => esc(deptName.get(c) ?? c)))}. So the factory is not crowded: the days the sheet gives those steps are fewer than ${n(a.qty ?? 0)} pieces need at ${rate} a day.`
+        : `We asked for ${n(a.qty ?? 0)} more ${esc(product)}s for ${day(a.date ?? '2026-01-01')}, when nothing else is planned. Every step fits${pulled.length ? `, and ${n(pulled.length)} of them are planned to finish earlier than your day-count &mdash; ${list(pulled.map((p) => `${esc(deptName.get(p.name) ?? p.name)} by ${plural(p.days, 'day', 'days')}`))} &mdash; because at ${rate} a day the step after each needs more days than the day-counts leave between them` : ''}.`,
       tell: `Who answers &ldquo;can we take this order?&rdquo; today, and how long does it take them?`,
     }),
     stop({

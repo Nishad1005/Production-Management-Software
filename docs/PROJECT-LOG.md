@@ -78,7 +78,7 @@ unmodified in the browser, so the demo runs the real engine with no backend.
 `npm run build` produces a static folder.
 
 **Online.** Supabase project `fiqfbbnmksppbpxmhnbv` — *kram*, Mumbai
-(ap-south-1), Postgres 17.6. All seventy-one migrations applied once `20261014090000` is pushed: it is committed and, as of this writing, not yet on the live project (§9, 14 Oct, "quantity pulls the chain").
+(ap-south-1), Postgres 17.6. All seventy-one migrations applied, the latest `20261014090000` on 14 Oct (§9, "quantity pulls the chain").
 
 **The plan of record is §8.0** — the concept deck's promises, each marked
 built, partly or not built, and what it waits on. Written 9 Oct.
@@ -2269,6 +2269,49 @@ screenshot`: 51 of 51; the *parallel feeders* step now counts the
 `gantt-pulled` rows instead of looking for a runway breach — the D-70
 contradiction pulls two rows earlier, declaring the two departments
 parallel takes it to none.
+
+**On the live project, the same evening.** Pushed by Nishad; `verify:live`
+green as anon and as the test account, the engine runs, every view reads;
+`verify:hosted-ui` green on every screen after the deploy. Then the
+question that started it, asked of the live check (today given, as the
+screen gives it): Edison Counter Stool, 300 pieces, 14 May 2027 — **Clear
+on all 20 steps**, 12 of them pulled, Machining the furthest at 33 working
+days; it read "16 of 20 cannot be made" that morning. At 1,000 pieces,
+6 of 20 cannot be made, Stapling to Ex-factory, runway: at the stand-in
+40 a day a department is 25 working days of work, the wood chain runs
+from today under batch handoff, and the day-counts run out at Stapling.
+That is the honest answer at the stand-in rates, and the one the real
+rates will change. **The current plan on the site is still the morning's
+run** until Run is pressed on the Command centre; the acceptance check
+plans afresh each time, so it shows the new rule already.
+
+KRAM/09's stop 6 re-taken: 150 stools for 15 Dec now read *Yes* with
+"finishes 6 days earlier" on Machining and three more, where they read
+refused; the stop's prose follows the verdict now (a Yes names *Add it to
+the book* and the pulled steps by name and days; a No names *Take it
+anyway*), where before it said "it is still refused" whatever the screen
+showed. KRAM/13 re-run on the demonstration build: MOCK-05, twenty days
+too soon, is still refused — the pull runs into today — so the
+taken-anyway chapter stands; its refusal reads *Late* now ("behind: what
+remains was re-planned from today and still overruns the due date") where
+it read runway, which is the truer word for an order twenty days too soon.
+18 of 21 checks pass; the three that do not are the two causes already
+in §8.2 item 0 — the evening run re-planning today's remainder onto today
+(Machining "made 33 of 32" reads *met* where a short day was expected, and
+its remainder still starts on the 14th), and the attention card for the
+taken-anyway order not carrying the reason — and the manual says so
+against each.
+
+**Wording that the pull made wrong, found on KRAM/09's stop 7.** The
+Capacity sheet's contradiction panel promised "runway breaches that are
+not real" and tagged the rows *Causing breaches*; Masters → What feeds
+what said a wrong edge "produces runway breaches". Both now say what
+happens: the feeder is pulled earlier than its own D-minus for a figure
+that is wrong, and the Schedule says "N days earlier" on it; the tag reads
+*Pulling the feeder earlier*, amber. One more lives in SQL —
+`attention_route_conflict`'s detail ends " · this is raising breaches
+that are not real" — and is a migration, so it waits for the next engine
+migration (§8.2 item 0) rather than a push of its own.
 
 **Not a defect, to confirm with PPC.** The engine subtracts D-minus as
 *calendar* days from the container date and snaps to the previous working
