@@ -308,14 +308,19 @@ await step('drag to reschedule', async () => {
   }
   await page.waitForSelector('[data-testid="gantt-bar"]', { timeout: 30_000 })
   const bar = page.locator('[data-testid="gantt-bar"]').first()
+  // The timeline scrolls sideways since 14 Oct and opens on today; the first
+  // bar may be off to the left of what is showing.
+  await bar.scrollIntoViewIfNeeded()
   const box = await bar.boundingBox()
   if (!box) throw new Error('no schedule bar to drag')
 
   // Drag a fraction of the *track*, not a fixed pixel count: the horizon
   // stretches as orders are added, and a fixed 60px can be less than one day.
+  // Capped, because the track is now twenty pixels a day for the whole
+  // horizon and a fifth of it can be a month.
   const track = await bar.evaluateHandle((el) => el.parentElement)
   const trackBox = await track.asElement().boundingBox()
-  const distance = Math.max(80, trackBox.width * 0.2)
+  const distance = Math.max(80, Math.min(300, trackBox.width * 0.2))
 
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
   await page.mouse.down()
@@ -337,6 +342,68 @@ await step('drag to reschedule', async () => {
   await page.waitForSelector('text=Pulled forward to protect', { timeout: 60_000 })
   await page.screenshot({ path: `${outDir}/schedule-pinned.png`, fullPage: true })
   return 'pin saved and honoured by the next run'
+})
+
+// --- the schedule is a timeline that scrolls, and nothing leaves its track --
+
+await step('schedule scrolls', async () => {
+  // The demonstration book has no order whose container day has passed,
+  // and that is the case the lines on the live Schedule came from. Give it
+  // one — ten days ago — so the check below can see the defect it guards.
+  const pastDay = new Date(Date.now() - 10 * 86_400_000).toISOString().slice(0, 10)
+  await go('#/orders', 'text=Order book')
+  await page.click('button:has-text("Add an order")')
+  await page.waitForSelector('text=Creates its first shipment line')
+  // Its own number: 0998 is the one "take it anyway" put in the book.
+  await page.fill('input[placeholder="SO/26-27/0500"]', 'SO/26-27/0990')
+  await page.fill('input[type=number]', '60')
+  await page.fill('input[type=date]', pastDay)
+  await page.click('button:has-text("Add order")')
+  await page.waitForSelector('text=SO/26-27/0990', { timeout: 60_000 })
+
+  await go('#/gantt', 'text=Manual pins')
+  await page.waitForSelector('[data-testid="gantt-scroll"]', { timeout: 60_000 })
+  await page.waitForSelector('[data-testid="gantt-order"][data-stuffing="' + pastDay + '"]', { timeout: 60_000 })
+  await page.waitForTimeout(500)
+  const r = await page.evaluate(() => {
+    const el = document.querySelector('[data-testid="gantt-scroll"]')
+    const markers = [...el.querySelectorAll('[data-testid="gantt-stuffing"]')]
+    // A marker belongs inside its track. Before 14 Oct a passed container
+    // day was drawn at a negative position, across the order's label.
+    const outside = markers.filter(
+      (m) => m.offsetLeft < 0 || m.offsetLeft > m.parentElement.clientWidth,
+    ).length
+    const passed = document.querySelectorAll('[data-testid="gantt-passed"]').length
+    const today = el.querySelector('[title="Today"]')?.getBoundingClientRect()
+    const view = el.getBoundingClientRect()
+    const stuffing = [...document.querySelectorAll('[data-testid="gantt-order"]')]
+      .map((o) => o.dataset.stuffing)
+      .sort()
+    return {
+      scrollWidth: el.scrollWidth,
+      clientWidth: el.clientWidth,
+      markers: markers.length,
+      outside,
+      todayInView: today ? today.left >= view.left && today.right <= view.right : null,
+      from: el.dataset.from,
+      to: el.dataset.to,
+      px: el.dataset.pxPerDay,
+      earliest: stuffing[0],
+      latest: stuffing[stuffing.length - 1],
+      passed,
+    }
+  })
+  if (!r.passed) throw new Error(`no order is tagged "Container day passed", with one stuffed ${pastDay}`)
+  if (r.scrollWidth <= r.clientWidth) {
+    throw new Error(`the schedule does not scroll: ${r.scrollWidth}px of content in ${r.clientWidth}px`)
+  }
+  if (!r.markers) throw new Error('no container-day markers on the schedule')
+  if (r.outside) throw new Error(`${r.outside} container-day markers drawn outside their track`)
+  if (r.todayInView === false) throw new Error('today is not in view when the schedule opens')
+  if (r.earliest < r.from || r.latest > r.to) {
+    throw new Error(`the track ${r.from}..${r.to} does not cover the container days ${r.earliest}..${r.latest}`)
+  }
+  return `${r.markers} container days on a track from ${r.from} to ${r.to} at ${r.px}px a day, ${r.scrollWidth}px in a ${r.clientWidth}px panel, today in view, ${r.passed} tagged as passed and on the track`
 })
 
 // --- the capacity sheet writes where the engine reads ----------------------

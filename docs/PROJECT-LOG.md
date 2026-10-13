@@ -2201,7 +2201,48 @@ in the plan, exactly: the sample book, dated August and September with
 nothing declared, has moved forward from today, and the screens say so.
 KRAM/09 regenerated from the site.
 
-### 2026-10-14 — Quantity pulls the chain
+### 2026-10-14 — The Schedule scrolls, and nothing leaves its track
+
+Nishad, with a screenshot of the live Schedule: "it's not looking good,
+there are some lines", and "make it scrollable horizontally, as the heat
+map is". The lines were container-day markers. The track began at the
+earliest planned start — for late work, today — so an order whose container
+day had already passed (3 Oct, 10 Oct on the sample book) had its marker
+at a negative position, drawn off the left edge of the track and across the
+"20 cannot be made in time" tag. The same screen squeezed the whole span
+into the panel at a few pixels a day.
+
+**The change** (`Gantt.tsx` only; no migration, no data). The track
+covers every date on the page — start, end, deadline and container day of
+every row — with three days either side, so a passed container day is a
+point on the track to the left of today; the dates decide the track, never
+the other way round. Twenty pixels a day for the whole horizon, a short one
+stretched to fill the panel; the rows sit in a scroll container (75vh,
+both axes), the label column a CSS variable on it and the track a fixed
+width, with the label cells `sticky left` and the ruler `sticky top`.
+Opens with today a quarter in. The past is shaded on every track. Every
+track is `overflow-hidden` — the airtight part Nishad asked for: a date
+that somehow fell outside is cut at the edge, never drawn across a label.
+An order whose container day has gone is tagged *Container day passed*
+beside its number, so the marker shows where and the tag says what. The
+labels are tidied into number, tags, details. GUIDE's Schedule section
+says all this.
+
+**Checked.** A new browser step, *schedule scrolls*: the container is
+wider than its panel, every container-day marker's `offsetLeft` is inside
+its track, today is within the visible part on opening, and the track's
+`data-from..data-to` covers the earliest and latest `data-stuffing` on
+the page. The demonstration book has no passed container day — the track
+starts in August because one order's late work sits there — so the step
+first adds an order stuffed ten days ago through the Order book, then
+requires it tagged *Container day passed* with its marker on the track:
+the exact defect, observable. Eleven container days on a track from
+August 2026 to March 2027 at 20px a day, about 4,200px in a 1,300px panel.
+The drag step scrolls the bar into view first and caps the drag at 300px,
+because a fifth of the track is now a month. 52 of 52; typecheck clean.
+The page-level "nothing scrolls sideways" check is untouched: the scroll
+is inside the panel, as the heatmap's is.
+
 
 Nishad's question: "a product having 300 quantity and one having 1,000 —
 their D-minus will differ." Before changing anything the whole flow was

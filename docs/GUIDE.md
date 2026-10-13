@@ -204,7 +204,16 @@ long, scroll sideways.
 bar, the container day as a black marker, and a red mark wherever a department
 cannot make its part in time, with a count beside the order number. The dates
 run along a ruler at the top — months above, every Monday below, today as a
-blue line — and the ruler stays in view as you scroll.
+blue line.
+
+**The timeline scrolls sideways.** It runs at twenty pixels a day from the
+earliest date in the book to the last container day, so a long book is not
+squeezed into the width of the screen. The department names stay at the left
+and the ruler stays at the top while you scroll, and the page opens with today
+in view, the past to the left of it shaded grey. Drag sideways, or use shift
+and the mouse wheel, to move along it. An order whose container day has already
+gone is tagged **Container day passed** beside its number, and its marker sits
+in the shaded past with the work planned after it.
 
 **Click a line to open it.** Each department is then a bar, from its start
 date to the day it must be finished, with that department's own deadline as a

@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useCurrentRun, useGantt, useOrders, type GanttRow } from '@/data/planning'
 import { useCreatePin, usePins, useReleasePin } from '@/data/mutations'
 import { Empty, Field, Panel, Table, Tag, Td, Th } from '@/components/ui'
@@ -11,15 +11,29 @@ import {
   inputClass,
 } from '@/components/format'
 import { Modal, ModalActions } from '@/components/edit'
-import { dayNumber as day, isoOf as iso, timelineMarks } from '@/components/timeline'
+import { dayNumber as day, isoOf as iso, timelineMarks, todayIso } from '@/components/timeline'
 import { componentLabel, useDepartmentNames } from '@/components/names'
 
 type Scale = { from: number; to: number; span: number }
 type Marks = ReturnType<typeof timelineMarks>
 
-/* The label column and the track, the same on every row so the ruler at the
-   top lines up with the bars beneath it. Narrower on a phone. */
-const COLS = 'grid-cols-[150px_1fr] sm:grid-cols-[230px_1fr]'
+/*
+ * The label column and the track, the same on every row so the ruler at the
+ * top lines up with the bars beneath it. The label column is a CSS variable
+ * set on the scroll container (narrower on a phone); the track is a fixed
+ * width in pixels from the scale, so the rows are wider than the panel when
+ * the horizon is long — and that is what scrolls, sideways, with the labels
+ * held at the left and the ruler at the top. Until 14 Oct the track was a
+ * percentage of the panel whatever the span: a year of orders at four pixels
+ * a day.
+ */
+const cols = (trackW: number) => ({ gridTemplateColumns: `var(--gantt-label) ${trackW}px` })
+const labelWidth = () => (window.innerWidth >= 640 ? 230 : 150)
+
+/** Twenty pixels a day: a week is a readable 140px. A short horizon fills the panel instead. */
+const PX_PER_DAY = 20
+/** Days of track either side of the first and last date, so nothing sits on an edge. */
+const MARGIN_DAYS = 3
 
 export function Gantt() {
   const run = useCurrentRun()
@@ -63,26 +77,57 @@ export function Gantt() {
   }, [gantt.data, department, customer, onlyBreaches])
 
   /*
-   * The track runs from the earliest start to the latest of end, deadline and
-   * stuffing date, so every order's container day is on it. Before 9 Oct the
-   * stuffing date could fall past the right edge and its marker was simply
-   * not drawn.
+   * The track covers every date on the page — each task's start, end and
+   * deadline, each order's container day — with a few days either side, so a
+   * container day that has already passed is a point on the track to the left
+   * of today. Before 14 Oct the track began at the earliest planned start,
+   * which for late work is today, and the marker for a passed container day
+   * was drawn at a negative position: off the left edge of the track and
+   * across the order's label. (Before 9 Oct the right edge had the same
+   * problem with the stuffing date.) The dates decide the track; the track
+   * never decides which dates fit.
    */
   const scale = useMemo<Scale | null>(() => {
-    const dated = rows.filter((r) => r.start_date && r.end_date)
-    if (!dated.length) return null
-    const from = Math.min(...dated.map((r) => day(r.start_date!)))
-    const to = Math.max(
-      ...dated.map((r) =>
-        Math.max(
-          day(r.end_date!),
-          day(r.due_date ?? r.end_date!),
-          day(r.stuffing_date),
-        ),
-      ),
-    )
+    let from = Infinity
+    let to = -Infinity
+    for (const r of rows) {
+      for (const d of [r.start_date, r.end_date, r.due_date, r.stuffing_date]) {
+        if (!d) continue
+        const n = day(d)
+        if (n < from) from = n
+        if (n > to) to = n
+      }
+    }
+    if (!Number.isFinite(from)) return null
+    from -= MARGIN_DAYS
+    to += MARGIN_DAYS
     return { from, to, span: Math.max(1, to - from) }
   }, [rows])
+
+  // The panel's width, so a short horizon stretches to fill it rather than
+  // sitting in its left third at twenty pixels a day.
+  const scroller = useRef<HTMLDivElement>(null)
+  const [avail, setAvail] = useState(0)
+  useLayoutEffect(() => {
+    const measure = () => {
+      const el = scroller.current
+      if (el) setAvail(Math.max(0, el.clientWidth - labelWidth()))
+    }
+    measure()
+    window.addEventListener('resize', measure)
+    return () => window.removeEventListener('resize', measure)
+  }, [scale])
+  const trackW = scale ? Math.round(Math.max(PX_PER_DAY * scale.span, avail)) : 0
+
+  // Opens with today a quarter of the way in: the past to the left, the
+  // months ahead to the right.
+  useEffect(() => {
+    const el = scroller.current
+    if (!el || !scale || !trackW) return
+    const t = day(todayIso())
+    if (t < scale.from || t > scale.to) return
+    el.scrollLeft = Math.max(0, ((t - scale.from) / scale.span) * trackW - avail / 4)
+  }, [scale, trackW, avail])
 
   const marks = useMemo(
     () => (scale ? timelineMarks(scale.from, scale.to) : null),
@@ -193,29 +238,46 @@ export function Gantt() {
         {!scale || !marks ? (
           <Empty>Nothing to show for these filters.</Empty>
         ) : (
-          <div>
-            <Ruler marks={marks} />
-            {groups.map((group) => (
-              <OrderGroup
-                key={group.key}
-                group={group}
-                againstPlan={againstPlan.get(group.header.erp_order_no) ?? null}
-                open={open.has(group.key)}
-                onToggle={() => toggle(group.key)}
-                scale={scale}
-                marks={marks}
-                nameOf={nameOf}
-                onPropose={(task, startDate) => setProposed({ task, startDate })}
-                onRelease={(task) =>
-                  releasePin.mutate({
-                    shipmentLineId: task.shipment_line_id,
-                    departmentCode: task.department_code,
-                    componentCode: task.component_code,
-                  })
-                }
-              />
-            ))}
-          </div>
+          <>
+            <div
+              ref={scroller}
+              data-testid="gantt-scroll"
+              data-from={iso(scale.from)}
+              data-to={iso(scale.to)}
+              data-px-per-day={(trackW / scale.span).toFixed(1)}
+              className="border-rule max-h-[75vh] overflow-auto border [--gantt-label:150px] sm:[--gantt-label:230px]"
+            >
+              <div style={{ width: `calc(var(--gantt-label) + ${trackW}px)` }}>
+                <Ruler marks={marks} trackW={trackW} />
+                {groups.map((group) => (
+                  <OrderGroup
+                    key={group.key}
+                    group={group}
+                    againstPlan={againstPlan.get(group.header.erp_order_no) ?? null}
+                    open={open.has(group.key)}
+                    onToggle={() => toggle(group.key)}
+                    scale={scale}
+                    marks={marks}
+                    trackW={trackW}
+                    nameOf={nameOf}
+                    onPropose={(task, startDate) => setProposed({ task, startDate })}
+                    onRelease={(task) =>
+                      releasePin.mutate({
+                        shipmentLineId: task.shipment_line_id,
+                        departmentCode: task.department_code,
+                        componentCode: task.component_code,
+                      })
+                    }
+                  />
+                ))}
+              </div>
+            </div>
+            <p className="text-faint mt-2 text-caption">
+              {formatDateLong(iso(scale.from))} to {formatDateLong(iso(scale.to))} —
+              scroll sideways for the rest. The past is shaded, today is the blue
+              line, and the department names and the dates stay where they are.
+            </p>
+          </>
         )}
       </Panel>
 
@@ -290,13 +352,16 @@ export function Gantt() {
  * scrolls, which is the whole point: a date axis that scrolls out of view is
  * an axis the reader has to remember.
  */
-function Ruler({ marks }: { marks: Marks }) {
+function Ruler({ marks, trackW }: { marks: Marks; trackW: number }) {
   return (
     <div
-      className={`${COLS} bg-sheet border-rule sticky top-0 z-20 grid items-end gap-3 border-b`}
+      style={cols(trackW)}
+      className="bg-sheet border-rule sticky top-0 z-20 grid items-end border-b"
     >
-      <div className="label pb-1">Department</div>
-      <div className="relative h-10">
+      <div className="label bg-sheet border-rule-soft sticky left-0 z-30 self-stretch border-r pt-5 pb-1 pl-2">
+        Department
+      </div>
+      <div className="relative h-10 overflow-hidden">
         {marks.months.map((m) => (
           <div
             key={`${m.label}-${m.left}`}
@@ -329,8 +394,18 @@ function Ruler({ marks }: { marks: Marks }) {
 
 /** The week lines and today, repeated faintly behind every track. */
 function Gridlines({ marks }: { marks: Marks }) {
+  // Everything left of today has either happened or has not; a container
+  // day on this side of the line has gone. Shaded, so that reads at a glance
+  // rather than from a date.
+  const past = Math.min(100, Math.max(0, marks.pos(day(todayIso()))))
   return (
     <>
+      {past > 0 ? (
+        <div
+          className="bg-ink/[0.045] pointer-events-none absolute inset-y-0 left-0"
+          style={{ width: `${past}%` }}
+        />
+      ) : null}
       {marks.weeks.map((w) => (
         <div
           key={w.iso}
@@ -363,6 +438,7 @@ function OrderGroup({
   onToggle,
   scale,
   marks,
+  trackW,
   nameOf,
   onPropose,
   onRelease,
@@ -374,6 +450,7 @@ function OrderGroup({
   onToggle: () => void
   scale: Scale
   marks: Marks
+  trackW: number
   nameOf: (code: string) => string
   onPropose: (task: GanttRow, startDate: string) => void
   onRelease: (task: GanttRow) => void
@@ -384,41 +461,54 @@ function OrderGroup({
   const start = dated.length ? Math.min(...dated.map((t) => day(t.start_date!))) : null
   const end = dated.length ? Math.max(...dated.map((t) => day(t.end_date!))) : null
   const h = group.header
+  // The container day has gone. The marker shows where; this says what, for
+  // a reader who does not read charts.
+  const passed = day(h.stuffing_date) < day(todayIso())
 
   return (
     <div
       data-testid="gantt-order"
       data-expanded={open ? 'yes' : 'no'}
       data-breaches={breaches}
+      data-stuffing={h.stuffing_date}
       className="border-rule-soft border-b py-1"
     >
-      <div className={`${COLS} grid items-center gap-3`}>
+      <div style={cols(trackW)} className="grid items-center">
         <button
           type="button"
           onClick={onToggle}
           aria-expanded={open}
-          className="flex min-h-11 items-start gap-1.5 py-1 text-left sm:min-h-0"
+          className="bg-sheet border-rule-soft sticky left-0 z-10 flex min-h-11 items-start gap-1.5 self-stretch border-r py-1 pr-3 text-left sm:min-h-0"
         >
           <span className="text-faint w-3 shrink-0 pt-0.5 text-caption">
             {open ? '▾' : '▸'}
           </span>
           <span className="min-w-0">
-            <span className="text-small font-semibold">
+            <span className="block text-small font-semibold">
               {h.erp_order_no}
               <span className="text-faint font-normal"> line {h.line_no}</span>
             </span>
-            {breaches ? (
-              <span className="ml-2 align-middle">
-                <Tag tone="flag">{breaches} cannot be made in time</Tag>
-              </span>
-            ) : null}
-            {againstPlan !== null ? (
-              <span
-                className="ml-2 align-middle"
-                data-testid="gantt-against-plan"
-                title={againstPlan ? `Taken against the plan: ${againstPlan}` : 'Taken against the plan'}
-              >
-                <Tag tone="mid">Taken against the plan</Tag>
+            {breaches || passed || againstPlan !== null ? (
+              <span className="mt-0.5 flex flex-wrap gap-1">
+                {breaches ? (
+                  <Tag tone="flag">{breaches} cannot be made in time</Tag>
+                ) : null}
+                {passed ? (
+                  <span
+                    data-testid="gantt-passed"
+                    title={`The container was to be stuffed on ${formatDateLong(h.stuffing_date)}. Work still planned after that day is late.`}
+                  >
+                    <Tag tone="flag">Container day passed</Tag>
+                  </span>
+                ) : null}
+                {againstPlan !== null ? (
+                  <span
+                    data-testid="gantt-against-plan"
+                    title={againstPlan ? `Taken against the plan: ${againstPlan}` : 'Taken against the plan'}
+                  >
+                    <Tag tone="mid">Taken against the plan</Tag>
+                  </span>
+                ) : null}
               </span>
             ) : null}
             <span className="text-mid block text-caption">
@@ -430,7 +520,10 @@ function OrderGroup({
         </button>
 
         <div
-          className="relative h-7 select-none"
+          // overflow-hidden is the airtight part: a date that somehow fell
+          // outside the track is cut off at its edge, never drawn across the
+          // label column.
+          className="relative h-7 overflow-hidden select-none"
           title={
             start !== null && end !== null
               ? `${formatDateLong(iso(start))} → ${formatDateLong(iso(end))} · stuffing ${formatDateLong(h.stuffing_date)}`
@@ -467,6 +560,7 @@ function OrderGroup({
               />
             ))}
           <div
+            data-testid="gantt-stuffing"
             className="bg-ink absolute inset-y-1 w-0.5"
             style={{ left: `${marks.pos(day(h.stuffing_date))}%` }}
             title={`Container stuffing ${formatDateLong(h.stuffing_date)}`}
@@ -483,6 +577,7 @@ function OrderGroup({
               name={nameOf(task.department_code)}
               scale={scale}
               marks={marks}
+              trackW={trackW}
               onPropose={(startDate) => onPropose(task, startDate)}
               onRelease={() => onRelease(task)}
             />
@@ -498,6 +593,7 @@ function Bar({
   name,
   scale,
   marks,
+  trackW,
   onPropose,
   onRelease,
 }: {
@@ -505,6 +601,7 @@ function Bar({
   name: string
   scale: Scale
   marks: Marks
+  trackW: number
   onPropose: (startDate: string) => void
   onRelease: () => void
 }) {
@@ -526,6 +623,10 @@ function Bar({
   const duePos = task.due_date
     ? ((day(task.due_date) - scale.from) / scale.span) * 100
     : null
+  // Where the words at the end of a row go: just past the bar's right end,
+  // or past its deadline marker if that is further right — never the
+  // track's right end, which is next spring once the timeline scrolls.
+  const afterBar = { left: `calc(${Math.max(left + width, duePos ?? 0)}% + 4px)` }
 
   const tone = !task.is_feasible
     ? 'bg-flag'
@@ -564,12 +665,29 @@ function Bar({
   }
 
   return (
-    <div className={`${COLS} grid items-center gap-3 select-none`}>
+    <div style={cols(trackW)} className="grid items-center select-none">
       <div
-        className="flex items-center gap-1.5 pl-[18px] text-caption"
+        className="bg-sheet border-rule-soft sticky left-0 z-10 flex items-center gap-1.5 self-stretch border-r pr-3 pl-[18px] text-caption"
         title={`${task.component_code} (${task.department_code})`}
       >
         <span className="truncate font-semibold">{name}</span>
+        {!hasDates && task.qty_remaining === 0 ? (
+          // Nothing left to place: the department has declared the whole job.
+          // Not a breach, and not the flag colour. Said here rather than on
+          // the track, whose left end is months back once the timeline
+          // scrolls.
+          <span
+            data-testid="gantt-made"
+            title={`${name}: ${formatNumber(task.qty_done, 0)} of ${formatNumber(task.qty_required, 0)} made`}
+            className="text-mid shrink-0 font-medium"
+          >
+            · Made
+          </span>
+        ) : !hasDates ? (
+          <span className="text-flag shrink-0 font-medium">
+            · {BREACH_LABEL[task.breach_reason ?? ''] ?? 'Not scheduled'}
+          </span>
+        ) : null}
         {task.is_pinned ? (
           <button
             type="button"
@@ -582,7 +700,7 @@ function Bar({
         ) : null}
       </div>
 
-      <div ref={track} className="relative h-[18px]">
+      <div ref={track} className="relative h-[18px] overflow-hidden">
         <Gridlines marks={marks} />
         <div className="bg-rule-soft pointer-events-none absolute inset-x-0 top-1/2 h-px" />
         {hasDates ? (
@@ -601,21 +719,7 @@ function Bar({
                   : ''
             } — drag to reschedule`}
           />
-        ) : task.qty_remaining === 0 ? (
-          // Nothing left to place: the department has declared the whole job.
-          // Not a breach, and not the flag colour.
-          <span
-            data-testid="gantt-made"
-            title={`${name}: ${formatNumber(task.qty_done, 0)} of ${formatNumber(task.qty_required, 0)} made`}
-            className="text-mid bg-sheet text-caption absolute top-1/2 left-0 -translate-y-1/2 pr-2 font-medium"
-          >
-            Made
-          </span>
-        ) : (
-          <span className="text-flag bg-sheet text-caption absolute top-1/2 left-0 -translate-y-1/2 pr-2 font-medium">
-            {BREACH_LABEL[task.breach_reason ?? ''] ?? 'Not scheduled'}
-          </span>
-        )}
+        ) : null}
         {duePos !== null ? (
           // pointer-events-none matters: this marker is one pixel wide and
           // frequently lands inside the bar it belongs to. Without it, the
@@ -628,13 +732,17 @@ function Bar({
           />
         ) : null}
         {dragDays !== null && dragDays !== 0 ? (
-          <span className="text-blue pointer-events-none absolute top-1/2 right-0 -translate-y-1/2 bg-white pl-2 text-caption font-semibold">
+          <span
+            className="text-blue pointer-events-none absolute top-1/2 -translate-y-1/2 bg-white pl-2 text-caption font-semibold whitespace-nowrap"
+            style={afterBar}
+          >
             {dragDays > 0 ? '+' : ''}
             {dragDays} days
           </span>
         ) : !task.is_feasible && task.breach_reason ? (
           <span
-            className="text-flag pointer-events-none absolute top-1/2 right-0 -translate-y-1/2 bg-white pl-2 text-caption font-medium"
+            className="text-flag pointer-events-none absolute top-1/2 -translate-y-1/2 bg-white pl-2 text-caption font-medium whitespace-nowrap"
+            style={afterBar}
             title={BREACH_EXPLAINER[task.breach_reason]}
           >
             {BREACH_LABEL[task.breach_reason] ?? task.breach_reason}
@@ -646,7 +754,8 @@ function Bar({
           <span
             data-testid="gantt-pulled"
             data-days={task.pulled_days}
-            className="text-mid pointer-events-none absolute top-1/2 right-0 -translate-y-1/2 bg-white pl-2 text-caption font-medium"
+            className="text-mid pointer-events-none absolute top-1/2 -translate-y-1/2 bg-white pl-2 text-caption font-medium whitespace-nowrap"
+            style={afterBar}
             title={PULLED_EXPLAINER(task.pulled_days)}
           >
             {task.pulled_days}d earlier
