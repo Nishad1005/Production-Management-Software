@@ -215,6 +215,16 @@ thin black marker. **Expand all** and **Collapse all** do every line at once.
 - **Red** — cannot be made in time, with the reason at the end of the row
 - **Made** — the department has declared the whole job; nothing left to place
 
+**"N days earlier"** at the end of a row means the department's planned finish
+was pulled that many working days earlier than its D-minus date, because the
+department after it needs the days for the quantity. A D-minus is a latest
+finish, and finishing earlier is always allowed, so this is not a breach and
+the bar is green; the thin black D-minus marker stays where it was, so the
+pull is visible. This is how one D-minus profile per article serves a
+300-piece order and a 1,000-piece one: the quantity, through the rate, pulls
+the feeders earlier along the route. If the pull would reach back past today,
+the feeder reads *Late* instead.
+
 Work that has fallen behind is placed from the day the plan was run, not left
 in the past, so the bar shows what still has to happen. A department that is
 behind starts the working day after the last department feeding it has
@@ -281,6 +291,12 @@ breach reads as a decision somebody made rather than a surprise.
 
 Quantities shown are inflated for yield: each department must make enough that
 the shipped quantity survives every loss downstream of it.
+
+A Clear row may add **finishes N days earlier than its D-minus, for the
+quantity**: the department after it needs more days than the gap between the
+two deadlines, so this one is planned to finish earlier. That is the engine
+doing the quantity arithmetic along the route, and it is why a 1,000-piece
+line can read Clear where its steps are days apart on the sheet.
 
 ---
 
@@ -656,11 +672,11 @@ view however far you scroll.
 If **A department is due before something that feeds it** appears, a department
 has been given a deadline no later than something that must finish before it can
 start. Either the D-minus is wrong or the two are not really dependent, and the
-software will not guess which — but while it stands, the engine holds that work
-back behind something not yet due and reports breaches that are not real. The
-rule: a department's D-minus must be larger than that of everything feeding it,
-larger meaning earlier. Change the D-minus here, or change what feeds it on
-Masters → What feeds what.
+software will not guess which — but while it stands, the engine pulls the
+feeder's finish earlier than its own D-minus to honour the later deadline,
+which costs that feeder days it may not have. The rule: a department's D-minus
+must be larger than that of everything feeding it, larger meaning earlier.
+Change the D-minus here, or change what feeds it on Masters → What feeds what.
 
 The four figures across the top are the worklist: how many articles have a route
 at all, how many pairings exist, and what is still missing. An article with no
@@ -887,7 +903,7 @@ is a ratio rather than a count.
 | Reason | Meaning |
 |---|---|
 | **Material** | The work would have to start before material is available. Arithmetically valid, physically impossible. |
-| **Runway** | The departments feeding this one finish too late for it to meet its date: fewer working days between their deadlines and this one's than the work needs, or, once work is behind, their work runs past the day this one would have had to start. It is placed after them, so the bar shows where the work would actually land. **Overtime here cannot fix this** — under batch handoff the department physically cannot start earlier. If the department it is waiting for does not really feed it, say so on Masters → What feeds what. |
+| **Runway** | A department feeding this one finishes too late for it to meet its date, and the engine will not move that feeder: it is **pinned** by a planner, or it is behind and already re-planned from today. This one is placed after it, so the bar shows where the work would actually land. **Overtime here cannot fix this** — under batch handoff the department physically cannot start earlier; moving the pin, or overtime on the feeder, can. (A feeder that is merely due too late for the quantity is not a breach any more: it is pulled earlier — see *N days earlier* under Schedule.) |
 | **Pin** | A manual pin has pushed the work past its due date. Reported, not corrected. |
 | **D-minus missing** | The article × department offset has never been entered, so it cannot be scheduled. |
 | **No capacity** | No rate for this component in this department. |

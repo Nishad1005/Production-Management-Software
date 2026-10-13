@@ -21,13 +21,15 @@ type Task = {
   due_date: string | null
   qty_required: number
   breach_reason: string | null
+  end_date: string | null
+  pulled_days: number | null
 }
 
 const tasks = async (c: pg.Client, run: string) =>
   (
     await c.query<Task>(
-      `select component_code, department_code, start_date, due_date,
-              qty_required, breach_reason
+      `select component_code, department_code, start_date, end_date, due_date,
+              qty_required, breach_reason, pulled_days
          from schedule_gantt where run_id = $1
         order by route_position, component_code`,
       [run],
@@ -143,18 +145,20 @@ describe('the runway check follows the graph', () => {
    * the route, made the engine hold it behind work not due for another ten days.
    * Saying they are parallel is the answer, and it has to be sayable.
    */
-  it('stops holding a feeder behind a line it does not touch', async () => {
+  it('stops pulling a feeder for a line it does not touch', async () => {
     await withRollback(async (c) => {
       await applySeed(c)
       await c.query(`select set_dminus('AARA-LC', 'FABCUT', 70)`)
       await createOrder(c, { qty: 100, stuffingDate: '2026-12-01' })
 
+      // With the false edge, wood is pulled earlier to finish before the
+      // fabric is cut (since 14 Oct; before that, fabric cutting was held
+      // back and reported runway). Either way the edge costs something.
       const before = await tasks(c, await runSchedule(c))
-      expect(
-        before.find((t) => t.department_code === 'FABCUT')!.breach_reason,
-      ).toBe('runway')
+      expect(before.find((t) => t.department_code === 'FABCUT')!.breach_reason).toBeNull()
+      expect(before.find((t) => t.department_code === 'WOOD')!.pulled_days).toBeGreaterThan(0)
 
-      // Fabric cutting is an entry point: nothing feeds it.
+      // Fabric cutting is an entry point: nothing feeds it, nothing is pulled.
       await dep(c, 'FABCUT', 'WOOD', false)
       await dep(c, 'STITCH', 'WOOD', true)
 
@@ -165,7 +169,7 @@ describe('the runway check follows the graph', () => {
     })
   })
 
-  it('holds a department behind the latest of its feeders, not the nearest position', async () => {
+  it('pulls the latest of its feeders, not the nearest position', async () => {
     await withRollback(async (c) => {
       await applySeed(c)
 
@@ -178,16 +182,19 @@ describe('the runway check follows the graph', () => {
 
       const both = await tasks(c, await runSchedule(c))
       const stitch = both.find((t) => t.department_code === 'STITCH')!
-      // The later feeder governs, so stitching cannot start when it wants to.
-      expect(stitch.breach_reason).toBe('runway')
+      const fabcut = both.find((t) => t.department_code === 'FABCUT')!
+      // The later feeder governs: fabric cutting is pulled earlier to finish
+      // before stitching starts, and stitching is clear.
+      expect(stitch.breach_reason).toBeNull()
+      expect(fabcut.pulled_days).toBeGreaterThan(0)
+      expect(fabcut.end_date! < stitch.start_date!).toBe(true)
 
       // Drop the later feeder and only wood is left, twenty days earlier —
-      // nothing to wait for, and the breach goes with it.
+      // nothing to wait for, and nothing to pull.
       await dep(c, 'STITCH', 'FABCUT', false)
       const woodOnly = await tasks(c, await runSchedule(c))
-      expect(
-        woodOnly.find((t) => t.department_code === 'STITCH')!.breach_reason,
-      ).toBeNull()
+      expect(woodOnly.find((t) => t.department_code === 'STITCH')!.breach_reason).toBeNull()
+      expect(woodOnly.find((t) => t.department_code === 'FABCUT')!.pulled_days).toBeNull()
     })
   })
 

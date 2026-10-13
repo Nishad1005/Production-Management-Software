@@ -78,7 +78,7 @@ unmodified in the browser, so the demo runs the real engine with no backend.
 `npm run build` produces a static folder.
 
 **Online.** Supabase project `fiqfbbnmksppbpxmhnbv` — *kram*, Mumbai
-(ap-south-1), Postgres 17.6. All seventy migrations applied, the last on 12 Oct (§9).
+(ap-south-1), Postgres 17.6. All seventy-one migrations applied once `20261014090000` is pushed: it is committed and, as of this writing, not yet on the live project (§9, 14 Oct, "quantity pulls the chain").
 
 **The plan of record is §8.0** — the concept deck's promises, each marked
 built, partly or not built, and what it waits on. Written 9 Oct.
@@ -223,6 +223,22 @@ book, on the Schedule's header, on the Attention card (the breach is still
 listed; it is still real). An order taken against the plan with no reason is
 refused by `create_order`: a decision with no reason is indistinguishable
 from a mistake six weeks later, which is the pins' rule.
+
+**Quantity pulls the chain; one D-minus profile per article (14 Oct).**
+Asked how a 300-piece and a 1,000-piece order of the same article get
+different D-minus, as U&M's sheet gives them. They do not: a D-minus is a
+*latest* finish, per article and department, and quantity becomes days
+through the article-wise rate on the Capacity sheet. What was missing is
+the pull — a department's planned finish moving earlier than its D-minus
+when the department after it needs the days. Decided by Nishad: one profile
+per article, the engine pulls. From the end of the route back, each
+unpinned task's effective due is the earlier of its D-minus date and the
+working day before the earliest start of anything it feeds; its window is
+placed again from there; `pulled_days` says by how much and the Schedule
+and Accept an order show it. A feeder pulled before today is behind (late),
+before its material a material breach; a pinned feeder is never pulled and
+is the one chain *runway* now names. Not chosen: D-minus per quantity band,
+three times the data for PPC to keep right.
 
 **Pins are honoured and reported, never undone.** A planner who drags a task has
 made a decision the engine cannot see the reasons for. The reason is mandatory —
@@ -915,6 +931,9 @@ all.
    before writing. The first version, which hard-coded the fourteen-department
    route and would have retired the six checkpoint departments, is gone. What
    is owed is unchanged: the workbook itself, the six answers, and the rates.
+8a. **D-minus: calendar or working days?** The engine counts calendar days
+   back from the container and snaps to the previous working day; the
+   sample sheet reads that way too. One question at the PPC session (14 Oct).
 9. **The what-feeds-what table**, `DBBS/UM/KRAM/02` — and inside it the one
    concrete question: **does Machining feed Ply Cutting?** (§6 item 0.) No
    longer shouting from the Attention screen, and not answered either.
@@ -2181,6 +2200,80 @@ Attention, the header reading "as of 11 Oct", the horizon from 12 August
 in the plan, exactly: the sample book, dated August and September with
 nothing declared, has moved forward from today, and the screens say so.
 KRAM/09 regenerated from the site.
+
+### 2026-10-14 — Quantity pulls the chain
+
+Nishad's question: "a product having 300 quantity and one having 1,000 —
+their D-minus will differ." Before changing anything the whole flow was
+checked on the live project, read only: one sample line traced from the
+Capacity sheet to the plan with every figure redone by hand (quantity
+required through the yield chain ✓, days = quantity ÷ rate ✓, the day's
+load summed across articles equal to the heatmap's own cell ✓), and the
+acceptance check run for the same item at 300 and at 1,000, seven months
+out. **That is where it broke**: at 300, *16 of 20 steps cannot be made*.
+Machining ended on its date; Assembly had to start after it, needed nine
+days at the stand-in rate, ended past its own date, and every step after it
+was pushed later still — Packing a month after the container. The 12 Oct
+rule (a department starts after what feeds it) was pushing the chain
+*later* when, with seven months of room, the feeders should have been
+pulled *earlier*. Finishing earlier is always allowed. At 40 a day with
+the sample sheet's gaps, every order read like that.
+
+**The change** (§4): `20261014090000_quantity_pulls_the_chain.sql`,
+regenerated from its predecessor. Backward passes by reverse route depth,
+after `_pb` and before the forward passes: a task's effective due becomes
+the earlier of its D-minus date and the working day before the earliest
+start of anything downstream with work left (a pinned consumer by its pin),
+its window is placed again from there, and the pull propagates upstream.
+`schedule_tasks.pulled_days`; `schedule_gantt` and `check_order_acceptance`
+expose it (the function re-created: a new column is a new return type).
+The runway check now reads where the feeders actually *end* — a pulled
+feeder's effective due, a pinned or late feeder's forward end — so runway
+is left naming the chains the engine will not move: a pinned feeder, or
+one pulled back past today, placed forward from today instead, and still
+not done in time for the department after it. That feeder reads clear if
+it meets its own D-minus (it does; the days ran out downstream), carries no
+"earlier" tag (the pull was asked, not honoured — `pulled_days` is null on
+anything placed forward), and the department after it reads runway with the
+explainer saying which of the two it is.
+The Schedule writes "7d earlier" at the end of a pulled row (grey, not red;
+the D-minus marker stays); Accept an order adds "finishes 7 days earlier
+than its D-minus, for the quantity" under Clear. GUIDE: Schedule, Accept an
+order, Breach reasons, the Capacity sheet's contradiction warning.
+
+**What it changed in the tests, and why that is right.** Nine tests
+assumed the old rule. Five now assert the pull: 600
+chairs through Stitching (fabric cutting and wood pulled earlier, Stitching
+clear); a D-minus contradiction (wood pulled, the guard still reports it);
+a false edge (wood pulled while the edge stands, not after); the later of
+two feeders (pulled, the earlier not); and the 5,000-chair order on
+Attention, which now breaches on a material date instead. Four were given
+*a day*: without one the engine pulls feeders into the past until the
+quantity fits and nothing breaches, which is the point — the acceptance
+check's 5,000 chairs on three weeks' notice is told it is 30 Nov and reads
+late on every step; the what-if outage and the what-if second shift are
+told 14 and 21 Sept, so the pull runs into today and the breach counts move
+the way the tests always said (base clean then worse; base worse then
+clean); and "only the tasks that changed" now lists Stitching *and the two
+departments feeding it*, which the pull moved to make room, and not
+Assembly. A new test pins the feeder and gets runway. Parity, grid parity,
+scale and the actuals are untouched.
+
+**Checked.** `npm test`: 431 of 431, one run. `npm run typecheck` clean.
+`bench:engine --dump` against the dumps taken before the change: the
+sparse and dense fixtures identical to the row — 168 and 13,608 tasks,
+336 and 285,768 load rows, every department-day — so where no pull is
+needed nothing moves, which is the parity promise kept. Engine times
+unchanged within noise (um 11 s, um4 53 s as the planner). `npm run
+screenshot`: 51 of 51; the *parallel feeders* step now counts the
+`gantt-pulled` rows instead of looking for a runway breach — the D-70
+contradiction pulls two rows earlier, declaring the two departments
+parallel takes it to none.
+
+**Not a defect, to confirm with PPC.** The engine subtracts D-minus as
+*calendar* days from the container date and snaps to the previous working
+day; the guide did not say which. U&M's sheet almost certainly means
+calendar days. Added to the questions for the PPC session (§8.4).
 
 ### 2026-10-12 — Five items, three days: the mock run (KRAM/13)
 

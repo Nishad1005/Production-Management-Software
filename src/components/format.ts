@@ -16,11 +16,15 @@ export const BREACH_LABEL: Record<string, string> = {
   late: 'Late',
 }
 
+/** What a pulled finish means, in one line. */
+export const PULLED_EXPLAINER = (days: number) =>
+  `Finishes ${days} working ${days === 1 ? 'day' : 'days'} earlier than its D-minus date, so the department after it has the days the quantity needs. Not a breach: a D-minus is a latest.`
+
 export const BREACH_EXPLAINER: Record<string, string> = {
   late: 'Behind: what remains was re-planned from today and still overruns the due date.',
   material: 'The window opens before material is available.',
   runway:
-    'Fewer working days than the department needs. Overtime cannot fix this.',
+    'A department upstream finishes too late to leave this one the working days it needs, and the engine will not move it: it is pinned, or it is behind and already placed from today. Overtime on this department cannot fix it; moving the pin, or overtime on the feeder, can.',
   pin: 'A manual pin has pushed this past its due date. Reported, not corrected.',
   no_capacity: 'No rate for this component in this department.',
   out_of_horizon: 'The window falls outside the working-day calendar.',

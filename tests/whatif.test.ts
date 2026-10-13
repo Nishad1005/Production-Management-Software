@@ -12,18 +12,20 @@ async function whatIf(
     from?: string
     to?: string
     factor?: number
+    today?: string
   },
 ) {
   const { rows } = await c.query<{ id: string }>(
     `select run_what_if($1,
        array['confirmed','probable']::order_confidence[],
-       $2, $3::date, $4::date, $5::numeric) as id`,
+       $2, $3::date, $4::date, $5::numeric, $6::date) as id`,
     [
       opts.note,
       opts.department ?? null,
       opts.from ?? null,
       opts.to ?? null,
       opts.factor ?? null,
+      opts.today ?? null,
     ],
   )
   return rows[0].id
@@ -43,7 +45,17 @@ describe('what-if scenarios', () => {
     await withRollback(async (c) => {
       await applySeed(c)
       await createOrder(c, { qty: 250, stuffingDate: '2026-11-16' })
-      const base = await runSchedule(c)
+      // Told the day, so there is a today for the pull to run into. Left
+      // out, the engine (since 14 Oct) simply pulls wood and fabric cutting
+      // earlier into the past to make room for the outage, and nothing
+      // breaches. Told it is 14 Sept — the day before wood is due to start
+      // — the base plan is clean, and the scenario is not: stitching's
+      // window reaches back to mid-September, wood would have had to be
+      // done before today, and stitching, placed after the feeders it could
+      // not pull, ends past its date.
+      const today = '2026-09-14'
+      const base = await runSchedule(c, { today })
+      expect(await breachCount(c, base)).toBe(0)
 
       const scenario = await whatIf(c, {
         note: 'Stitching down for a fortnight',
@@ -51,6 +63,7 @@ describe('what-if scenarios', () => {
         from: '2026-09-28',
         to: '2026-10-11',
         factor: 0,
+        today,
       })
 
       expect(await breachCount(c, scenario)).toBeGreaterThan(
@@ -62,17 +75,25 @@ describe('what-if scenarios', () => {
   it('adds capacity and resolves breaches', async () => {
     await withRollback(async (c) => {
       await applySeed(c)
-      // Enough to overload stitching, which runs 30 covers a day.
+      // Enough to overload stitching, which runs 30 covers a day: 600
+      // chairs is three weeks of stitching against a ten-day gap, so the
+      // feeders are pulled back past 21 Sept, the day the engine is told it
+      // is, and stitching — placed after the feeders it could not pull —
+      // ends past its date.
       await createOrder(c, { qty: 600, stuffingDate: '2026-12-01' })
-      const base = await runSchedule(c)
+      const today = '2026-09-21'
+      const base = await runSchedule(c, { today })
       expect(await breachCount(c, base)).toBeGreaterThan(0)
 
+      // Three times the rate brings stitching's start into October, and the
+      // pull inside the days there are.
       const scenario = await whatIf(c, {
         note: 'Second shift on stitching',
         department: 'STITCH',
         from: '2026-01-01',
         to: '2027-06-30',
         factor: 3,
+        today,
       })
 
       expect(await breachCount(c, scenario)).toBeLessThan(
@@ -231,8 +252,13 @@ describe('comparing runs', () => {
       ])
 
       expect(rows.length).toBeGreaterThan(0)
-      // Only stitching's capacity moved, so only stitching's tasks should.
+      // Only stitching's capacity moved. Its own window stretches back over
+      // the outage, and the pull (14 Oct) moves the departments feeding it
+      // earlier to make room — so wood and fabric cutting move with it.
+      // Assembly, after it, has no reason to.
       expect([...new Set(rows.map((r) => r.department_code))]).toEqual([
+        'WOOD',
+        'FABCUT',
         'STITCH',
       ])
       expect(rows.every((r) => ['moved', 'new_breach'].includes(r.change))).toBe(

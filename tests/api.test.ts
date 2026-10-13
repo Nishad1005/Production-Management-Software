@@ -253,13 +253,18 @@ describe('order writes', () => {
     await withRollback(async (c) => {
       await applySeed(c)
       await c.query(`insert into customers (code, name) values ('C1', 'Test customer')`)
-      // Five thousand chairs through a department making thirty covers a day
-      // cannot fit however far out the date is: a breach that is not 'late'.
+      // Five thousand chairs with the fabric arriving a week before the
+      // container: every department would have to start long before the
+      // material exists — a breach that is not 'late', so the breach list
+      // carries it. (Since 14 Oct the quantity pulls the chain earlier
+      // rather than breaching for runway, which is why the material date
+      // is what makes this one a breach.)
       await c.query(
         `select create_order('SO-5',
            (select id from customers where code = 'C1'),
            (select id from articles where code = 'AARA-LC'),
            5000, '2027-03-01'::date,
+           p_material_ready_date => '2027-02-20',
            p_accepted_against_plan => true,
            p_acceptance_note => 'Taken for the relationship') as id`,
       )

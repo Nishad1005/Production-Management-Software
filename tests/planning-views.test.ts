@@ -184,10 +184,13 @@ describe('order acceptance check', () => {
         `select department_code, is_feasible, breach_reason
            from check_order_acceptance(
              (select id from articles where code = 'AARA-LC'),
-             5000, '2026-12-20'::date)`,
+             5000, '2026-12-20'::date, p_today => '2026-11-30'::date)`,
       )
 
-      // A 5,000-chair order on three weeks' notice cannot be made.
+      // A 5,000-chair order on three weeks' notice cannot be made. The check
+      // is told the day: without one the engine (since 14 Oct) pulls every
+      // feeder earlier into the past until the quantity fits, and nothing
+      // reads as a breach.
       expect(rows.length).toBeGreaterThan(0)
       expect(rows.some((r) => !r.is_feasible)).toBe(true)
 

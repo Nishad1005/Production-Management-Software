@@ -174,6 +174,8 @@ export type GanttRow = {
   is_feasible: boolean
   breach_reason: string | null
   is_pinned: boolean
+  /** Working days this finish was pulled earlier than its D-minus for the quantity; null when not. */
+  pulled_days: number | null
 }
 
 export function useGantt(runId: string | undefined) {
@@ -250,6 +252,7 @@ export type AcceptanceRow = {
   qty_required: number
   is_feasible: boolean
   breach_reason: string | null
+  pulled_days: number | null
 }
 
 /** Spec §14 — the check that finds the problem before the commitment. */

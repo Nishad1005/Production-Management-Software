@@ -4,7 +4,7 @@ import { useAcceptanceCheck, useArticles } from '@/data/planning'
 import { friendlyWriteError } from '@/lib/queryClient'
 import { Button, Field, Panel, Table, Tag, Td, Th } from '@/components/ui'
 import { componentLabel, useDepartmentNames } from '@/components/names'
-import { BREACH_EXPLAINER, BREACH_LABEL, formatDateLong, formatNumber, inputClass } from '@/components/format'
+import { BREACH_EXPLAINER, BREACH_LABEL, PULLED_EXPLAINER, formatDateLong, formatNumber, inputClass } from '@/components/format'
 
 /**
  * Spec §14: "A merchandiser enters a proposed article, quantity and stuffing
@@ -142,7 +142,21 @@ export function Acceptance() {
                   <Td>{formatDateLong(r.due_date)}</Td>
                   <Td>
                     {r.is_feasible ? (
-                      <Tag tone="clear">Clear</Tag>
+                      <span className="flex flex-col gap-1">
+                        <span>
+                          <Tag tone="clear">Clear</Tag>
+                        </span>
+                        {r.pulled_days ? (
+                          <span
+                            className="text-mid text-caption"
+                            data-testid="accept-pulled"
+                            data-days={r.pulled_days}
+                            title={PULLED_EXPLAINER(r.pulled_days)}
+                          >
+                            Finishes {r.pulled_days} {r.pulled_days === 1 ? 'day' : 'days'} earlier than its D-minus, for the quantity.
+                          </span>
+                        ) : null}
+                      </span>
                     ) : (
                       <span className="flex flex-col gap-1">
                         <span>

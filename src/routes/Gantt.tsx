@@ -5,6 +5,7 @@ import { Empty, Field, Panel, Table, Tag, Td, Th } from '@/components/ui'
 import {
   BREACH_EXPLAINER,
   BREACH_LABEL,
+  PULLED_EXPLAINER,
   formatDateLong,
   formatNumber,
   inputClass,
@@ -595,7 +596,9 @@ function Bar({
             title={`${name}: ${formatDateLong(task.start_date)} → ${formatDateLong(task.end_date)} · ${formatNumber(task.qty_required, 0)} units${
               task.breach_reason
                 ? ` · ${BREACH_EXPLAINER[task.breach_reason] ?? task.breach_reason}`
-                : ''
+                : task.pulled_days
+                  ? ` · ${PULLED_EXPLAINER(task.pulled_days)}`
+                  : ''
             } — drag to reschedule`}
           />
         ) : task.qty_remaining === 0 ? (
@@ -635,6 +638,18 @@ function Bar({
             title={BREACH_EXPLAINER[task.breach_reason]}
           >
             {BREACH_LABEL[task.breach_reason] ?? task.breach_reason}
+          </span>
+        ) : task.pulled_days ? (
+          // Pulled earlier than its D-minus for the quantity the department
+          // after it has to make. Not a breach, so not the flag colour; the
+          // D-minus marker stays where it was, so the pull is visible.
+          <span
+            data-testid="gantt-pulled"
+            data-days={task.pulled_days}
+            className="text-mid pointer-events-none absolute top-1/2 right-0 -translate-y-1/2 bg-white pl-2 text-caption font-medium"
+            title={PULLED_EXPLAINER(task.pulled_days)}
+          >
+            {task.pulled_days}d earlier
           </span>
         ) : null}
       </div>

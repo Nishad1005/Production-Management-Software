@@ -163,21 +163,28 @@ describe('what the graph changes about the guard', () => {
 })
 
 describe('the contradiction the guard is about', () => {
-  it('does produce a runway breach the order alone would not justify', async () => {
+  it('pulls the feeder earlier for a deadline the order alone would not need, and still reports the contradiction', async () => {
     await withRollback(async (c) => {
       await applySeed(c)
       // Fabric cutting must now finish ten days before wood, while sitting
-      // after it — so the engine holds it back behind work that is not due yet.
+      // after it. Until 14 Oct the engine held it back behind work not due
+      // yet and reported runway; now it pulls wood's finish earlier so the
+      // fabric can be cut when the sheet says — the plan absorbs the
+      // contradiction, and the guard below is what still reports it.
       await c.query(`select set_dminus('AARA-LC', 'FABCUT', 70)`)
       await createOrder(c, { qty: 100, stuffingDate: '2026-12-01' })
       const run = await runSchedule(c)
 
-      const { rows } = await c.query<{ breach_reason: string | null }>(
-        `select breach_reason from schedule_gantt
-          where run_id = $1 and department_code = 'FABCUT'`,
+      const { rows } = await c.query<{ department_code: string; breach_reason: string | null; pulled_days: number | null; start_date: string; end_date: string }>(
+        `select department_code, breach_reason, pulled_days, start_date, end_date from schedule_gantt
+          where run_id = $1 and department_code in ('FABCUT', 'WOOD')`,
         [run],
       )
-      expect(rows[0].breach_reason).toBe('runway')
+      const fabcut = rows.find((r) => r.department_code === 'FABCUT')!
+      const wood = rows.find((r) => r.department_code === 'WOOD')!
+      expect(fabcut.breach_reason).toBeNull()
+      expect(wood.pulled_days).toBeGreaterThan(0)
+      expect(wood.end_date < fabcut.start_date).toBe(true)
 
       const { rows: flagged } = await conflicts(c)
       expect(flagged).toHaveLength(1)

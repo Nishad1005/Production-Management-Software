@@ -544,6 +544,20 @@ await step('parallel feeders', async () => {
     { timeout: 60_000 },
   )
 
+  // While the contradiction stands, the engine pulls the feeder's finish
+  // earlier to honour the later deadline (since 14 Oct; before that it held
+  // the work back and reported runway). Count the pulled rows before.
+  const pulledRows = async () => {
+    await go('#/gantt', 'text=Schedule')
+    await page.waitForSelector('[data-testid="gantt-order"]', { timeout: 60_000 })
+    await page.waitForTimeout(1500)
+    await page.click('[data-testid="gantt-expand-all"]')
+    await page.waitForSelector('[data-testid="gantt-bar"]', { timeout: 30_000 })
+    return page.locator('[data-testid="gantt-pulled"]').count()
+  }
+  const pulledBefore = await pulledRows()
+  if (!pulledBefore) throw new Error('the contradiction pulled nothing earlier')
+
   // Say what is true on Masters — sanding waits for nothing.
   await go('#/masters?tab=route', 'text=What feeds what')
   const dependencies = page.locator('[data-testid="route-dependency-grid"]')
@@ -581,21 +595,15 @@ await step('parallel feeders', async () => {
     { timeout: 60_000 },
   )
 
-  // And so does the runway breach it was predicting.
-  //
-  // Read from the summary strips' attribute, not from the page text. The text
-  // version of this check looked for lowercase "runway" and the screen has
-  // always rendered "Runway" — so it passed for seven weeks without once being
-  // able to fail. Each order now carries its breach count as data.
-  await go('#/gantt', 'text=Schedule')
-  await page.waitForSelector('[data-testid="gantt-order"]', { timeout: 60_000 })
-  await page.waitForTimeout(1500)
-  await page.click('[data-testid="gantt-expand-all"]')
-  await page.waitForSelector('[data-testid="gantt-bar"]', { timeout: 30_000 })
-  const runway = await page.evaluate(() =>
-    /\bRunway\b/.test(document.body.textContent ?? ''),
-  )
-  if (runway) throw new Error('runway breach survived the parallel declaration')
+  // And so does the pull it was causing: fewer rows read "earlier" once
+  // sanding no longer waits for assembly. Read from an attribute, never the
+  // prose — the text version of this check looked for lowercase "runway"
+  // and the screen always rendered "Runway", so it passed for seven weeks
+  // without once being able to fail.
+  const pulledAfter = await pulledRows()
+  if (pulledAfter >= pulledBefore) {
+    throw new Error(`the parallel declaration left ${pulledAfter} pulled rows against ${pulledBefore} before`)
+  }
 
   // Put it back, so the steps after this one see the schedule they expect.
   await go('#/capacity', 'text=Capacity sheet')
@@ -614,7 +622,7 @@ await step('parallel feeders', async () => {
   await back.press('Enter')
   await page.waitForTimeout(1200)
 
-  return 'declaring two departments parallel cleared the false breach'
+  return `declaring two departments parallel took the pulled rows from ${pulledBefore} to ${pulledAfter}`
 })
 
 // --- declaring output, and the next bench counting it in --------------------

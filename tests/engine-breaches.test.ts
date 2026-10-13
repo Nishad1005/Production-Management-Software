@@ -14,10 +14,11 @@ async function tasks(c: pg.Client, run: string) {
     is_feasible: boolean
     breach_reason: string | null
     is_pinned: boolean
+    pulled_days: number | null
   }>(
     `select d.code as dept, cmp.code as component,
             t.start_date::text, t.end_date::text, t.due_date::text,
-            t.is_feasible, t.breach_reason, t.is_pinned
+            t.is_feasible, t.breach_reason, t.is_pinned, t.pulled_days
        from schedule_tasks t
        join departments d on d.id = t.department_id
        join components cmp on cmp.id = t.component_id
@@ -50,25 +51,50 @@ describe('feasibility checks', () => {
     })
   })
 
-  it('flags runway when a department cannot start early enough', async () => {
+  it('pulls the feeders earlier when a department needs more days than its gap', async () => {
     await withRollback(async (c) => {
       await applySeed(c)
-      // Stitching runs 30 covers a day and has ten calendar days of runway
-      // between its own deadline and fabric cutting's. 600 chairs needs about
-      // twenty days, so it has to start before the fabric exists — which is the
-      // one breach overtime cannot fix.
+      // Stitching runs 30 covers a day and has ten calendar days between its
+      // own deadline and fabric cutting's. 600 chairs needs about twenty, so
+      // the fabric must be cut earlier than its D-minus says — and since
+      // 14 Oct the engine pulls fabric cutting (and wood behind it) earlier
+      // rather than reporting runway. A D-minus is a latest finish.
       await createOrder(c, { qty: 600, stuffingDate: '2026-12-01' })
       const run = await runSchedule(c)
 
       const all = await tasks(c, run)
-      const stitching = all.find((t) => t.dept === 'STITCH')
-      expect(stitching?.breach_reason).toBe('runway')
+      const stitching = all.find((t) => t.dept === 'STITCH')!
+      const fabcut = all.find((t) => t.dept === 'FABCUT')!
+      const wood = all.find((t) => t.dept === 'WOOD')!
+      expect(stitching.breach_reason).toBeNull()
+      expect(fabcut.pulled_days).toBeGreaterThan(0)
+      expect(fabcut.end_date! < stitching.start_date!).toBe(true)
+      // The pull propagates: wood ends before the fabric is cut.
+      expect(wood.end_date! < fabcut.start_date!).toBe(true)
+      // Stitching itself was not pulled: nothing after it needed the days.
+      expect(stitching.pulled_days).toBeNull()
+    })
+  })
 
-      // Wood is first in the route, so it has no upstream to be blocked by —
-      // whatever else is wrong, it is not a runway breach.
-      expect(all.find((t) => t.dept === 'WOOD')?.breach_reason).not.toBe(
-        'runway',
+  it('names runway for the one chain it will not move: a pinned feeder', async () => {
+    await withRollback(async (c) => {
+      await applySeed(c)
+      const line = await createOrder(c, { qty: 600, stuffingDate: '2026-12-01' })
+      const first = await tasks(c, await runSchedule(c))
+      const stitching = first.find((t) => t.dept === 'STITCH')!
+      // Pin fabric cutting to start the day stitching must start: pinned
+      // work is honoured and reported, never pulled.
+      await c.query(
+        `insert into schedule_pins
+           (shipment_line_id, department_id, component_id, pinned_start_date, reason)
+         values ($1, (select id from departments where code = 'FABCUT'),
+                 (select id from components where code = 'FAB-PANEL'),
+                 $2::date, 'Cloth held at the port')`,
+        [line, stitching.start_date],
       )
+      const pinned = await tasks(c, await runSchedule(c))
+      expect(pinned.find((t) => t.dept === 'FABCUT')!.is_pinned).toBe(true)
+      expect(pinned.find((t) => t.dept === 'STITCH')!.breach_reason).toBe('runway')
     })
   })
 
