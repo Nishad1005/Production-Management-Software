@@ -244,6 +244,16 @@ export type DepartmentDay = {
   attendance_fraction: number | null
   rates: number
   rates_with_crew: number
+  /** Overtime person-hours entered for the day; null when nobody has said. */
+  ot_person_hours: number | null
+  /** What that overtime adds to the day as a fraction of the rate. */
+  ot_fraction: number | null
+  /** More hours entered than the shift allows per person; the plan counts the maximum. */
+  ot_over_limit: boolean | null
+  /** present × net production hours + overtime person-hours. */
+  man_hours: number | null
+  max_ot_hours: number
+  net_production_hours: number
 }
 
 export function useDepartmentDay(departmentCode: string | null) {
@@ -283,13 +293,16 @@ export function useSetAttendance() {
     date: string
     present: number | null
     note?: string | null
-  }>(async ({ departmentCode, shiftCode, date, present, note }) => {
+    /** Overtime person-hours for the day; left out, the hours already entered stay. */
+    otPersonHours?: number | null
+  }>(async ({ departmentCode, shiftCode, date, present, note, otPersonHours }) => {
     await rpc('set_attendance', {
       p_department_code: departmentCode,
       p_shift_code: shiftCode,
       p_date: date,
       p_present: present,
       p_note: note ?? null,
+      p_ot_person_hours: otPersonHours ?? null,
     })
   })
 }

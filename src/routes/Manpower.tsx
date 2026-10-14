@@ -151,10 +151,15 @@ export function Manpower() {
                   </span>
                   {r.absent > 0 ? <span>{r.absent} out</span> : null}
                   {r.on_leave > 0 ? <span>{r.on_leave} on leave</span> : null}
-                  {r.ot_hours > 0 ? (
-                    <span>
-                      {formatNumber(r.ot_hours, 1)} OT hours across{' '}
-                      {r.people_on_ot}
+                  {r.ot_person_hours > 0 ? (
+                    <span data-testid="manpower-ot" data-hours={r.ot_person_hours}>
+                      {formatNumber(r.ot_person_hours, 1)} overtime hours
+                      {r.people_on_ot > 0 ? <> across {r.people_on_ot}</> : null}
+                    </span>
+                  ) : null}
+                  {r.man_hours !== null ? (
+                    <span title="Who came in × the shift's production hours, plus the overtime">
+                      {formatNumber(r.man_hours, 0)} man-hours
                     </span>
                   ) : null}
                   {r.unrecorded > 0 ? (

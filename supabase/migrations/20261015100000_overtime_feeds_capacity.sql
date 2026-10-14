@@ -1,0 +1,1392 @@
+-- Kram — overtime feeds capacity, and the day is counted in man-hours.
+--
+-- ---------------------------------------------------------------------------
+-- Overtime worked was stored per person (employee_attendance.ot_hours, 15 Aug)
+-- and never reached the plan: a department that stayed three hours made the
+-- same on the grid as one that went home. Man-hours existed nowhere. Asked for
+-- on 14 Oct, for the demonstration week: "how overtime and hours and people
+-- will be recorded".
+--
+-- Now department_attendance carries the day's overtime person-hours — entered
+-- as a total on Production beside "who came in", or summed from the roster on
+-- Manpower, the same fact either way. The standing rate for the day becomes
+--
+--   units_per_day × present/manpower × (1 + overtime) × machines
+--
+-- where overtime = person-hours × the shift's overtime efficiency ÷ (people ×
+-- the shift's net production hours), person-hours capped at the shift's
+-- maximum per person. Three hours by four of a crew of twelve on an eight-hour
+-- shift at 85% is 12 × 0.85 ÷ 96 = 10.6% more that day. Entered ahead, it is
+-- planned overtime and shows on the heatmap; entered in the evening, it is what
+-- happened. Man-hours = present × net production hours + overtime person-hours,
+-- derived on the views, not stored.
+--
+-- resolve_capacity stays the referee (tests/engine-grid-parity) and gains the
+-- same term, written once in the generator and pasted into both.
+--
+-- Regenerated from the text of 20261015090000 (the engine), not retyped.
+-- ---------------------------------------------------------------------------
+
+alter table public.department_attendance
+  add column ot_person_hours numeric(8, 2) not null default 0
+    check (ot_person_hours >= 0);
+
+comment on column public.department_attendance.ot_person_hours is
+  'Overtime person-hours for the day (worked, or agreed ahead). Raises the day''s capacity at the shift''s overtime efficiency, capped at max_ot_hours per person present.';
+
+-- ---------------------------------------------------------------------------
+-- Writing it. A sixth parameter with a default would leave the five-parameter
+-- function ambiguous beside it, so the old signature goes.
+-- ---------------------------------------------------------------------------
+drop function if exists public.set_attendance(text, text, date, integer, text);
+
+create or replace function public.set_attendance(
+  p_department_code text,
+  p_shift_code text,
+  p_date date,
+  p_present integer,
+  p_note text default null,
+  p_ot_person_hours numeric default null
+)
+returns void
+language plpgsql
+as $$
+declare
+  v_department uuid;
+  v_shift uuid;
+begin
+  select id into v_department from public.departments where code = p_department_code;
+  select id into v_shift from public.shifts where code = p_shift_code;
+
+  if v_department is null then
+    raise exception 'unknown department %', p_department_code;
+  end if;
+  if v_shift is null then
+    raise exception 'unknown shift %', p_shift_code;
+  end if;
+  if p_ot_person_hours is not null and p_ot_person_hours < 0 then
+    raise exception 'overtime hours cannot be negative';
+  end if;
+
+  -- Null clears the entry, which is not the same as entering zero. Zero says
+  -- nobody came in and drops the day's capacity to nothing; clearing says
+  -- nobody has recorded it, and hands the day back to the standing rate.
+  if p_present is null then
+    delete from public.department_attendance
+     where department_id = v_department
+       and shift_id = v_shift
+       and attendance_date = p_date;
+    return;
+  end if;
+
+  -- Overtime left null keeps what was there: "who came in" can be corrected
+  -- without re-typing the hours.
+  insert into public.department_attendance
+    (department_id, shift_id, attendance_date, present, note, ot_person_hours)
+  values (v_department, v_shift, p_date, p_present, p_note, coalesce(p_ot_person_hours, 0))
+  on conflict (department_id, shift_id, attendance_date)
+  do update set present = excluded.present,
+                note = excluded.note,
+                ot_person_hours = coalesce(p_ot_person_hours, public.department_attendance.ot_person_hours);
+end;
+$$;
+
+revoke execute on function
+  public.set_attendance(text, text, date, integer, text, numeric) from public, anon;
+grant execute on function
+  public.set_attendance(text, text, date, integer, text, numeric) to authenticated;
+
+-- The roster recounts the head count; now it sums the overtime too, so a
+-- person marked in with three hours is three hours on the department.
+create or replace function public.set_employee_attendance(
+  p_emp_code text,
+  p_date date,
+  p_status public.attendance_status,
+  p_ot_hours numeric default 0,
+  p_note text default null
+)
+returns void
+language plpgsql
+as $$
+declare
+  v_employee uuid;
+  v_department uuid;
+  v_shift uuid;
+  v_department_code text;
+  v_shift_code text;
+  v_present integer;
+  v_ot numeric;
+begin
+  select e.id, e.department_id, e.default_shift_id
+    into v_employee, v_department, v_shift
+    from public.employees e
+   where e.emp_code = p_emp_code and e.is_active;
+
+  if v_employee is null then
+    raise exception 'unknown or inactive employee %', p_emp_code;
+  end if;
+  if v_department is null or v_shift is null then
+    raise exception
+      'employee % has no department or shift, so their day cannot be counted anywhere',
+      p_emp_code;
+  end if;
+
+  insert into public.employee_attendance
+    (employee_id, attendance_date, shift_id, status, ot_hours, note)
+  values (v_employee, p_date, v_shift, p_status, coalesce(p_ot_hours, 0), p_note)
+  on conflict (employee_id, attendance_date)
+  do update set shift_id = excluded.shift_id,
+                status = excluded.status,
+                ot_hours = excluded.ot_hours,
+                note = excluded.note;
+
+  select count(*) filter (where ea.status = 'present'),
+         coalesce(sum(ea.ot_hours) filter (where ea.status = 'present'), 0)
+    into v_present, v_ot
+    from public.employee_attendance ea
+    join public.employees e on e.id = ea.employee_id
+   where e.department_id = v_department
+     and ea.shift_id = v_shift
+     and ea.attendance_date = p_date;
+
+  select d.code, s.code into v_department_code, v_shift_code
+    from public.departments d, public.shifts s
+   where d.id = v_department and s.id = v_shift;
+
+  perform public.set_attendance(v_department_code, v_shift_code, p_date, v_present, null, v_ot);
+end;
+$$;
+
+-- ---------------------------------------------------------------------------
+-- The referee, with the same term.
+-- ---------------------------------------------------------------------------
+create or replace function public.resolve_capacity(
+  p_department_id uuid,
+  p_shift_id uuid,
+  p_component_id uuid,
+  p_date date
+)
+returns numeric
+language sql
+stable
+as $$
+  select coalesce(
+    -- 1. Someone typed a figure for this component on this day.
+    (
+      select co.units_per_day
+      from public.capacity_overrides co
+      where co.department_id = p_department_id
+        and co.shift_id = p_shift_id
+        and p_date between co.from_date and co.to_date
+        and co.component_id is not distinct from p_component_id
+      limit 1
+    ),
+    -- 2. Someone typed a figure for the whole department on this day.
+    (
+      select co.units_per_day
+      from public.capacity_overrides co
+      where co.department_id = p_department_id
+        and co.shift_id = p_shift_id
+        and p_date between co.from_date and co.to_date
+        and co.component_id is null
+      limit 1
+    ),
+    -- 3. The standing rate, scaled by who came in, the overtime entered, and
+    -- what is running. Each factor is optional and independent: attendance
+    -- applies only where the rate carries the crew it was measured with,
+    -- overtime only where hours were entered for the day, machines only where
+    -- the department has any recorded. Where none is known this is the
+    -- standing rate untouched.
+    (
+      select round(
+               cr.units_per_day
+               * coalesce(
+                     case when cr.manpower is not null and cr.manpower > 0
+                          then att.present::numeric / cr.manpower
+                     end,
+                     1)
+                 * (1 + coalesce(
+                     case when att.ot_person_hours > 0
+                           and coalesce(att.present, cr.manpower) > 0
+                           and s.net_production_hours > 0
+                          then least(att.ot_person_hours,
+                                     s.max_ot_hours * coalesce(att.present, cr.manpower))
+                               * s.ot_efficiency_pct / 100.0
+                               / (coalesce(att.present, cr.manpower) * s.net_production_hours)
+                     end,
+                     0))
+               * coalesce(
+                   public.machine_availability(p_department_id, p_date),
+                   1
+                 ),
+               3
+             )
+        from public.component_rates cr
+        join public.shifts s on s.id = cr.shift_id
+        left join public.department_attendance att
+          on att.department_id = cr.department_id
+         and att.shift_id = cr.shift_id
+         and att.attendance_date = p_date
+       where cr.department_id = p_department_id
+         and cr.shift_id = p_shift_id
+         and cr.component_id = p_component_id
+    )
+  );
+$$;
+
+comment on function public.resolve_capacity is
+  'Units/day for one department+shift+component+date. Component override beats department override beats the standing rate scaled by attendance, overtime and machines.';
+
+-- ---------------------------------------------------------------------------
+-- The engine's grid, the same term.
+-- ---------------------------------------------------------------------------
+create or replace function public.run_schedule(
+  p_confidence public.order_confidence[]
+    default array['confirmed', 'probable']::public.order_confidence[],
+  p_make_current boolean default true,
+  p_note text default null,
+  p_today date default null
+)
+returns uuid
+language plpgsql
+as $$
+declare
+  v_run_id uuid;
+  v_started timestamptz := clock_timestamp();
+  v_from date;
+  v_to date;
+  v_tasks integer := 0;
+  v_breaches integer := 0;
+  v_prev uuid;
+  v_today_next date;
+  v_max_depth integer := 0;
+  v_depth integer;
+begin
+  -- The run that is current as this one starts. With p_today given, the days
+  -- before today are taken from it rather than planned again ("The past is
+  -- frozen", below).
+  select id into v_prev from public.schedule_runs where is_current;
+
+  insert into public.schedule_runs (params, note, status)
+  values (
+    jsonb_build_object(
+      'confidence', to_jsonb(p_confidence),
+      'make_current', p_make_current,
+      'today', p_today
+    ),
+    p_note,
+    'running'
+  )
+  returning id into v_run_id;
+
+  -- Guards so two runs inside one explicit transaction do not collide: ON
+  -- COMMIT DROP only fires at commit, which may be a long way off.
+  drop table if exists _today, _dept, _edge, _reach, _article_dept, _yield, _pair, _task,
+                       _cap_pair, _mach, _cap_shift, _cum, _win, _upstream, _final,
+                       _wd, _load, _cap_window, _depth, _pb, _fwd;
+
+  -- -------------------------------------------------------------------------
+  -- The route graph.
+  --
+  -- Cumulative yield used to live here, as a window running down route_position.
+  -- It depends on the article, so it has moved to _yield below; this is now just
+  -- the set of departments in play.
+  -- -------------------------------------------------------------------------
+  create temp table _dept on commit drop as
+  select d.id, d.route_position, d.yield_pct
+    from public.departments d
+   where d.is_active;
+
+  -- -------------------------------------------------------------------------
+  -- The calendar, as a set.
+  --
+  -- prev_working_day, next_working_day and working_days_between are SQL
+  -- functions with sub-selects in their bodies, which the planner will not
+  -- inline, so every call is its own statement — forty thousand tasks would be
+  -- eighty thousand statements, each paying the row-level policy once. The
+  -- same three answers as three columns of one pass over working_days: the
+  -- running maximum of working dates (the day itself if it works, else the
+  -- last one before), the running minimum from the other end, and the dense
+  -- working-day sequence, whose difference counts the working days between
+  -- two working days. A date outside the calendar has no row here, so a join
+  -- reads null — the functions' own answer for it, and the behaviour the
+  -- engine relies on to fail visibly rather than snap to the horizon.
+  -- tests/calendar-as-a-set.test.ts proves all three against the functions.
+  -- -------------------------------------------------------------------------
+  create temp table _wd on commit drop as
+  select calendar_date,
+         is_working,
+         working_day_seq,
+         max(case when is_working then calendar_date end) over (
+           order by calendar_date
+           rows between unbounded preceding and current row
+         ) as prev_working,
+         min(case when is_working then calendar_date end) over (
+           order by calendar_date
+           rows between current row and unbounded following
+         ) as next_working
+    from public.working_days;
+
+  create unique index on _wd (calendar_date);
+
+  -- The first working day on or after today, when the engine has been told
+  -- what day it is. Outside the calendar there is no such day, and saying so
+  -- beats planning from a date that does not exist.
+  if p_today is not null then
+    select next_working into v_today_next from _wd where calendar_date = p_today;
+    if v_today_next is null then
+      raise exception 'Today (%) is outside the working-day calendar', p_today;
+    end if;
+  end if;
+
+  -- -------------------------------------------------------------------------
+  -- A day a department has entered is over for that department.
+  --
+  -- The evening run used to re-plan today's remainder onto today: a
+  -- department that had declared half its target at six o'clock saw the day's
+  -- planned figure on the grid drop to meet what was made ("made 33 of 32,
+  -- met") and its remainder planned for a day that was over. Found by the
+  -- mock run, 12 Oct. The honest rule is per department and day: once a
+  -- declaration dated today exists for a department, today is a past day for
+  -- that department. Its loads and capacity for today are frozen from the
+  -- previous run (below, with the days before today), nothing new is placed
+  -- on it, and the first day its work can begin is the next working day. A
+  -- department that has entered nothing today is still working today. With
+  -- p_today null nothing here applies.
+  -- -------------------------------------------------------------------------
+  create temp table _today on commit drop as
+  select d.id as department_id,
+         t.eff_today,
+         (select nw.next_working from _wd nw where nw.calendar_date = t.eff_today) as first_day
+    from public.departments d
+    cross join lateral (
+      select case
+               when p_today is null then null::date
+               when exists (select 1 from public.production_declarations pd
+                             where pd.department_id = d.id
+                               and pd.production_date = p_today)
+               then p_today + 1
+               else p_today
+             end as eff_today
+    ) t;
+  create unique index on _today (department_id);
+
+  create temp table _edge on commit drop as
+  select dd.department_id, dd.depends_on_department_id
+    from public.department_dependencies dd
+    join _dept a on a.id = dd.department_id
+    join _dept b on b.id = dd.depends_on_department_id;
+
+  -- Reachability, closed once: (root, node) for every department downstream of
+  -- root, root included via the base case. Fourteen nodes, so the closure is a
+  -- few hundred rows and both directions read off the same table — descendants
+  -- by fixing root, ancestors by fixing node.
+  --
+  -- union rather than union all: it deduplicates, which both terminates the walk
+  -- and keeps a department from being counted twice when two branches rejoin. A
+  -- yield must not be applied twice because the material reaches it two ways.
+  create temp table _reach on commit drop as
+  with recursive down (root, node) as (
+    select d.id, d.id from _dept d
+    union
+    select r.root, e.department_id
+      from down r
+      join _edge e on e.depends_on_department_id = r.node
+  )
+  select root, node from down;
+
+  create index on _reach (root);
+  create index on _reach (node);
+
+  -- Depth along the route: the longest path from an entry point, so that
+  -- every edge runs from a lower depth to a higher one. Work that is behind
+  -- is placed in this order, feeders before the departments they feed, and
+  -- when a depth is placed everything upstream of it already is. The cycle
+  -- trigger on department_dependencies is what keeps the walk finite.
+  create temp table _depth on commit drop as
+  with recursive d (department_id, depth) as (
+    select d.id, 0
+      from _dept d
+     where not exists (select 1 from _edge e where e.department_id = d.id)
+    union
+    select e.department_id, d.depth + 1
+      from d
+      join _edge e on e.depends_on_department_id = d.department_id
+  )
+  select department_id, max(depth) as depth
+    from d
+   group by department_id;
+
+  select coalesce(max(depth), 0) into v_max_depth from _depth;
+
+  -- Department × component pairs that can actually run: a rate on an active
+  -- shift that the department actually works. No row here means the department
+  -- does not touch that component.
+  create temp table _pair on commit drop as
+  select distinct cr.department_id, cr.component_id
+    from public.component_rates cr
+    join public.shifts s on s.id = cr.shift_id and s.is_active
+    join public.department_shifts ds
+      on ds.department_id = cr.department_id
+     and ds.shift_id = cr.shift_id
+     and ds.is_active
+    join _dept d on d.id = cr.department_id;
+
+  -- The departments each article actually passes through — the union across its
+  -- components of the departments that hold a rate for them.
+  create temp table _article_dept on commit drop as
+  select distinct bom.article_id, p.department_id
+    from public.article_bom bom
+    join _pair p on p.component_id = bom.component_id;
+
+  create index on _article_dept (article_id, department_id);
+
+  -- -------------------------------------------------------------------------
+  -- Cumulative yield, per article and department.
+  --
+  -- Spec §4: "a department must produce the shipped quantity divided by its own
+  -- yield and the yield of every department after it." After it means downstream
+  -- of it along the route the material takes — not, as this previously read,
+  -- every department with a higher route_position.
+  --
+  -- The difference is the whole of the defect this migration exists to fix. A
+  -- wooden leg is made in Wood and goes into the chair at Assembly; it never
+  -- enters Fabric Cutting or Stitching, and must not be inflated by their
+  -- losses. Restricting to _article_dept matters as much as walking the graph:
+  -- a department downstream in the graph that this article never visits cannot
+  -- lose any of its material either.
+  --
+  -- One row per (article, department) rather than per task — 71 × 14 at U&M,
+  -- against roughly 40,000 tasks.
+  -- -------------------------------------------------------------------------
+  create temp table _yield on commit drop as
+  select ad.article_id,
+         ad.department_id,
+         exp(sum(ln(d.yield_pct / 100.0))) as cum_yield
+    from _article_dept ad
+    join _reach r on r.root = ad.department_id
+    join _article_dept visited
+      on visited.article_id = ad.article_id
+     and visited.department_id = r.node
+    join _dept d on d.id = r.node
+   group by ad.article_id, ad.department_id;
+
+  create index on _yield (article_id, department_id);
+
+  -- -------------------------------------------------------------------------
+  -- Candidate tasks: shipment line × department × component.
+  -- Spec §4: the shipment line is the scheduling unit, never the order.
+  -- -------------------------------------------------------------------------
+  create temp table _task on commit drop as
+  select sl.id                        as shipment_line_id,
+         p.department_id,
+         p.component_id,
+         d.route_position,
+         sl.material_ready_date,
+         adm.is_complete              as dminus_complete,
+         case when adm.is_complete then wd.prev_working end as due_date,
+         round(sl.qty * bom.qty_per_unit / y.cum_yield, 3) as qty_required,
+         -- What the department has declared good against this job, every day
+         -- and shift summed, and what that leaves. qty_required keeps its
+         -- meaning for every view that compares declared against required;
+         -- placement, load and the breach tests work on what remains.
+         coalesce(done.qty_good, 0)                      as qty_done,
+         greatest(round(sl.qty * bom.qty_per_unit / y.cum_yield, 3)
+                  - coalesce(done.qty_good, 0), 0)       as qty_remaining
+    from public.shipment_lines sl
+    join public.orders o
+      on o.id = sl.order_id
+     and o.status in ('open', 'in_production')
+     and o.confidence = any (p_confidence)
+    join public.article_bom bom on bom.article_id = o.article_id
+    join _pair p on p.component_id = bom.component_id
+    join _dept d on d.id = p.department_id
+    join _yield y
+      on y.article_id = o.article_id
+     and y.department_id = p.department_id
+    join public.article_dept_dminus adm
+      on adm.article_id = o.article_id
+     and adm.department_id = p.department_id
+    left join _wd wd
+      on wd.calendar_date = sl.stuffing_date - adm.dminus_days
+    -- Grouped first, so the task set is not multiplied by the days declared.
+    left join (
+      select shipment_line_id, department_id, component_id,
+             sum(qty_good) as qty_good
+        from public.production_declarations
+       group by shipment_line_id, department_id, component_id
+    ) done
+      on done.shipment_line_id = sl.id
+     and done.department_id = p.department_id
+     and done.component_id = p.component_id;
+
+  analyze _task;
+
+  select min(due_date) - 730, max(due_date)
+    into v_from, v_to
+    from _task
+   where due_date is not null;
+
+  -- Nothing has a schedulable date — every article is missing its D-minus, or
+  -- there are no orders at all. The pipeline still runs to completion so those
+  -- tasks are written down with their reasons. Returning early here would make
+  -- "no order book" and "the whole order book is unschedulable" look identical,
+  -- which is the difference between nothing to do and an urgent problem.
+  if v_to is null then
+    v_from := date '3000-01-01';
+    v_to := date '3000-01-01';
+  end if;
+
+  -- Work that is behind is placed forward from today, and the grid has to
+  -- reach past the last due date for it to land anywhere: a year, in keeping
+  -- with the two it already reaches back.
+  if p_today is not null then
+    v_to := greatest(v_to, p_today + 365);
+  end if;
+
+  -- -------------------------------------------------------------------------
+  -- Capacity grid, per shift and per day.
+  -- Spec §11: capacity is the sum across active shifts of the override for that
+  -- date, falling back to the standing rate.
+  -- -------------------------------------------------------------------------
+  -- Only where work is actually being planned: the pairings in _task, not the
+  -- 994 in the masters (30 Aug).
+  create temp table _cap_pair on commit drop as
+  select distinct department_id, component_id from _task;
+
+  -- machine_availability() as a set: once per department and day rather than
+  -- once per cell. Active machines, less the ones with a downtime row covering
+  -- the day, over active machines. The exclusion constraint on machine_downtime
+  -- lets at most one row cover a machine on a day, so the left join cannot
+  -- count a machine twice. No row where the department has no active machine;
+  -- the join below then reads null and falls back to 1 — "nobody has said",
+  -- which is what the function's null meant and how it was resolved.
+  create temp table _mach on commit drop as
+  select m.department_id,
+         w.calendar_date,
+         count(*) filter (where dt.id is null)::numeric / count(*) as availability
+    from public.machines m
+    join (select distinct department_id from _cap_pair) p
+      on p.department_id = m.department_id
+    join public.working_days w
+      on w.is_working and w.calendar_date between v_from and v_to
+    left join public.machine_downtime dt
+      on dt.machine_id = m.id
+     and w.calendar_date between dt.from_date and dt.to_date
+   where m.is_active
+   group by m.department_id, w.calendar_date;
+
+  create index on _mach (department_id, calendar_date);
+
+  -- resolve_capacity(), as one statement over the whole grid instead of one
+  -- call per cell. The same three branches in the same order: a figure typed
+  -- for this component on this day, else one typed for the whole department,
+  -- else the standing rate scaled by who came in, the overtime entered, and
+  -- what is running. Each
+  -- left join is at most one row by constraint — the gist exclusion on
+  -- capacity_overrides, the unique keys on component_rates and
+  -- department_attendance — so the grid is not multiplied. The function itself
+  -- is unchanged and still the referee: tests/engine-grid-parity.test.ts
+  -- asserts every written cell equals it, on every branch.
+  --
+  -- A shift with no rate for a component contributes nothing unless somebody
+  -- typed a figure for it; a zero-capacity day (breakdown, shutdown) cannot
+  -- absorb work. Both are the WHERE at the end, which is what the DELETE this
+  -- replaces used to do.
+  create temp table _cap_shift on commit drop as
+  select g.department_id, g.shift_id, g.component_id, g.calendar_date, g.capacity
+    from (
+      select p.department_id,
+             ds.shift_id,
+             p.component_id,
+             w.calendar_date,
+             coalesce(
+               co_comp.units_per_day,
+               co_dept.units_per_day,
+               round(
+                 cr.units_per_day
+                 * coalesce(
+                     case when cr.manpower is not null and cr.manpower > 0
+                          then att.present::numeric / cr.manpower
+                     end,
+                     1)
+                 -- Overtime entered for the day adds to it: person-hours at the
+                 -- shift's overtime efficiency over the crew's normal hours,
+                 -- capped at what the shift allows (15 Oct).
+                 * (1 + coalesce(
+                     case when att.ot_person_hours > 0
+                           and coalesce(att.present, cr.manpower) > 0
+                           and s.net_production_hours > 0
+                          then least(att.ot_person_hours,
+                                     s.max_ot_hours * coalesce(att.present, cr.manpower))
+                               * s.ot_efficiency_pct / 100.0
+                               / (coalesce(att.present, cr.manpower) * s.net_production_hours)
+                     end,
+                     0))
+                 * coalesce(m.availability, 1),
+                 3)
+             ) as capacity
+        from _cap_pair p
+        join public.department_shifts ds
+          on ds.department_id = p.department_id and ds.is_active
+        join public.shifts s on s.id = ds.shift_id and s.is_active
+        join public.working_days w
+          on w.is_working and w.calendar_date between v_from and v_to
+        left join public.capacity_overrides co_comp
+          on co_comp.department_id = p.department_id
+         and co_comp.shift_id = ds.shift_id
+         and co_comp.component_id = p.component_id
+         and w.calendar_date between co_comp.from_date and co_comp.to_date
+        left join public.capacity_overrides co_dept
+          on co_dept.department_id = p.department_id
+         and co_dept.shift_id = ds.shift_id
+         and co_dept.component_id is null
+         and w.calendar_date between co_dept.from_date and co_dept.to_date
+        left join public.component_rates cr
+          on cr.department_id = p.department_id
+         and cr.shift_id = ds.shift_id
+         and cr.component_id = p.component_id
+        left join public.department_attendance att
+          on att.department_id = p.department_id
+         and att.shift_id = ds.shift_id
+         and att.attendance_date = w.calendar_date
+        left join _mach m
+          on m.department_id = p.department_id
+         and m.calendar_date = w.calendar_date
+    ) g
+   where g.capacity > 0;
+
+  create index on _cap_shift (department_id, component_id, calendar_date);
+  analyze _cap_shift;
+
+  create temp table _cum on commit drop as
+  select department_id,
+         component_id,
+         calendar_date,
+         capacity,
+         sum(capacity) over (
+           partition by department_id, component_id
+           order by calendar_date
+           rows between unbounded preceding and current row
+         ) as cum
+    from (
+      select department_id, component_id, calendar_date, sum(capacity) as capacity
+        from _cap_shift
+       group by department_id, component_id, calendar_date
+    ) g;
+
+  create index on _cum (department_id, component_id, calendar_date);
+  analyze _cum;
+
+  -- -------------------------------------------------------------------------
+  -- Resolve each task's window.
+  -- -------------------------------------------------------------------------
+  create temp table _win on commit drop as
+  select t.*,
+         pin.pinned_start_date,
+         (pin.id is not null) as is_pinned,
+         cd.calendar_date     as eff_due,
+         cd.cum               as cum_due
+    from _task t
+    left join public.schedule_pins pin
+      on pin.is_active
+     and pin.shipment_line_id = t.shipment_line_id
+     and pin.department_id = t.department_id
+     and pin.component_id = t.component_id
+
+    -- The last day *with capacity* on or before the due date, not the due date
+    -- itself. A department shut down over its own deadline still has a
+    -- schedule; it just has to finish earlier. Matching the due date exactly
+    -- would leave those tasks with no cumulative to work from and quietly
+    -- report them as out of horizon.
+    left join lateral (
+      select c.calendar_date, c.cum
+        from _cum c
+       where c.department_id = t.department_id
+         and c.component_id = t.component_id
+         and c.calendar_date <= t.due_date
+       order by c.calendar_date desc
+       limit 1
+    ) cd on true;
+
+  -- Backward placement, as a table: the forward passes below read it more
+  -- than once, and a department that is behind needs to know where the
+  -- departments feeding it ended up.
+  create temp table _pb on commit drop as
+  select w.*,
+         u.start_date as unpinned_start,
+         -- The D-minus date, kept: eff_due below may be pulled earlier.
+         w.eff_due   as dminus_due,
+         0::integer  as pulled_days,
+         -- Where a pin starts, for the departments feeding it.
+         case when w.is_pinned then (
+           select nw.next_working from _wd nw
+            where nw.calendar_date = case
+              when p_today is null then w.pinned_start_date
+              else greatest(w.pinned_start_date,
+                            (select td.eff_today from _today td where td.department_id = w.department_id))
+            end)
+         end as pin_start
+    from _win w
+
+    -- Unpinned: the latest window that still ends on the due date, sized to
+    -- what remains. Nothing to place when nothing remains.
+    left join lateral (
+      select min(c.calendar_date) as start_date
+        from _cum c
+       where not w.is_pinned
+         and w.qty_remaining > 0
+         and w.cum_due is not null
+         and c.department_id = w.department_id
+         and c.component_id = w.component_id
+         and c.calendar_date <= w.eff_due
+         and c.cum > w.cum_due - w.qty_remaining
+    ) u on true;
+
+  create index on _pb (shipment_line_id, department_id);
+  analyze _pb;
+
+  -- -------------------------------------------------------------------------
+  -- Quantity pulls the chain.
+  --
+  -- A D-minus is a latest finish, and finishing earlier is always allowed.
+  -- Until now a department's window ended on its D-minus date whatever the
+  -- quantity, and a department after it that needed more days than the gap
+  -- between the two deadlines was reported as a runway breach — or, told
+  -- the day, pushed later behind its feeder, past its own date and past the
+  -- container, with seven months of room in front of it. That was the
+  -- plan refusing a 300-piece order the factory could make by starting
+  -- earlier.
+  --
+  -- So, from the end of the route back (reverse depth: a department's
+  -- consumers are always deeper), each unpinned task's effective due becomes
+  -- the earlier of its D-minus date and the working day before the earliest
+  -- start of anything it feeds on the same line — a pinned consumer by its
+  -- pin — and its window is placed again from there. The pull propagates:
+  -- a feeder placed in one pass is what its own feeders see in the next.
+  -- pulled_days records the working days between the D-minus date and the
+  -- effective due, for the Schedule to say "pulled 7 days earlier for the
+  -- quantity". A feeder pulled before today is simply behind (the forward
+  -- passes below), before its material is a material breach, and a pinned
+  -- feeder is never pulled — which is the one chain left for runway.
+  -- -------------------------------------------------------------------------
+  for v_depth in reverse v_max_depth..0 loop
+    update _pb pb
+       set eff_due = x.chain_due,
+           cum_due = x.chain_cum,
+           unpinned_start = x.start_date,
+           pulled_days = x.pulled
+      from (
+        select p.shipment_line_id, p.department_id, p.component_id,
+               cd.calendar_date as chain_due,
+               cd.cum           as chain_cum,
+               u.start_date,
+               (w0.working_day_seq - w1.working_day_seq)::integer as pulled
+          from _pb p
+          join _depth dp
+            on dp.department_id = p.department_id
+           and dp.depth = v_depth
+          -- The earliest start of anything downstream with work left.
+          cross join lateral (
+            select min(coalesce(c.pin_start, c.unpinned_start)) as consumer_start
+              from _reach r
+              join _pb c
+                on c.shipment_line_id = p.shipment_line_id
+               and c.department_id = r.node
+               and c.qty_remaining > 0
+             where r.root = p.department_id
+               and r.node <> p.department_id
+          ) k
+          -- The working day before it: the latest this task may end.
+          cross join lateral (
+            select pw.prev_working as target
+              from _wd pw
+             where pw.calendar_date = k.consumer_start - 1
+          ) t
+          -- The last day with capacity on or before that, and its running total.
+          join lateral (
+            select c.calendar_date, c.cum
+              from _cum c
+             where c.department_id = p.department_id
+               and c.component_id = p.component_id
+               and c.calendar_date <= t.target
+             order by c.calendar_date desc
+             limit 1
+          ) cd on true
+          -- The window back from there, sized to what remains.
+          left join lateral (
+            select min(c.calendar_date) as start_date
+              from _cum c
+             where c.department_id = p.department_id
+               and c.component_id = p.component_id
+               and c.calendar_date <= cd.calendar_date
+               and c.cum > cd.cum - p.qty_remaining
+          ) u on true
+          join _wd w0 on w0.calendar_date = p.eff_due
+          join _wd w1 on w1.calendar_date = cd.calendar_date
+         where not p.is_pinned
+           and p.qty_remaining > 0
+           and p.cum_due is not null
+           and t.target < p.eff_due
+      ) x
+     where pb.shipment_line_id = x.shipment_line_id
+       and pb.department_id = x.department_id
+       and pb.component_id = x.component_id;
+  end loop;
+  analyze _pb;
+
+  -- Forward placement: start on a given day and run until what remains is
+  -- covered. One row per task placed forward, with null dates when the day it
+  -- should start on is not in the grid; a task with no row here is placed
+  -- back from its date.
+  create temp table _fwd (
+    shipment_line_id uuid not null,
+    department_id uuid not null,
+    component_id uuid not null,
+    forward_start date,
+    forward_end date,
+    -- Whether the task is behind on its own account: the latest start that
+    -- still meets its date is before the first working day from today. False
+    -- for a task placed forward only because a department feeding it ends
+    -- later — that is the runway case, and it keeps that name.
+    own_late boolean not null default false,
+    primary key (shipment_line_id, department_id, component_id)
+  ) on commit drop;
+
+  -- Pinned work starts where the planner put it (spec §6 — honoured, then
+  -- reported, never undone). A pin already in the past starts from today:
+  -- the days before today are frozen below, and what remains cannot be made
+  -- on them. Pins wait for nothing; what they collide with is reported.
+  insert into _fwd (shipment_line_id, department_id, component_id,
+                    forward_start, forward_end)
+  select pb.shipment_line_id, pb.department_id, pb.component_id,
+         f.start_date, f.end_date
+    from _pb pb
+    left join lateral (
+          select s.calendar_date as start_date,
+                 (
+                   select min(c2.calendar_date)
+                     from _cum c2
+                    where c2.department_id = pb.department_id
+                      and c2.component_id = pb.component_id
+                      and c2.calendar_date >= s.calendar_date
+                      and c2.cum >= pb.qty_remaining + s.cum - s.capacity
+                 ) as end_date
+            from _cum s
+           where s.department_id = pb.department_id
+             and s.component_id = pb.component_id
+             and s.calendar_date = (
+               select nw.next_working from _wd nw
+                where nw.calendar_date = case
+                  when p_today is null then pb.pinned_start_date
+                  else greatest(pb.pinned_start_date,
+                                (select td.eff_today from _today td where td.department_id = pb.department_id))
+                end)
+        ) f on true
+   where pb.is_pinned
+     and pb.qty_remaining > 0;
+
+  -- Work that is behind. Told what day it is, the engine asks of every
+  -- unpinned task with something left: what is the first day it can actually
+  -- begin — the first working day from today, or the working day after the
+  -- last department upstream of it ends, whichever is later — and is the
+  -- latest start that still meets its date before that day? If so the task is
+  -- behind, through its own delay or a feeder's, and is placed forward from
+  -- that day. Under batch handoff a department cannot start before the
+  -- departments feeding it have finished (the runway rule), and a plan that
+  -- had Assembly start today on chairs whose covers Stitching also started
+  -- today was asking for something the floor cannot do.
+  --
+  -- Depth by depth, nearest the entry points first, so that by the time a
+  -- department is asked every department upstream of it already has its end:
+  -- a pin's or a late start's from this table, a job placed back from its
+  -- date ends on that date. A statement reads the rows the statements before
+  -- it wrote and never its own, which is what makes each pass see exactly the
+  -- depths below it. Upstream is the whole closure, not the direct feeders,
+  -- so a department the article skips does not break the chain; and it is
+  -- restricted to departments with something left to make, so a feeder that
+  -- has declared the whole job holds nothing back. One that has not declared
+  -- does: the plan is honest to the declarations it has. An ancestor without
+  -- an end (one that could not be placed at all) holds nothing either; it
+  -- carries its own breach.
+  if p_today is not null then
+    for v_depth in 0..v_max_depth loop
+      insert into _fwd (shipment_line_id, department_id, component_id,
+                        forward_start, forward_end, own_late)
+      select pb.shipment_line_id, pb.department_id, pb.component_id,
+             f.start_date, f.end_date,
+             (pb.unpinned_start is null or pb.unpinned_start < td.first_day)
+        from _pb pb
+        join _depth dp
+          on dp.department_id = pb.department_id
+         and dp.depth = v_depth
+        join _today td
+          on td.department_id = pb.department_id
+        cross join lateral (
+          select (select nw.next_working from _wd nw
+                   where nw.calendar_date = greatest(td.eff_today, coalesce(up.last_end + 1, td.eff_today)))
+                   as first_day
+            from (
+              select max(case when fw.shipment_line_id is not null then fw.forward_end
+                              else a.eff_due end) as last_end
+                from _reach r
+                join _pb a
+                  on a.shipment_line_id = pb.shipment_line_id
+                 and a.department_id = r.root
+                 and a.qty_remaining > 0
+                left join _fwd fw
+                  on fw.shipment_line_id = a.shipment_line_id
+                 and fw.department_id = a.department_id
+                 and fw.component_id = a.component_id
+               where r.node = pb.department_id
+                 and r.root <> pb.department_id
+            ) up
+        ) can
+        left join lateral (
+          select s.calendar_date as start_date,
+                 (
+                   select min(c2.calendar_date)
+                     from _cum c2
+                    where c2.department_id = pb.department_id
+                      and c2.component_id = pb.component_id
+                      and c2.calendar_date >= s.calendar_date
+                      and c2.cum >= pb.qty_remaining + s.cum - s.capacity
+                 ) as end_date
+            from _cum s
+           where s.department_id = pb.department_id
+             and s.component_id = pb.component_id
+             and s.calendar_date = can.first_day
+        ) f on true
+       where not pb.is_pinned
+         and pb.qty_remaining > 0
+         and pb.cum_due is not null
+         and (pb.unpinned_start is null
+              or can.first_day is null
+              or pb.unpinned_start < can.first_day);
+    end loop;
+  end if;
+
+  -- Where the departments upstream of each task end, for the runway check.
+  -- After the pull an unpinned feeder ends before its consumer starts by
+  -- construction; a pinned feeder, honoured where the planner put it, is the
+  -- chain the engine will not move — and the one runway now names. The
+  -- closure, restricted to departments with work left on the same line; a
+  -- department with no ancestors produces no row and no breach.
+  create temp table _upstream on commit drop as
+  with ends as (
+    select pb.shipment_line_id,
+           pb.department_id,
+           coalesce(fw.forward_end, pb.eff_due) as end_date
+      from _pb pb
+      left join _fwd fw
+        on fw.shipment_line_id = pb.shipment_line_id
+       and fw.department_id = pb.department_id
+       and fw.component_id = pb.component_id
+     where pb.qty_remaining > 0
+  )
+  select t.shipment_line_id,
+         t.department_id,
+         max(a.end_date) as upstream_due
+    from ends t
+    join _reach r
+      on r.node = t.department_id
+     and r.root <> t.department_id
+    join ends a
+      on a.shipment_line_id = t.shipment_line_id
+     and a.department_id = r.root
+   group by t.shipment_line_id, t.department_id;
+
+  create temp table _final on commit drop as
+  with placed as (
+    select pb.*,
+           fw.forward_start,
+           fw.forward_end,
+           -- Behind: placed forward without a pin, because its own latest
+           -- start had passed or because a department feeding it ends later.
+           (fw.shipment_line_id is not null and not pb.is_pinned) as is_late,
+           coalesce(fw.own_late, false) as own_late
+      from _pb pb
+      left join _fwd fw
+        on fw.shipment_line_id = pb.shipment_line_id
+       and fw.department_id = pb.department_id
+       and fw.component_id = pb.component_id
+  ),
+  anchored as (
+    select pl.*,
+           case when pl.is_pinned or pl.is_late then pl.forward_start
+                else pl.unpinned_start end as start_date,
+           -- Unpinned work ends on the last day it can actually be worked,
+           -- which is the due date unless the department is down over it. A
+           -- job with nothing left has no window at all.
+           case when pl.qty_remaining <= 0 then null
+                when pl.is_pinned or pl.is_late then pl.forward_end
+                else pl.eff_due end as end_date
+      from placed pl
+  ),
+  resolved as (
+    select a.*,
+           cs.cum      as start_cum,
+           cs.capacity as start_cap,
+           up.upstream_due,
+           -- Capacity actually available inside the resolved window.
+           case
+             when a.start_date is null or cs.cum is null then null
+             when a.is_pinned or a.is_late then null
+             else a.cum_due - cs.cum + cs.capacity
+           end as available
+      from anchored a
+      left join _cum cs
+        on cs.department_id = a.department_id
+       and cs.component_id = a.component_id
+       and cs.calendar_date = a.start_date
+      left join _upstream up
+        on up.shipment_line_id = a.shipment_line_id
+       and up.department_id = a.department_id
+  )
+  -- Breach classification. Order matters: a job with nothing left to make has
+  -- nothing to breach; a task with no D-minus has no dates to test for
+  -- anything else; and a pin or a late start that cannot finish in time is a
+  -- more useful thing to report than the material date it also happens to
+  -- miss.
+  select r.*,
+         (case
+           when r.qty_remaining <= 0                     then null
+           when not r.dminus_complete                    then 'dminus_incomplete'
+           when r.due_date is null or r.cum_due is null  then 'out_of_horizon'
+           when r.is_pinned
+                and (r.end_date is null or r.end_date > r.due_date) then 'pin'
+           when r.is_late and r.own_late
+                and (r.end_date is null or r.end_date > r.due_date) then 'late'
+           when r.is_late and not r.own_late
+                and (r.end_date is null or r.end_date > r.due_date) then 'runway'
+           when not r.is_pinned and not r.is_late
+                and (r.available is null or r.available < r.qty_remaining)
+                                                         then 'out_of_horizon'
+           when r.material_ready_date is not null
+                and r.start_date < r.material_ready_date then 'material'
+           when not r.is_late
+                and r.upstream_due is not null
+                and r.start_date < r.upstream_due        then 'runway'
+         end)::public.breach_reason as breach
+    from resolved r;
+
+  analyze _final;
+
+  -- -------------------------------------------------------------------------
+  -- Write the run.
+  -- -------------------------------------------------------------------------
+  insert into public.schedule_tasks (
+    run_id, shipment_line_id, department_id, component_id,
+    due_date, start_date, end_date, qty_required, days_needed,
+    is_feasible, breach_reason, is_pinned, qty_done, qty_remaining,
+    pulled_days
+  )
+  select v_run_id, f.shipment_line_id, f.department_id, f.component_id,
+         f.due_date, f.start_date, f.end_date, f.qty_required,
+         -- Both are working days (they are _cum dates), so the inclusive
+         -- count is the difference of their working-day sequence numbers.
+         case when f.start_date is not null and f.end_date is not null
+              then we.working_day_seq - ws.working_day_seq + 1
+         end,
+         f.breach is null,
+         f.breach,
+         f.is_pinned,
+         f.qty_done,
+         f.qty_remaining,
+         -- The pull is reported only where it was honoured. Work placed
+         -- forward from today was not moved earlier, whatever was asked of
+         -- it; the department after it reads runway if the days ran out.
+         case when f.is_late then null else nullif(f.pulled_days, 0) end
+    from _final f
+    left join _wd ws on ws.calendar_date = f.start_date
+    left join _wd we on we.calendar_date = f.end_date;
+
+  get diagnostics v_tasks = row_count;
+
+  -- Daily load, split across the shifts working that day in proportion to what
+  -- each contributes. Written wherever a window exists — including for flagged
+  -- tasks, because a material or runway breach is precisely the thing a planner
+  -- needs to *see* on the heatmap.
+  --
+  -- Into a temp table first, then to the run and the department-day summary
+  -- from the same rows. The summary used to re-read what had just been
+  -- written through schedule_component_load, a security_invoker view: as the
+  -- owner that was fast, and as a signed-in planner — which is every run on
+  -- the live project — it was 89 of a 95-second run at the dense scale, the
+  -- grid of 300,000 rows aggregated again under row-level security. The rows
+  -- are in hand here; summarising them costs a tenth of a second.
+  create temp table _load on commit drop as
+  select f.shipment_line_id,
+         f.department_id,
+         cs.shift_id,
+         f.component_id,
+         c.calendar_date as load_date,
+         round(pl.planned * cs.capacity / c.capacity, 3) as qty_planned
+    from _final f
+    join _cum c
+      on c.department_id = f.department_id
+     and c.component_id = f.component_id
+     and c.calendar_date between f.start_date and f.end_date
+    cross join lateral (
+      select least(
+               c.capacity,
+               f.qty_remaining - case
+                 when f.is_pinned or f.is_late then c.cum - c.capacity - (f.start_cum - f.start_cap)
+                 else f.cum_due - c.cum
+               end
+             ) as planned
+    ) pl
+    join _cap_shift cs
+      on cs.department_id = f.department_id
+     and cs.component_id = f.component_id
+     and cs.calendar_date = c.calendar_date
+   where f.start_date is not null
+     and f.end_date is not null
+     and pl.planned > 0;
+
+  -- -------------------------------------------------------------------------
+  -- The past is frozen.
+  --
+  -- With p_today given, nothing above lands before it: work that is behind
+  -- starts from today, and so does what remains of a pin in the past. The
+  -- days before today are taken from the run that was current when this one
+  -- started — load and capacity, and from those the department-day figure —
+  -- so production against plan, the efficiency figure and the heatmap's past
+  -- stay what they were when the day was planned. A line that has left the
+  -- order book is dropped (the foreign key already did that for a deleted
+  -- order); a cancelled order's past plan is kept, because it is what the day
+  -- was planned to hold. A frozen row for a job since declared complete is
+  -- kept: it is what was asked for that day, and the declaration beside it is
+  -- the answer. The first run told what day it is freezes whatever its
+  -- predecessor had.
+  -- -------------------------------------------------------------------------
+  if p_today is not null and v_prev is not null then
+    insert into _load (shipment_line_id, department_id, shift_id, component_id,
+                       load_date, qty_planned)
+    select l.shipment_line_id, l.department_id, l.shift_id, l.component_id,
+           l.load_date, l.qty_planned
+      from public.schedule_daily_load l
+      join public.shipment_lines sl on sl.id = l.shipment_line_id
+     where l.run_id = v_prev
+       and (l.load_date < p_today
+            or (l.load_date = p_today
+                and l.department_id in (select department_id from _today where eff_today > p_today)));
+  end if;
+
+  insert into public.schedule_daily_load (
+    run_id, shipment_line_id, department_id, shift_id, component_id,
+    load_date, qty_planned
+  )
+  select v_run_id, shipment_line_id, department_id, shift_id, component_id,
+         load_date, qty_planned
+    from _load;
+
+  -- Capacity for the same grid, bounded to the dates actually in play.
+  create temp table _cap_window on commit drop as
+  select cs.department_id, cs.shift_id, cs.component_id,
+         cs.calendar_date as load_date, cs.capacity
+    from _cap_shift cs
+   where cs.calendar_date between
+           -- From today when the engine knows it, so the idle days between
+           -- today and the first late start are on the heatmap.
+           coalesce(p_today,
+                    (select min(start_date) from _final where start_date is not null))
+       and (select max(end_date) from _final where end_date is not null)
+     -- Today's capacity for a department whose today is over comes from the
+     -- previous run with its load, not from here, or the day is counted twice.
+     and not (p_today is not null
+              and cs.calendar_date = p_today
+              and cs.department_id in (select department_id from _today where eff_today > p_today));
+
+  if p_today is not null and v_prev is not null then
+    insert into _cap_window (department_id, shift_id, component_id, load_date, capacity)
+    select c.department_id, c.shift_id, c.component_id, c.load_date, c.capacity
+      from public.schedule_daily_capacity c
+     where c.run_id = v_prev
+       and (c.load_date < p_today
+            or (c.load_date = p_today
+                and c.department_id in (select department_id from _today where eff_today > p_today)));
+  end if;
+
+  insert into public.schedule_daily_capacity (
+    run_id, department_id, shift_id, component_id, load_date, capacity
+  )
+  select v_run_id, department_id, shift_id, component_id, load_date, capacity
+    from _cap_window;
+
+  -- -------------------------------------------------------------------------
+  -- The department-day figure, written once instead of aggregated on every read.
+  --
+  -- `schedule_department_day` used to compute this by summing the two grids
+  -- above on every read — 3.1 seconds a screen on Supabase, and over the API's
+  -- eight-second ceiling once anything joined to it. Stored since 30 Aug.
+  --
+  -- The expression is schedule_component_load's, over the rows just staged:
+  -- capacity summed across shifts per component and day, load summed across
+  -- shifts and lines, the ratio per component, the ratios added per
+  -- department-day. Same rounding (both columns are numeric(14,3) and the
+  -- staged values already are), same null handling, same thresholds.
+  -- tests/engine-scale.test.ts compares the stored row to the view's own
+  -- aggregate and must find no difference.
+  -- -------------------------------------------------------------------------
+  insert into public.schedule_daily_department (
+    run_id, department_id, load_date, utilisation, components_loaded, status
+  )
+  select v_run_id,
+         cap.department_id,
+         cap.load_date,
+         sum(coalesce(l.qty_planned, 0) / nullif(cap.capacity, 0)),
+         count(*) filter (where coalesce(l.qty_planned, 0) > 0),
+         case
+           when sum(coalesce(l.qty_planned, 0) / nullif(cap.capacity, 0)) > 1.0001 then 'over'
+           when sum(coalesce(l.qty_planned, 0) / nullif(cap.capacity, 0)) > 0 then 'loaded'
+           else 'idle'
+         end
+    from (
+      select department_id, component_id, load_date, sum(capacity) as capacity
+        from _cap_window
+       group by department_id, component_id, load_date
+    ) cap
+    left join (
+      select department_id, component_id, load_date, sum(qty_planned) as qty_planned
+        from _load
+       group by department_id, component_id, load_date
+    ) l
+      on l.department_id = cap.department_id
+     and l.component_id = cap.component_id
+     and l.load_date = cap.load_date
+   group by cap.department_id, cap.load_date;
+
+  select count(*) into v_breaches from _final where breach is not null;
+
+  update public.schedule_runs
+     set status = 'complete',
+         horizon_from = least((select min(start_date) from _final),
+                              (select min(load_date) from _load)),
+         horizon_to = greatest((select max(end_date) from _final),
+                               (select max(load_date) from _load)),
+         task_count = v_tasks,
+         breach_count = v_breaches,
+         duration_ms = (extract(epoch from clock_timestamp() - v_started) * 1000)::integer
+   where id = v_run_id;
+
+  if p_make_current then
+    update public.schedule_runs set is_current = false where is_current;
+    update public.schedule_runs set is_current = true where id = v_run_id;
+  end if;
+
+  return v_run_id;
+end;
+$$;
+
+comment on function public.run_schedule is
+  'Backward-schedules what remains of every open shipment line, netting off what each department has declared. Told what day it is (p_today), it places work that is behind forward from today and keeps the days before today from the previous run; a department that has declared production dated today keeps today too, and its remainder starts the next working day. Returns the new schedule_runs id. Never mutates a previous run.';
+
+alter function public.run_schedule(public.order_confidence[], boolean, text, date)
+  set statement_timeout = '120s';
+
+-- The running total is a window sort over the whole grid — a hundred and
+-- thirty thousand rows on twelve orders, a million at U&M's scale — and it
+-- spilled to disk at the default four megabytes on the smallest fixture. A
+-- ceiling per sort, not an allocation; the demonstration build's grid never
+-- approaches it.
+alter function public.run_schedule(public.order_confidence[], boolean, text, date)
+  set work_mem = '32MB';
+
+revoke execute on function public.run_schedule(public.order_confidence[], boolean, text, date)
+  from public, anon;
+grant execute on function public.run_schedule(public.order_confidence[], boolean, text, date)
+  to authenticated;
+
+-- ---------------------------------------------------------------------------
+-- The views say the hours. Columns appended, so the dependants stand.
+-- ---------------------------------------------------------------------------
+create or replace view public.department_day
+with (security_invoker = true) as
+  select d.code                       as department_code,
+         d.name                       as department_name,
+         d.route_position,
+         s.code                       as shift_code,
+         ds.sanctioned_headcount      as sanctioned,
+         att.present,
+         att.note                     as attendance_note,
+         att.attendance_date::text    as attendance_date,
+         co.units_per_day::float8     as override_units,
+         co.reason                    as override_reason,
+         co.from_date::text           as override_from,
+         co.to_date::text             as override_to,
+         -- Null rather than a number when there is nothing to divide by: a
+         -- department with no establishment recorded is not at 0%.
+         case when ds.sanctioned_headcount > 0 and att.present is not null
+              then round(att.present::numeric / ds.sanctioned_headcount, 4)::float8
+         end as attendance_fraction,
+         -- How many of this department's rates can actually be scaled. A rate
+         -- with no crew size against it is untouched by attendance, and if that
+         -- is most of them the figure on screen is quieter than it looks.
+         (select count(*) from public.component_rates cr
+           where cr.department_id = d.id and cr.shift_id = s.id) as rates,
+         (select count(*) from public.component_rates cr
+           where cr.department_id = d.id and cr.shift_id = s.id
+             and cr.manpower is not null and cr.manpower > 0) as rates_with_crew,
+         -- Overtime for the day, what it adds as a fraction of the rate, whether
+         -- more was entered than the shift allows, and the day in man-hours.
+         att.ot_person_hours::float8  as ot_person_hours,
+         case when att.present > 0 and att.ot_person_hours > 0 and s.net_production_hours > 0
+              then round(least(att.ot_person_hours, s.max_ot_hours * att.present)
+                         * s.ot_efficiency_pct / 100.0
+                         / (att.present * s.net_production_hours), 4)::float8
+         end as ot_fraction,
+         (att.ot_person_hours > s.max_ot_hours * att.present) as ot_over_limit,
+         case when att.present is not null
+              then (att.present * s.net_production_hours + att.ot_person_hours)::float8
+         end as man_hours,
+         s.max_ot_hours::float8       as max_ot_hours,
+         s.net_production_hours::float8 as net_production_hours
+    from public.departments d
+    join public.department_shifts ds on ds.department_id = d.id and ds.is_active
+    join public.shifts s on s.id = ds.shift_id and s.is_active
+    left join public.department_attendance att
+      on att.department_id = d.id and att.shift_id = s.id
+    left join public.capacity_overrides co
+      on co.department_id = d.id
+     and co.shift_id = s.id
+     and co.component_id is null
+     and att.attendance_date between co.from_date and co.to_date
+   where d.is_active;
+
+create or replace view public.department_manpower_day
+with (security_invoker = true) as
+  select d.code                as department_code,
+         d.name                as department_name,
+         d.route_position,
+         s.code                as shift_code,
+         ds.sanctioned_headcount as sanctioned,
+         ea.attendance_date::text as attendance_date,
+         count(*) filter (where ea.status = 'present')::integer as present,
+         count(*) filter (where ea.status = 'absent')::integer  as absent,
+         count(*) filter (where ea.status = 'leave')::integer   as on_leave,
+         coalesce(sum(ea.ot_hours), 0)::float8 as ot_hours,
+         count(*) filter (where ea.ot_hours > 0)::integer as people_on_ot,
+         -- On the books but not spoken for. The figure a supervisor chases.
+         (ds.sanctioned_headcount - count(*))::integer as unrecorded,
+         -- The department's figures for the day: overtime person-hours as the
+         -- plan has them (typed as a total, or summed from this roster), and
+         -- the day in man-hours on the head count the plan is using.
+         coalesce(max(da.ot_person_hours), 0)::float8 as ot_person_hours,
+         case when ea.attendance_date is not null
+              then (coalesce(max(da.present), count(*) filter (where ea.status = 'present'))
+                    * s.net_production_hours
+                    + coalesce(max(da.ot_person_hours), 0))::float8
+         end as man_hours
+    from public.departments d
+    join public.department_shifts ds on ds.department_id = d.id and ds.is_active
+    join public.shifts s on s.id = ds.shift_id and s.is_active
+    left join public.employees e
+      on e.department_id = d.id and e.default_shift_id = s.id and e.is_active
+    left join public.employee_attendance ea on ea.employee_id = e.id
+    left join public.department_attendance da
+      on da.department_id = d.id and da.shift_id = s.id
+     and da.attendance_date = ea.attendance_date
+   where d.is_active
+   group by d.code, d.name, d.route_position, s.code, s.net_production_hours,
+            ds.sanctioned_headcount, ea.attendance_date;

@@ -78,7 +78,7 @@ unmodified in the browser, so the demo runs the real engine with no backend.
 `npm run build` produces a static folder.
 
 **Online.** Supabase project `fiqfbbnmksppbpxmhnbv` — *kram*, Mumbai
-(ap-south-1), Postgres 17.6. All seventy-one migrations applied, the latest `20261014090000` on 14 Oct (§9, "quantity pulls the chain").
+(ap-south-1), Postgres 17.6. All seventy-three migrations applied locally; seventy-one are on the live project, and the two of 15 Oct (`20261015090000`, a day entered is over; `20261015100000`, overtime feeds capacity) are committed and wait for the go (§9, 15 Oct).
 
 **The plan of record is §8.0** — the concept deck's promises, each marked
 built, partly or not built, and what it waits on. Written 9 Oct.
@@ -677,7 +677,7 @@ Note the task count is lower than the spec's ~40,000 estimate; three components
 across seven departments gives 21 pairs. The row count matches. Worth checking
 against the real route.
 
-**Browser** — `npm run screenshot` drives eighteen screens plus thirty-three
+**Browser** — `npm run screenshot` drives eighteen screens plus thirty-five
 interactions in headless Chromium and fails on any console error. It checks the
 D-minus edit survives a reload, which is what proves it reached the database
 rather than only React state. Fifty steps, three of them at other viewports — two phones and a 1920×1080 wall.
@@ -2745,6 +2745,69 @@ morning's "quantity pulls the chain" entry had lost its heading to the
 evening's Schedule entry (an edit anchored on it); and the entries since
 11 Oct had been prepended newest first against the section's own rule.
 All three put right.
+
+### 2026-10-15 — A day entered is over; overtime feeds capacity (two migrations, built, not yet pushed)
+
+The first two of the pending items, as planned on 14 Oct (the plan is in
+the 14 Oct D-minus entry's sibling, "Finish the pending things, then a week
+at U&M"). Both migrations regenerated from the engine's text, not retyped;
+both committed; both wait for the go and Nishad's `db:push`.
+
+**`20261015090000_a_day_entered_is_over.sql`** (§8.2 item 0). Per department
+and day: once a declaration dated today exists for a department, today is a
+past day for that department. A temp table `_today` gives each department
+its effective today (today, or tomorrow once it has entered) and first
+working day; pins and work that is behind start from it; `own_late` compares
+against it; the frozen past takes today's loads and capacity from the
+previous run for those departments, and the capacity window leaves today out
+for them so the day is not counted twice. A department that has entered
+nothing today still works today; with no day given nothing changes. Same
+push: `attention_behind`'s card carries "taken against the plan: <reason>"
+as `attention_breach`'s has (the mock run's check 4); `attention_route_conflict`
+says "the feeder is being pulled earlier than its D-minus for this" where it
+said "raising breaches that are not real".
+
+**`20261015100000_overtime_feeds_capacity.sql`** (gap found 14 Oct: overtime
+was stored per person and never reached the plan; man-hours existed nowhere).
+`department_attendance.ot_person_hours`; `set_attendance` gains a sixth
+parameter (the five-parameter signature dropped, or the two would be
+ambiguous — `verify:live` will say whether the live schema cache agrees);
+`set_employee_attendance` sums the roster's hours onto the department. The
+day's rate becomes units × present/manpower × (1 + overtime) × machines,
+overtime = person-hours × the shift's efficiency ÷ (people × net hours),
+capped at the shift's maximum per person; the term is written once in the
+generator and pasted into `resolve_capacity` and the engine's `_cap_shift`,
+so the grid parity test compares like with like. `department_day` and
+`department_manpower_day` gain the hours, the fraction, the over-limit flag
+and man-hours (present × net hours + overtime), derived. Production's crew
+panel has an overtime box beside *who came in*, one Save for both, and the
+sentence says "9 overtime hours add 9% · 97 man-hours"; Manpower's *Who is
+in* and the floor display say the hours. GUIDE: Production (the crew; a day
+you have entered is over), Manpower.
+
+**Checked.** `npm test`: 443 of 443, one run — new `tests/department-day.test.ts`
+(the morning plan kept, the remainder from tomorrow, a department that has
+entered nothing untouched, no double capacity row, nothing changes untold,
+the behind card's reason) and `tests/overtime.test.ts` (the factor on the
+crew hours, on who came in, the cap, hours kept when only the head count is
+corrected, the roster summed, the engine's cell equal to the referee's, and
+nothing where no overtime was entered). A first version of the department-day
+test froze Stitching on a day its late feeders had pushed it off — nothing to
+freeze; the wood shop on 15 Sept is the case. `npm run screenshot`: 54 of 54,
+with *overtime raises the day* (nine hours typed on Production, the sentence
+and Manpower's card agree; its first version tripped twice — on hours the
+roster step had already put on the department, which is the feature working,
+and on the date Production remembers from the declaration step; the third
+tripped on the query cache — a hash change is a same-document navigation,
+so Manpower's card first showed the roster step's figure and refreshed a
+moment later, and the step now waits for the value instead of reading once).
+`bench:engine --dump` against this morning's dumps: every fixture
+identical to the row, owner and planner — no overtime, no declaration, no
+day given, nothing moves; times within noise (um 12 s, um4 55 s as the
+planner). Typecheck clean. The pages are held with the migrations: the
+crew panel calls the six-parameter `set_attendance` and reads the new
+view columns, so pushing them first would break Production on the live
+site.
 
 ### 2026-08-17 — Three asks, and a sheet PPC can actually fill in
 

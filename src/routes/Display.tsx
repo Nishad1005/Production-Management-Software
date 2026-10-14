@@ -85,6 +85,9 @@ export function Display() {
             <span>
               <strong>{crew.present}</strong>
               <span className="text-white/60"> of {crew.sanctioned} in</span>
+              {crew.ot_person_hours > 0 ? (
+                <span className="text-white/60"> · {crew.ot_person_hours} h overtime</span>
+              ) : null}
             </span>
           ) : (
             <span className="text-white/50 text-[16px]">attendance not marked</span>

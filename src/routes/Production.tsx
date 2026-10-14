@@ -606,6 +606,7 @@ function ShiftCapacity({
   const [present, setPresent] = useState(
     row.present === null ? '' : String(row.present),
   )
+  const [ot, setOt] = useState(row.ot_person_hours ? String(row.ot_person_hours) : '')
   const [units, setUnits] = useState(
     row.override_units === null ? '' : String(row.override_units),
   )
@@ -613,16 +614,20 @@ function ShiftCapacity({
 
   useEffect(() => {
     setPresent(row.present === null ? '' : String(row.present))
+    setOt(row.ot_person_hours ? String(row.ot_person_hours) : '')
     setUnits(row.override_units === null ? '' : String(row.override_units))
     setReason(row.override_reason ?? '')
-  }, [row.present, row.override_units, row.override_reason])
+  }, [row.present, row.ot_person_hours, row.override_units, row.override_reason])
 
+  // Who came in and the overtime hours are one entry: a blank overtime box is
+  // no overtime, not "keep what was there".
   const saveAttendance = () =>
     setAttendance.mutate({
       departmentCode,
       shiftCode: row.shift_code,
       date,
       present: present === '' ? null : Number(present),
+      otPersonHours: ot === '' ? 0 : Number(ot),
     })
 
   const saveOverride = () =>
@@ -651,36 +656,52 @@ function ShiftCapacity({
         </span>
       </div>
 
-      <div className="mt-3 grid gap-3 sm:grid-cols-[200px_1fr]">
+      <div className="mt-3 grid gap-3 sm:grid-cols-[130px_150px_auto_1fr]">
         <label className="flex flex-col gap-1">
           <span className="text-faint text-caption tracking-wider uppercase">
             Who came in
           </span>
-          <div className="flex gap-2">
-            <input
-              type="number"
-              inputMode="numeric"
-              min={0}
-              step="1"
-              disabled={!scalable}
-              placeholder={String(row.sanctioned)}
-              className={`${inputClass} h-12 text-emphasis disabled:opacity-50 sm:h-auto sm:text-small`}
-              value={present}
-              onChange={(e) => setPresent(e.target.value)}
-              aria-label={`People present, shift ${row.shift_code}`}
-            />
-            <button
-              type="button"
-              onClick={saveAttendance}
-              disabled={!scalable || setAttendance.isPending}
-              className="border-rule hover:border-blue hover:text-blue h-12 shrink-0 rounded-[2px] border px-3 text-small font-semibold disabled:opacity-40 sm:h-auto sm:py-2"
-            >
-              {setAttendance.isPending ? '…' : 'Save'}
-            </button>
-          </div>
+          <input
+            type="number"
+            inputMode="numeric"
+            min={0}
+            step="1"
+            disabled={!scalable}
+            placeholder={String(row.sanctioned)}
+            className={`${inputClass} h-12 text-emphasis disabled:opacity-50 sm:h-auto sm:text-small`}
+            value={present}
+            onChange={(e) => setPresent(e.target.value)}
+            aria-label={`People present, shift ${row.shift_code}`}
+          />
         </label>
+        <label className="flex flex-col gap-1">
+          <span className="text-faint text-caption tracking-wider uppercase">
+            Overtime hours, all people
+          </span>
+          <input
+            type="number"
+            inputMode="decimal"
+            min={0}
+            step="0.5"
+            disabled={!scalable}
+            placeholder="0"
+            className={`${inputClass} h-12 text-emphasis disabled:opacity-50 sm:h-auto sm:text-small`}
+            value={ot}
+            onChange={(e) => setOt(e.target.value)}
+            aria-label={`Overtime hours, shift ${row.shift_code}`}
+          />
+        </label>
+        <button
+          type="button"
+          onClick={saveAttendance}
+          disabled={!scalable || setAttendance.isPending}
+          data-testid={`crew-save-${row.shift_code}`}
+          className="border-rule hover:border-blue hover:text-blue h-12 shrink-0 self-end rounded-[2px] border px-3 text-small font-semibold disabled:opacity-40 sm:h-auto sm:py-2"
+        >
+          {setAttendance.isPending ? '…' : 'Save'}
+        </button>
 
-        <div className="text-caption">
+        <div className="text-caption sm:self-end" data-testid={`crew-day-${row.shift_code}`}>
           {!scalable ? (
             <p className="text-amber">
               No crew size recorded against this department's rates, so who came
@@ -697,7 +718,20 @@ function ShiftCapacity({
               {row.attendance_fraction !== null ? (
                 <> — the day is running at {Math.round(row.attendance_fraction * 100)}% of the rate</>
               ) : null}
+              {row.ot_person_hours ? (
+                <>
+                  {' '}· <strong>{formatNumber(row.ot_person_hours, 1)}</strong> overtime hours
+                  {row.ot_fraction !== null ? <> add {Math.round(row.ot_fraction * 100)}%</> : null}
+                </>
+              ) : null}
+              {row.man_hours !== null ? <> · {formatNumber(row.man_hours, 0)} man-hours</> : null}
               .{' '}
+              {row.ot_over_limit ? (
+                <span className="text-amber">
+                  More than the shift allows ({formatNumber(row.max_ot_hours, 1)} h a person);
+                  the plan counts the maximum.{' '}
+                </span>
+              ) : null}
               {partial ? (
                 <span className="text-amber">
                   {row.rates - row.rates_with_crew} of {row.rates} rates have no

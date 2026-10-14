@@ -55,6 +55,10 @@ export type ManpowerDay = {
   ot_hours: number
   people_on_ot: number
   unrecorded: number
+  /** The department's overtime person-hours for the day, as the plan has them. */
+  ot_person_hours: number
+  /** present × net production hours + overtime; null before anyone is marked. */
+  man_hours: number | null
 }
 
 export function useManpowerDay(date: string) {

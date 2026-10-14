@@ -463,6 +463,21 @@ or **Run the schedule**.
 Entering a figure again corrects it rather than adding to it, so there is no way
 to double a day by entering it twice.
 
+**The crew.** Beside the day's jobs: **who came in** and the **overtime hours**
+for the day, all people together, one Save for both. Who came in scales the
+day's capacity by the share of the crew the rate was measured with; overtime
+adds person-hours at the shift's overtime efficiency, capped at the shift's
+maximum per person, and the sentence beside the boxes says what the day is
+running at and how many man-hours it holds. Nobody marked means the standing
+rate. A whole-day figure can be typed over all of that, with a reason.
+
+**A day you have entered is over.** Once a department has entered any figure
+for today, the next run keeps today's plan for that department as it was in
+the morning and places what remains from the next working day — so the
+evening run does not move today's target to meet what was made, and the
+Dashboard reads the day against the plan it was given. A department that has
+entered nothing today is still planned for today.
+
 ---
 
 ### Manpower
@@ -492,7 +507,15 @@ the head count on the Production screen follows the same moment, because it is
 the same number and not a second copy of it.
 
 Overtime here is hours **worked**, not hours the plan would like. The panel above
-says what a day would need; this says what happened.
+says what a day would need; this says what happened. **Overtime changes the
+day's capacity** — the hours against each person are summed onto the
+department, and the day makes more by that many person-hours at the shift's
+overtime efficiency (85% by default), up to the shift's maximum per person.
+Entered ahead for a day that has not come, it is planned overtime and shows on
+the heatmap. The same total can be typed as one figure on Production beside
+*who came in*; it is the same fact either way. **Who is in** also gives the
+day in **man-hours**: who came in × the shift's production hours + the
+overtime.
 
 ---
 

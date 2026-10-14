@@ -1620,6 +1620,57 @@ await step('attendance moves capacity', async () => {
 // feature there. Everything a person actually operates — buttons, fields,
 // selects — has to be thumb-sized.
 
+// --- overtime entered for the day raises what the day can make -------------
+
+await step('overtime raises the day', async () => {
+  await go('#/production', 'text=What you were asked for')
+  await page.selectOption('[data-testid="production-department"]', 'STITCH')
+  // The screen remembers the date the declaration step moved it to; the
+  // hours must go on today, the day Manpower's card shows.
+  const localToday = await page.evaluate(() => {
+    const d = new Date()
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  })
+  await page.fill('input[type=date]', localToday)
+  await page.waitForTimeout(800)
+  const otBox = page.locator('[aria-label="Overtime hours, shift GEN"]')
+  await otBox.waitFor({ timeout: 60_000 })
+  const day = page.locator('[data-testid="crew-day-GEN"]')
+  // The roster step above may already have put hours on the department (the
+  // demonstration roster carries overtime against some people, and the
+  // roster's hours feed the plan now). So: a known total, typed over it.
+  const present = page.locator('[aria-label="People present, shift GEN"]')
+  if (!(await present.inputValue())) await present.fill('12')
+  await otBox.fill('9')
+  await page.click('[data-testid="crew-save-GEN"]')
+  await page.waitForFunction(
+    () => /\b9(\.0)? overtime hours add \d+%/.test(document.querySelector('[data-testid="crew-day-GEN"]')?.textContent ?? ''),
+    null,
+    { timeout: 60_000 },
+  )
+  const after = await day.innerText()
+  const pct = Number(/add (\d+)%/.exec(after)?.[1])
+  if (!(pct > 0)) throw new Error(`overtime added nothing: ${after}`)
+  const manHours = /([\d,]+) man-hours/.exec(after)?.[1]
+  if (!manHours) throw new Error(`no man-hours figure: ${after}`)
+
+  // And the same hours on Manpower's card for the department, which never
+  // saw the box they were typed into. Waited for, not read once: a hash
+  // change is a same-document navigation, so the card first renders what
+  // the roster step left in the query cache and refreshes a moment later —
+  // which read "4, not 9" twice before this waited.
+  await go('#/manpower', 'text=Who is in')
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector('[data-testid="manpower-dept-STITCH"] [data-testid="manpower-ot"]')
+        ?.getAttribute('data-hours') === '9',
+    null,
+    { timeout: 60_000 },
+  )
+  return `9 overtime hours in Stitching add ${pct}% to the day · ${manHours} man-hours · the same 9 on Manpower`
+})
+
 await step('thumb-sized everywhere', async () => {
   const phone = await browser.newContext({
     viewport: { width: 390, height: 844 },
