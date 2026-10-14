@@ -504,10 +504,12 @@ the tests check Kram against it rather than against itself.
 Days that have already gone are not listed. Overload in the past is real, but no
 amount of overtime reaches it — that work is late, and it moves on the schedule.
 
-**Who is in** is each department's day: on the books, in, out, on leave, and the
-overtime actually worked. A department nobody has marked shows as unrecorded
-rather than as fully present, because the two are not the same thing and only one
-of them is a fact.
+**Who is in** is each department's day: on the books, in, out, on leave, the
+overtime, and the man-hours. A department appears for the day once anything
+has been entered for it — person by person on Deployment, or as a total on
+Production; the two are the same fact. Marked person by person, anyone not
+spoken for shows as *not marked* rather than as present, because the two are
+not the same thing and only one of them is a fact.
 
 **Deployment** is the roster. Pick a department, and mark each person **In**,
 **Out** or **On leave**; enter overtime hours against anyone who stayed. Marking

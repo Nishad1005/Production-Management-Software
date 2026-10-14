@@ -26,6 +26,7 @@
     "walkthrough": "node scripts/make-walkthrough.mjs",
     "journey": "node scripts/make-journey.mjs",
     "mock-run": "node scripts/make-mock-run.mjs",
+    "demo-week": "node scripts/make-demo-week.mjs",
     "screens": "node scripts/capture-screens.mjs",
     "report": "node scripts/make-sample-report.mjs",
     "clicks": "node scripts/make-click-guide.mjs",

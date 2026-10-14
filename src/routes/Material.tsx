@@ -193,6 +193,9 @@ function StockRow({
         onClick={onToggle}
         data-testid={`material-${row.material_code}`}
         data-status={row.status}
+        // What the plan needs and the shortfall, for a script sizing a count.
+        data-required={row.qty_required}
+        data-shortfall={row.shortfall ?? ''}
       >
         <Td>
           <span className="font-semibold">{row.material_name}</span>

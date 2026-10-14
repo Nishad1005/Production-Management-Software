@@ -62,4 +62,6 @@ docs/walkthrough/
 docs/journey/
 # The mock run's pictures (KRAM/13), taken by scripts/make-mock-run.mjs.
 docs/mock-run/
+# The demo week's pictures (KRAM/14), taken by scripts/make-demo-week.mjs.
+docs/demo-week/
 docs/click-guide/

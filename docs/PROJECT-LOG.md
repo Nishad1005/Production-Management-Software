@@ -78,7 +78,7 @@ unmodified in the browser, so the demo runs the real engine with no backend.
 `npm run build` produces a static folder.
 
 **Online.** Supabase project `fiqfbbnmksppbpxmhnbv` — *kram*, Mumbai
-(ap-south-1), Postgres 17.6. All seventy-three migrations applied, the latest two on 15 Oct (`20261015090000`, a day entered is over; `20261015100000`, overtime feeds capacity — §9, 15 Oct).
+(ap-south-1), Postgres 17.6. All seventy-four migrations applied locally; seventy-three on the live project, with `20261015110000` (Who is in counts the department; the behind card keyed by line) committed and waiting for the go (§9, 15 Oct).
 
 **The plan of record is §8.0** — the concept deck's promises, each marked
 built, partly or not built, and what it waits on. Written 9 Oct.
@@ -280,6 +280,14 @@ get abandoned.
 ---
 
 ## 5. Gotchas — things that cost time
+
+- **The browser check fails after midnight IST on the seed's "today" rows**
+  (15 Oct): `attendance moves capacity` and `machine downtime` look for
+  today's card and today's machine figure, and the seed dates them by the
+  database's `current_date`, which is UTC — a day behind the browser's local
+  date between 00:00 and 05:30. Not a regression: the same pages were 55 of
+  55 an hour before midnight. Run the check in office hours, or fix the
+  timezone (§8.2 item 6).
 
 **Under row-level security, a correlated subquery is paid once per row.**
 `article_master` asked, per article, which departments it is routed through:
@@ -896,6 +904,17 @@ the real workload at 324 orders and ~40,000 tasks.
 5. ~~**Schedule markers readable on hover**~~ **Done 15 Oct** (pages; the
    15 Oct "why rejected" entry), with why-rejected on Production and the
    Machines screen for maintenance.
+6. **Two todays between midnight and 05:30 IST.** The client sends the
+   browser's local date as `p_today` and reads views by it; every view that
+   says `current_date` reads the database's date, which is UTC on Supabase
+   and on PGlite. For five and a half hours a night they disagree by a day:
+   "who is in today", "machines running today", the behind card's days
+   out. Found at 01:00 on 15 Oct when the browser check's attendance and
+   machine steps failed on the seed's "today" rows, dated the 14th. The fix
+   is one setting, not code: `alter role authenticated set timezone to
+   'Asia/Kolkata'` on the live project (a migration), and the same `set
+   time zone` on the PGlite session. Three lines first. Until then,
+   nothing entered before 05:30 is wrong, only read a day early.
 
 ### 8.3 Ours, before U&M's own people have accounts
 
@@ -2845,6 +2864,100 @@ GUIDE: Production (why rejected), Quality (where the cause is entered), a
 Machines section, Masters' machines paragraph, Schedule (hover). Typecheck
 clean; 443 of 443; 55 of 55 browser steps (one new).
 
+### 2026-10-15 — The ask to U&M, in one letter (KRAM/15)
+
+Item 7 of the 14 Oct plan: everything owed from U&M, on two pages, in the
+order that matters and in factory language, for Nishad to send.
+`scripts/make-request-figures.mjs` writes
+`docs/request-rates-and-handover-days.html`; `npm run pdf` prints it. Five
+things — the rates with crew sizes (the KRAM/04 workbook, handed out
+pre-filled by *Blank workbook*), handover days per department (about
+twenty numbers, which is what lets the D-minus be printed per order
+instead of typed per item), does Machining feed Ply Cutting, one real
+Panipuri export, and bills of materials and costs for three or four items
+— and two smaller ones, who should see what (with the names and emails for
+accounts) and the overtime ceiling. Each says what it changes on the
+screens and the form it is easiest to give it in. Pages looked at.
+
+### 2026-10-15 — The demo week: sixteen orders, five days, every role (KRAM/14, rehearsed)
+
+Item 6 of the 14 Oct plan, built and rehearsed on the demonstration build;
+the live run waits for a go and is Nishad's hand (it writes through every
+screen and presses Run). `scripts/make-demo-week.mjs`, `npm run demo-week`,
+`scripts/lib/demo-week-page.mjs`, `docs/demo-week.html` → KRAM/14.
+
+**The run.** Sixteen DEMO- orders on the items the Accept screen lists (the
+demo's six; `--items` on the live site), each container date worked out
+from the item's own D-minus by the mock run's `calibrate()` and then
+spread: the first three on the same weeks, one in two containers, two
+probable, two arriving mid-week (day 2 and day 4), one ten-piece order
+stuffed on day 4 so its container day passes while we watch, the last three
+months out. Five floor days, data-driven: attendance and overtime typed on
+Production (day 3 and 4: twelve hours in Stitching), one on leave in
+Sanding, good and rejected per job with the rejects put down to a cause
+(days 1 and 4), count-ins with Assembly two short, a breakdown booked on
+the Machines screen, a bar dragged two days with a reason, a stock count
+sized from the plan's need, a what-if second shift, the schedule run each
+evening and the Command centre, Attention, Dashboard, WIP, Schedule,
+Manpower, the floor display, Quality, Forecast and Money read after it.
+Thirty-four checks; a page per role saying what they enter and when; a
+table of what is recorded and what is not.
+
+**What the rehearsals found, all fixed before the final pass.** (1) The
+why-rejected helper took the article code for the order number. (2) A
+breakdown booked for day 2 did not move "machines available today": every
+day of the run is entered on one real day, so it books from day 1, as the
+mock run did. (3) A round 9,000 no longer covers a material with sixteen
+orders in the plan; the count is sized from `data-required` on the Material
+row, added for it. (4) **A real one:** Production's crew panel rendered one
+"Shift GEN" row per date anything was entered on — day 1's crew beside day
+3's under one heading, with duplicate React keys — because
+`TodaysCapacity` mapped every row of `department_day` instead of the
+selected date's. It now picks the date's row per shift, or the shift's
+standing figures with nothing said. (5) **Another:** a head count and
+overtime typed on Production did not appear on Manpower's *Who is in*,
+which was built from the roster alone — against the guide's "the same fact
+either way". `20261015110000_who_is_in_counts_the_department.sql` rebuilds
+`department_manpower_day` from the union of roster days and department
+entries, same columns. (6) **And a third:** sixty-three console errors on
+Attention — the behind card's key had no shipment line, so DEMO-04's two
+containers, late at the same department, were two cards with one key. The
+same migration re-creates `attention_behind` with the line in the key.
+`tests/who-is-in.test.ts` covers the view and the key. 447 of 447.
+(7) **And a fourth, on the screen:** a save on Production's end-of-day row
+that is refused shows nothing — `declare.isError` was never rendered — so a
+figure typed and rejected looked exactly like a figure saved. It now reads
+"Not saved: …" under the row. Found because (8) the script's "Entered"
+wait matched the substring in "Not yet entered" and let a row planned for
+a fraction of a unit — rounded to a zero the screen does not count as a
+change — slip through as "0 of 1 entered". The script matches the tag
+exactly and rounds a fractional day up to one, as a HOD would.
+
+**The final rehearsal** (the fifth start; the others fell to the findings
+above and once to a transient 200-second wait on the Accept screen while
+the browser's database rebuilt itself for the new migration): exit 0, no
+console error, 30 pictures, 34 checks — 31 pass, 3 read only (whether a
+pull was needed, which the demo's wide day-counts do not; the Money
+figures; the floor display's words), none not as expected. DEMO-06, ten
+pieces with yesterday's container day, is refused on 14 of 14 steps,
+taken anyway, and tagged *Container day passed* from the day it is
+entered; DEMO-05 arrives on day 4, is refused on 2 of 10 and taken anyway,
+and Attention's behind card for it ends with the reason; the breakdown
+takes Stitching from 7 to 6 machines; Assembly's pin holds; Stitching's
+twelve overtime hours add 11% and read 108 man-hours on Production,
+Manpower and the display; Ply Cutting's and Sanding's rejects are on
+Quality with their causes; the morning's Machining target is what the
+evening run left (ratio 0.5). KRAM/14 is 31 pages, looked at.
+`npm run screenshot` after the Production and Material changes: 55 of 55.
+
+**Owed to the live site, on a go, by Nishad's hand:**
+`npm run demo-week -- https://kraam.netlify.app <email> <password>` (the
+sample book cleared on the way in; `--items` to name the articles); then
+`npm run demo-week -- --page-only` is not needed — the script writes the
+page — and `npm run pdf docs/demo-week.html`. The view migration
+`20261015110000` goes first.
+
+### 2026-08-17 — Three asks, and a sheet PPC can actually fill in
 
 Nothing left on the list is code. The three things still open are a document
 someone holds, figures someone knows, and a file that does not exist yet — and

@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from 'react'
+import { Fragment, useEffect, useState, useMemo } from 'react'
 import {
   useAcceptProduction,
   useAttributeDefect,
@@ -226,6 +226,13 @@ function WorklistEntry({ row, date }: { row: WorklistRow; date: string }) {
   ) : (
     <span className="text-faint text-caption">Not yet entered</span>
   )
+  // A save that did not take must say so: a figure typed and refused with
+  // nothing on screen looks exactly like a figure saved (found 15 Oct).
+  const failed = declare.isError ? (
+    <p className="text-flag mt-1 text-caption" data-testid="declare-error">
+      Not saved: {String(declare.error).replace(/^(\w*error:\s*)+/i, '')}
+    </p>
+  ) : null
 
   return (
     <>
@@ -314,6 +321,7 @@ function WorklistEntry({ row, date }: { row: WorklistRow; date: string }) {
                     ? 'Entered'
                     : 'Enter a figure'}
             </button>
+            {failed}
             {row.declaration_id && row.qty_rejected > 0 ? (
               <div className="mt-3">
                 <WhyRejected row={row} date={date} />
@@ -365,7 +373,10 @@ function WorklistEntry({ row, date }: { row: WorklistRow; date: string }) {
             aria-label={`Rejected, ${row.erp_order_no} ${row.component_code}`}
           />
         </Td>
-        <Td align="right">{status}</Td>
+        <Td align="right">
+          {status}
+          {failed}
+        </Td>
       </tr>
       {row.declaration_id && row.qty_rejected > 0 ? (
         <tr className="hidden sm:table-row">
@@ -694,7 +705,33 @@ function TodaysCapacity({
   date: string
 }) {
   const day = useDepartmentDay(departmentCode)
-  const rows = day.data ?? []
+  // One row per shift, for the date on the screen. The view has a row per
+  // date anything was entered on; rendering them all showed day 1's crew
+  // beside day 3's under one heading (found by the demo week, 15 Oct). A
+  // shift with nothing entered for this date gets its standing figures with
+  // nothing said, so the boxes are there to type into.
+  const rows = useMemo(() => {
+    const all = day.data ?? []
+    const byShift = new Map<string, DepartmentDay>()
+    for (const r of all) if (r.attendance_date === date) byShift.set(r.shift_code, r)
+    for (const r of all) {
+      if (byShift.has(r.shift_code)) continue
+      byShift.set(r.shift_code, {
+        ...r,
+        present: null,
+        attendance_note: null,
+        attendance_date: null,
+        attendance_fraction: null,
+        ot_person_hours: null,
+        ot_fraction: null,
+        ot_over_limit: null,
+        man_hours: null,
+        override_units: null,
+        override_reason: null,
+      })
+    }
+    return [...byShift.values()]
+  }, [day.data, date])
 
   return (
     <Panel title="What you can do today" meta={formatDateLong(date)}>

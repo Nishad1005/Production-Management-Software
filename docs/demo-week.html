@@ -1,0 +1,400 @@
+<title>Kram — A week at U&amp;M</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  /* Kram's own register, as the other notes carry it, so a folder of these
+     reads as one set of documents. */
+  :root {
+    --paper: #e9edf1; --sheet: #ffffff; --ink: #16202e; --mid: #5c6b7a;
+    --faint: #8996a4; --rule: #c9d3dc; --rule-soft: #dfe6ec;
+    --blue: #2c4a6e; --amber: #b07d1a; --flag: #c4462e; --go: #1a6547;
+    --mark: #ffd60a; --mark-ink: #16202e; --bar: #16202e; --bar-text: #ffffff;
+    --sans: 'Archivo', ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) {
+      --paper: #0f151d; --sheet: #16202e; --ink: #e6ecf2; --mid: #a3b1c0;
+      --faint: #7e8d9d; --rule: #2c3a4b; --rule-soft: #223044;
+      --blue: #8fb4dc; --amber: #d9a441; --flag: #e8705c; --go: #4fb98c;
+      --bar: #dbe4ee; --bar-text: #0f151d;
+    }
+  }
+  :root[data-theme='dark'] {
+    --paper: #0f151d; --sheet: #16202e; --ink: #e6ecf2; --mid: #a3b1c0;
+    --faint: #7e8d9d; --rule: #2c3a4b; --rule-soft: #223044;
+    --blue: #8fb4dc; --amber: #d9a441; --flag: #e8705c; --go: #4fb98c;
+    --bar: #dbe4ee; --bar-text: #0f151d;
+  }
+
+  body { background: var(--paper); color: var(--ink); font-family: var(--sans);
+    font-size: 16px; line-height: 1.55; -webkit-font-smoothing: antialiased; }
+  .doc { max-width: 60rem; margin: 0 auto; padding: 2.5rem 1rem 5rem;
+    display: flex; flex-direction: column; gap: 1.8rem; }
+
+  .head { background: var(--sheet); border: 1px solid var(--rule); }
+  .head__main { padding: 1.7rem 1.5rem 1.4rem; }
+  .firm { font-family: var(--mono); font-size: 0.6875rem; letter-spacing: 0.15em;
+    text-transform: uppercase; color: var(--faint); }
+  h1 { font-size: clamp(1.9rem, 5vw, 2.6rem); line-height: 1.05; margin: 0.4rem 0 0.55rem;
+    letter-spacing: -0.028em; font-weight: 700; text-wrap: balance; }
+  .sub { color: var(--mid); margin: 0; max-width: 56ch; font-size: 1.03rem; }
+  dl.stamp { margin: 0; display: grid; grid-template-columns: auto 1fr;
+    border-top: 1px solid var(--rule); font-family: var(--mono); font-size: 0.75rem; }
+  dl.stamp dt { padding: 0.45rem 0.9rem; color: var(--faint); text-transform: uppercase;
+    font-size: 0.6875rem; letter-spacing: 0.09em; border-bottom: 1px solid var(--rule-soft);
+    border-right: 1px solid var(--rule-soft); white-space: nowrap; }
+  dl.stamp dd { margin: 0; padding: 0.45rem 0.9rem; border-bottom: 1px solid var(--rule-soft); }
+
+  /* Block, not flex: a flex column is laid out as one piece in print, and a
+     section that could not fit whole was carried to the next page, leaving
+     half of the one before it blank. */
+  h2 { font-size: 1.32rem; margin: 0.6rem 0 0; letter-spacing: -0.015em; text-wrap: balance; }
+  h3 { font-size: 1rem; margin: 0; }
+  h3 .aside { font-weight: 400; color: var(--mid); }
+
+  p { margin: 0; max-width: 72ch; }
+  .lede { color: var(--mid); }
+  .k { font-family: var(--mono); font-size: 0.9em; }
+
+  .tablewrap { overflow-x: auto; border: 1px solid var(--rule); background: var(--sheet); }
+  table { border-collapse: collapse; width: 100%; font-size: 0.875rem; }
+  th, td { text-align: left; padding: 0.5rem 0.8rem; border-bottom: 1px solid var(--rule-soft); vertical-align: top; }
+  th { font-family: var(--mono); font-size: 0.625rem; letter-spacing: 0.11em;
+    text-transform: uppercase; color: var(--faint); font-weight: 600; }
+  tr:last-child td { border-bottom: 0; }
+  td.term { font-weight: 600; white-space: nowrap; }
+  td.def { color: var(--mid); }
+  td.def strong { color: var(--ink); }
+  td.num, th.num { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+  /* Three things to know, side by side. */
+  .three { display: grid; gap: 0.8rem; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); }
+  .card { background: var(--sheet); border: 1px solid var(--rule); border-top: 3px solid var(--ink);
+    padding: 0.9rem 1rem 1rem; display: flex; flex-direction: column; gap: 0.35rem; }
+  .card.yours { border-top-color: var(--go); }
+  .card.standin { border-top-color: var(--amber); }
+  .card.ask { border-top-color: var(--blue); }
+  .card__t { font-family: var(--mono); font-size: 0.625rem; letter-spacing: 0.13em;
+    text-transform: uppercase; color: var(--faint); }
+  .card p { font-size: 0.95rem; }
+
+  .note { background: var(--sheet); border: 1px solid var(--rule);
+    border-left: 3px solid var(--blue); padding: 1.05rem 1.2rem;
+    display: flex; flex-direction: column; gap: 0.55rem; }
+  .note.amber { border-left-color: var(--amber); }
+
+  /* The worked example: a sum laid out as a sum. */
+  .sum { display: grid; gap: 0; border: 1px solid var(--rule); background: var(--sheet); }
+  .sum__row { display: grid; grid-template-columns: 2.4rem 1fr auto; gap: 0.9rem; align-items: baseline;
+    padding: 0.7rem 1rem; border-bottom: 1px solid var(--rule-soft); }
+  .sum__row:last-child { border-bottom: 0; }
+  .sum__i { font-family: var(--mono); font-size: 0.75rem; color: var(--faint); }
+  .sum__v { font-family: var(--mono); font-weight: 500; font-size: 1.05rem; white-space: nowrap; }
+  .sum__row.result { background: color-mix(in srgb, var(--flag) 7%, transparent); }
+  .sum__row.result .sum__v { color: var(--flag); font-weight: 600; }
+
+  /* The numbered badge: the same one drawn on the screenshots. */
+  .n { display: inline-flex; align-items: center; justify-content: center; flex: none;
+    width: 1.5rem; height: 1.5rem; border-radius: 50%; background: var(--mark);
+    color: var(--mark-ink); border: 1.5px solid var(--mark-ink); font-weight: 700;
+    font-size: 0.8rem; line-height: 1; }
+  ol.marks { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.6rem 1.4rem;
+    grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr)); font-size: 0.93rem; }
+  ol.marks li { display: grid; grid-template-columns: 1.5rem 1fr; gap: 0.6rem; align-items: start; }
+  ol.marks li > span:last-child { color: var(--mid); }
+  ol.marks strong { color: var(--ink); }
+
+  .stop { background: var(--sheet); border: 1px solid var(--rule); }
+  .stop__bar { background: var(--bar); color: var(--bar-text); padding: 0.6rem 1rem;
+    display: flex; gap: 0.85rem; align-items: baseline; flex-wrap: wrap; }
+  .stop__no { font-family: var(--mono); font-size: 0.6875rem; letter-spacing: 0.11em;
+    text-transform: uppercase; opacity: 0.78; }
+  .stop__title { font-weight: 600; font-size: 1.02rem; }
+  .stop__where { margin-left: auto; font-family: var(--mono); font-size: 0.6875rem;
+    letter-spacing: 0.09em; text-transform: uppercase; opacity: 0.85; }
+  .stop__body { padding: 1rem 1.1rem 1.1rem; display: flex; flex-direction: column; gap: 0.9rem; }
+
+  figure.shot { margin: 0; border: 1px solid var(--rule); background: #eef1f5; }
+  figure.shot img { display: block; width: 100%; height: auto; }
+  figure.shot figcaption { font-family: var(--mono); font-size: 0.625rem; letter-spacing: 0.11em;
+    text-transform: uppercase; color: #5c6b7a; padding: 0.3rem 0.6rem; background: #ffffff;
+    border-top: 1px solid var(--rule); }
+  figure.shot--tall img { max-height: 46rem; width: auto; max-width: 100%; margin: 0 auto; }
+  figure.small { max-width: 21rem; }
+
+  .pair { display: grid; gap: 0.8rem; grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr)); }
+  .sample, .tell { padding: 0.6rem 0.9rem; font-size: 0.93rem; }
+  .sample { border-left: 3px solid var(--blue); background: color-mix(in srgb, var(--blue) 6%, transparent); }
+  .tell { border-left: 3px solid var(--amber); background: color-mix(in srgb, var(--amber) 9%, transparent); }
+  .sample__t, .tell__t { font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.13em;
+    text-transform: uppercase; margin-bottom: 0.2rem; }
+  .sample__t { color: var(--blue); }
+  .tell__t { color: var(--amber); }
+
+  ol.steps { margin: 0; padding: 0; list-style: none; counter-reset: s; display: grid; gap: 0.55rem; }
+  ol.steps li { counter-increment: s; display: grid; grid-template-columns: 1.9rem 1fr; gap: 0.7rem; }
+  ol.steps li::before { content: counter(s); font-family: var(--mono); font-size: 0.8rem;
+    color: var(--faint); border: 1px solid var(--rule); height: 1.6rem; display: flex;
+    align-items: center; justify-content: center; background: var(--sheet); }
+
+  /* Questions, each with room to answer by hand on a printed copy. */
+  ol.checklist { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.7rem; }
+  ol.checklist li { background: var(--sheet); border: 1px solid var(--rule); padding: 0.65rem 1rem 0.75rem; }
+  .q { display: grid; grid-template-columns: 1.7rem 1fr; gap: 0.7rem; align-items: start; }
+  .q__n { font-family: var(--mono); font-size: 0.8rem; color: var(--faint); padding-top: 0.1rem; }
+  .q__hint { display: block; color: var(--mid); font-size: 0.9rem; margin-top: 0.15rem; }
+  .answer { margin: 0.5rem 0 0 2.4rem; border-bottom: 1px solid var(--rule); height: 1.5rem; }
+
+  /* The sheet as we copied it: seventeen narrow columns, headings on end. */
+  table.tight th, table.tight td { padding-top: 0.32rem; padding-bottom: 0.32rem; }
+  table.sheet { font-size: 0.78rem; }
+  table.sheet th, table.sheet td { padding: 0.35rem 0.3rem; }
+  table.sheet td.term { padding-left: 0.7rem; }
+  table.sheet th.up { vertical-align: bottom; height: 7rem; padding-bottom: 0.5rem; }
+  table.sheet th.up span { writing-mode: vertical-rl; transform: rotate(180deg);
+    white-space: nowrap; letter-spacing: 0.06em; }
+  table.sheet th.qc span { color: var(--blue); }
+
+  /* Spacing inside a section. Declared last, and with the wrapper in the
+     selector, because `p`, `ol.steps` and the rest all zero their own margins
+     above and a bare `section > * + *` loses to every one of them. */
+  .doc section > * + * { margin-top: 0.85rem; }
+  .doc section > h3 { margin-top: 1.5rem; }
+  .doc section > h2:not(:first-child) { margin-top: 2.2rem; }
+
+  .open { display: grid; gap: 1rem 1.6rem; grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr)); align-items: start; }
+
+  footer { border-top: 1px solid var(--rule); padding-top: 1rem; color: var(--faint);
+    font-family: var(--mono); font-size: 0.7rem; display: flex; justify-content: space-between;
+    gap: 1rem; flex-wrap: wrap; }
+
+  @media print {
+    /* One stop to a page: the picture and what it shows are never separated. */
+    .stop { break-before: page; break-inside: avoid; }
+    .pagebreak { break-before: page; }
+    figure.shot img { max-height: 141mm; width: auto; max-width: 100%; margin: 0 auto; }
+    figure.shot--tall img { max-height: 158mm; }
+    figure.shot + figure.shot { margin-top: -0.3rem; }
+    ol.marks { grid-template-columns: 1fr 1fr; font-size: 0.9rem; gap: 0.45rem 1.2rem; }
+    .pair { grid-template-columns: 1fr 1fr; }
+    .three { grid-template-columns: 1fr 1fr 1fr; }
+    .open { grid-template-columns: 1.25fr 1fr; }
+    .card, .sum, .pair, ol.steps li, ol.marks li { break-inside: avoid; }
+    ol.checklist { gap: 0.42rem; }
+    ol.checklist li { padding: 0.5rem 1rem 0.6rem; }
+    .answer { margin-top: 0.15rem; height: 1.35rem; }
+    /* The last hairline of a full-width box sits exactly on the page edge and
+       is clipped; a transparent pixel beside it brings it back. */
+    .doc { border-right: 1px solid transparent; }
+  }
+</style>
+<style>
+  td.pass { color: var(--go); font-weight: 600; white-space: nowrap; }
+  td.fail { color: var(--flag); font-weight: 600; white-space: nowrap; }
+  td.read { color: var(--mid); white-space: nowrap; }
+  .role { border: 1px solid var(--rule); padding: 10px 14px; margin: 0 0 10px; break-inside: avoid; }
+  .role h3 { margin: 0 0 4px; font-size: 12.5pt; }
+  .role p { margin: 0 0 4px; }
+  .role .when { color: var(--mid); font-family: 'IBM Plex Mono', monospace; font-size: 8.5pt; letter-spacing: .04em; text-transform: uppercase; }
+  @media print { figure.shot img { max-height: 118mm; } section.pagebreak figure.shot { break-inside: avoid; } }
+</style>
+
+<div class="doc">
+  <header class="head">
+    <div class="head__main">
+      <div class="firm">Data Brilliance Business Solutions LLP</div>
+      <h1>A week at U&amp;M on Kram</h1>
+      <p class="sub">Sixteen orders on your items, dated over Jan 2027, Oct 2026, Feb 2027, Mar 2027, Apr 2027, Dec 2026, and five days on the floor entered the way
+        each person at U&amp;M would enter them &mdash; who came in and the overtime, end-of-day actuals against targets with the
+        rejects put down to a cause, handovers counted in, a machine down, a stock count, a pin, a what-if, orders arriving
+        mid-week &mdash; with the plan re-run each evening and every screen read afterwards. On the demonstration build.</p>
+    </div>
+    <dl class="stamp">
+      <dt>Ref</dt><dd>DBBS/UM/KRAM/14 &middot; Rev A &middot; for U&amp;M Designs</dd>
+      <dt>Checks</dt><dd>34 made &middot; 31 passed &middot; 3 read only</dd>
+      <dt>Run on</dt><dd>15 Oct 2026, 00:01 IST &middot; day 1 = 14 Oct 2026</dd>
+    </dl>
+  </header>
+
+  <section>
+    <h2>In one minute</h2>
+    <div class="three">
+      <div class="card yours">
+        <div class="card__t">Yours</div>
+        <p><strong>The items, their routes and their D-minus</strong> are from your master. The orders, the customers, the people and the five days of entries are made up for this week, so that every screen has something to show.</p>
+      </div>
+      <div class="card standin">
+        <div class="card__t">A stand-in</div>
+        <p><strong>Every speed is a stand-in</strong> until your rates arrive. Where the plan says a day is over capacity or a step is late, that follows from the stand-in rate, not from your factory. The shape of the week is real; the numbers are placeholders.</p>
+      </div>
+      <div class="card ask">
+        <div class="card__t">How to read it</div>
+        <p><strong>Your day first</strong> &mdash; one page per role, what you enter and what you read. Then the week, day by day. Then what is recorded and what is not, and the checks: what we expected, what the screen said, pass or not.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>The book</h2>
+    <p class="lede">Sixteen orders on 6 of your items. Each container date is worked out from the item's own D-minus so the first containers have work on day 1; the rest are spread over the three months after, two of them probable rather than confirmed, two arriving during the week.</p>
+    <div class="tablewrap"><table><thead><tr><th>Order</th><th>Item</th><th class="num">Pieces</th><th>Container</th><th>Why it is in the week</th></tr></thead><tbody><tr><td class="term">DEMO-01</td><td class="def">Boden Dining Chair</td><td class="num">240</td><td class="def">5 Jan 2027</td><td class="def">fits on its own: the first container of the run</td></tr><tr><td class="term">DEMO-02</td><td class="def">Boden Barstool</td><td class="num">300</td><td class="def">8 Jan 2027</td><td class="def">the same weeks and the same route as DEMO-01: the overlap</td></tr><tr><td class="term">DEMO-03</td><td class="def">Mable Chair</td><td class="num">180</td><td class="def">11 Jan 2027</td><td class="def">a third stream on the same departments</td></tr><tr><td class="term">DEMO-04</td><td class="def">Betsy Chair</td><td class="num">120 + 120</td><td class="def">13 Jan 2027 and 3 Feb 2027</td><td class="def">one order, two containers three weeks apart</td></tr><tr><td class="term">DEMO-05</td><td class="def">Lucaya Ottoman</td><td class="num">400</td><td class="def">14 Dec 2026</td><td class="def">arrives on day 4, twenty days too soon: the check refuses it, and it is taken anyway with a reason</td></tr><tr><td class="term">DEMO-06</td><td class="def">Betsy Counter Stool</td><td class="num">10</td><td class="def">13 Oct 2026</td><td class="def">ten pieces whose container day was yesterday: carried over, late from the day it is entered, its container day already in the past on the Schedule</td></tr><tr><td class="term">DEMO-07</td><td class="def">Boden Dining Chair</td><td class="num">150</td><td class="def">26 Jan 2027</td><td class="def">arrives on day 2: a second order of an item already running</td></tr><tr><td class="term">DEMO-08</td><td class="def">Boden Barstool</td><td class="num">60</td><td class="def">12 Feb 2027</td><td class="def">a small order a month later</td></tr><tr><td class="term">DEMO-09</td><td class="def">Mable Chair</td><td class="num">220</td><td class="def">19 Feb 2027</td><td class="def">next month</td></tr><tr><td class="term">DEMO-10 <span class="aside">probable</span></td><td class="def">Betsy Chair</td><td class="num">90</td><td class="def">24 Feb 2027</td><td class="def">probable, not yet confirmed: planned, and marked as such</td></tr><tr><td class="term">DEMO-11</td><td class="def">Lucaya Ottoman</td><td class="num">260</td><td class="def">1 Mar 2027</td><td class="def">next month, the biggest of the run</td></tr><tr><td class="term">DEMO-12</td><td class="def">Betsy Counter Stool</td><td class="num">200</td><td class="def">11 Mar 2027</td><td class="def">the month after</td></tr><tr><td class="term">DEMO-13</td><td class="def">Boden Dining Chair</td><td class="num">320</td><td class="def">16 Mar 2027</td><td class="def">the month after: a third order of the first item</td></tr><tr><td class="term">DEMO-14</td><td class="def">Boden Barstool</td><td class="num">140</td><td class="def">26 Mar 2027</td><td class="def">the month after</td></tr><tr><td class="term">DEMO-15 <span class="aside">probable</span></td><td class="def">Mable Chair</td><td class="num">180</td><td class="def">2 Apr 2027</td><td class="def">probable, three months out</td></tr><tr><td class="term">DEMO-16</td><td class="def">Betsy Chair</td><td class="num">100</td><td class="def">7 Apr 2027</td><td class="def">the last container of the run</td></tr></tbody></table></div>
+  </section>
+
+  <section class="pagebreak">
+    <h2>Your day</h2>
+    <p class="lede">What each person at U&amp;M does on the system, when, and on which screen &mdash; as it was done in this week. Nothing is entered twice: a figure typed once is what every other screen reads.</p>
+
+    <div class="role">
+      <h3>The HOD of a department</h3>
+      <p class="when">Morning · Production</p>
+      <p><strong>Who came in</strong> and the <strong>overtime hours</strong> for the day, two boxes, one Save. The sentence beside them says what the day is running at and its man-hours &mdash; on day 1 Stitching read "10 of 12 in — the day is running at 83% of the rate · 80 man-hours. 1 of 7 rates have no crew size and are unaffected.". <strong>Handed to you, not yet counted in</strong>: what the department before you says it sent; enter what arrived, and a difference is kept.</p>
+      <p class="when">Through the day · the floor display</p>
+      <p>The wall screen for the department: what is due today, what it is waiting on, who is in, which machines are running. It refreshes itself.</p>
+      <p class="when">End of day · Production</p>
+      <p><strong>What you were asked for</strong>: one row per job, the target beside it. Enter <strong>good</strong> and <strong>rejected</strong> separately. Under a row with rejects, <strong>why rejected</strong>: the cause and how many, as many causes as the day needs. Entering a day again corrects it. Then press nothing else: the evening run is PPC's.</p>
+    </div>
+
+    <div class="role">
+      <h3>HR</h3>
+      <p class="when">Morning · Manpower</p>
+      <p><strong>Deployment</strong>: mark each person In, Out or On leave, and the overtime hours against anyone who stays. The department's head count and its hours follow at once, and so does what it can make that day. <strong>Who is in</strong> is the whole factory on one page: on the books, in, out, on leave, overtime, man-hours, and who has not been marked.</p>
+    </div>
+
+    <div class="role">
+      <h3>Maintenance</h3>
+      <p class="when">When a machine stops · Machines</p>
+      <p><strong>Book downtime</strong>: the machine, breakdown or maintenance or changeover, from and to, a reason. The department's day is scaled by the machines running, the plan re-runs, and Attention carries a card until it is back. <strong>Remove</strong> the booking when it is.</p>
+    </div>
+
+    <div class="role">
+      <h3>Stores and purchase</h3>
+      <p class="when">When a count is done · Material</p>
+      <p>Click <strong>On hand</strong> against a material and type the count. The screen says what the plan needs against the store, and what is short and by when; a count that covers it moves the material out of the short list.</p>
+    </div>
+
+    <div class="role">
+      <h3>Merchandising</h3>
+      <p class="when">When an enquiry comes · Accept an order</p>
+      <p>Item, pieces, container date, <strong>Check</strong>. In a few seconds: Yes, or which departments cannot make it and why, with the whole factory planned around it and nothing saved. <strong>Add it to the book</strong> on a Yes; <strong>Take it anyway</strong> on a No, which asks for the reason and keeps it on the order, in the book and on Attention. A second container is added from the Order book.</p>
+    </div>
+
+    <div class="role">
+      <h3>PPC</h3>
+      <p class="when">Morning · Command centre, Attention, the heatmap</p>
+      <p>The plan as it stands: breaches, flagged days, the constraint department; every finding that needs an answer today, each linked to its screen; the days that are too full, department by department.</p>
+      <p class="when">During the day · Schedule, What if, Capacity sheet</p>
+      <p><strong>Drag a bar</strong> to hold a department's start where the floor needs it, with a reason: a pin every later run honours. <strong>What if</strong> tries a second shift, overtime or a department down without touching the live plan. The <strong>Capacity sheet</strong> is where the rates, the crew sizes and the D-minus live, and where your workbook loads.</p>
+      <p class="when">Evening · Command centre</p>
+      <p><strong>Run the schedule.</strong> The run keeps every day the departments have entered as it was planned, places what remains from the next working day, and says what moved.</p>
+    </div>
+
+    <div class="role">
+      <h3>The MD</h3>
+      <p class="when">Any time · Dashboard, WIP, Attention, Forecast, Money</p>
+      <p>Nine figures and the week as a grid, planned against made, department by day; every order's progress in units; what needs an answer today; how much of the forecast is worth believing, from the history it has; cash out, week by week. Read, not entered.</p>
+    </div>
+  </section>
+
+  
+  <section class="pagebreak">
+    <h2>Day 0 &mdash; the book, and what the plan said <span class="aside">14 Oct 2026</span></h2>
+    <p class="lede">Each order was checked on Accept an order first, then entered from the verdict with one click. DEMO-06 was refused and taken anyway with its reason. </p>
+    <div class="tablewrap"><table><thead><tr><th>Order</th><th>Verdict</th><th>Steps that could not</th></tr></thead><tbody><tr><td class="term">DEMO-01</td><td class="def">Every department can make this within its window.</td><td class="def">none</td></tr><tr><td class="term">DEMO-02</td><td class="def">Every department can make this within its window.</td><td class="def">none</td></tr><tr><td class="term">DEMO-03</td><td class="def">Every department can make this within its window.</td><td class="def">none</td></tr><tr><td class="term">DEMO-04</td><td class="def">Every department can make this within its window.</td><td class="def">none</td></tr><tr><td class="term">DEMO-06</td><td class="def">14 of 14 steps cannot be made to this date.</td><td class="def">Ply Cutting: Late; Machining: Late; Assembly: Late; Sanding: Late; Wood Finishing: Late; Metal Finishing: Late … (14)</td></tr><tr><td class="term">DEMO-08</td><td class="def">Every department can make this within its window.</td><td class="def">none</td></tr><tr><td class="term">DEMO-09</td><td class="def">Every department can make this within its window.</td><td class="def">none</td></tr><tr><td class="term">DEMO-10</td><td class="def">Every department can make this within its window.</td><td class="def">none</td></tr><tr><td class="term">DEMO-11</td><td class="def">Every department can make this within its window.</td><td class="def">none</td></tr><tr><td class="term">DEMO-12</td><td class="def">Every department can make this within its window.</td><td class="def">none</td></tr><tr><td class="term">DEMO-13</td><td class="def">Every department can make this within its window.</td><td class="def">none</td></tr><tr><td class="term">DEMO-14</td><td class="def">Every department can make this within its window.</td><td class="def">none</td></tr><tr><td class="term">DEMO-15</td><td class="def">Every department can make this within its window.</td><td class="def">none</td></tr><tr><td class="term">DEMO-16</td><td class="def">Every department can make this within its window.</td><td class="def">none</td></tr></tbody></table></div><div class="tablewrap"><table><thead><tr><th>Read after the run</th><th>What it said</th></tr></thead><tbody><tr><td class="term">Command centre</td><td class="def">14 breaches · 46 flagged days · constraint Stitching</td></tr><tr><td class="term">Attention</td><td class="def">23 critical · 45 warnings · behind 14, material-late 5, overloaded 46, machine-down 2, material-short 1</td></tr><tr><td class="term">Dashboard</td><td class="def">Orders running 14 · OTIF — · Daily production 0 · WIP in progress 0 · Production efficiency 0.0% · Rejections — · Material shortages 0.0% · Delayed orders 6.7% · Containers ready 0</td></tr><tr><td class="term">WIP</td><td class="def">nothing started</td></tr><tr><td class="term">Schedule</td><td class="def">DEMO-06 14 cannot · container day passed · taken against the plan · DEMO-01 · DEMO-02 · DEMO-03 · DEMO-04 · DEMO-04 · DEMO-08 · DEMO-09 · DEMO-10 · DEMO-11 · DEMO-12 · DEMO-13 · DEMO-14 · DEMO-15 · DEMO-16</td></tr></tbody></table></div>
+    <figure class="shot"><img src="demo-week/d0-accept-clear.png" alt="DEMO-01 checked" /><figcaption>DEMO-01: the check</figcaption></figure>
+<figure class="shot"><img src="demo-week/d0-accept-refused.png" alt="DEMO-06 refused" /><figcaption>DEMO-06: refused, and the Take it anyway button</figcaption></figure>
+<figure class="shot"><img src="demo-week/d0-book.png" alt="The order book" /><figcaption>The book</figcaption></figure>
+<figure class="shot"><img src="demo-week/d0-schedule.png" alt="The Schedule" /><figcaption>The Schedule, one span per line, today a quarter in</figcaption></figure>
+<figure class="shot"><img src="demo-week/d0-command-centre.png" alt="The Command centre" /><figcaption>The Command centre</figcaption></figure>
+<figure class="shot"><img src="demo-week/d0-heatmap.png" alt="The load heatmap" /><figcaption>The load heatmap</figcaption></figure>
+<figure class="shot"><img src="demo-week/d0-attention.png" alt="Attention" /><figcaption>Attention</figcaption></figure>
+  </section>
+
+  
+  <section class="pagebreak">
+    <h2>Day 1 &mdash; the first day on the floor <span class="aside">14 Oct 2026</span></h2>
+    <p class="lede">Stitching marked who came in first thing: 10 of 12 in — the day is running at 83% of the rate · 80 man-hours. 1 of 7 rates have no crew size and are unaffected.. The wall display for Stitching read "Stitching · 10 of 12 in · 7 of 8 machines". Then every department with work planned entered its end of day: good against the target, rejected apart; Ply Cutting put its four rejects down to a cause. Machining made half its target. Then PPC ran the schedule.</p>
+    <div class="tablewrap"><table><thead><tr><th>Department</th><th class="num">On the books</th><th class="num">In</th><th class="num">Overtime hours</th><th>The screen said</th></tr></thead><tbody><tr><td class="term">Stitching</td><td class="num">12</td><td class="num">10</td><td class="num">0</td><td class="def">10 of 12 in — the day is running at 83% of the rate · 80 man-hours. 1 of 7 rates have no crew size and are unaffected.</td></tr></tbody></table></div><div class="tablewrap"><table><thead><tr><th>Department</th><th class="num">Planned</th><th class="num">Good</th><th class="num">Rejected</th><th>The header said</th></tr></thead><tbody><tr><td class="term">Ply Cutting <span class="aside">(Knot or shake in the face)</span></td><td class="num">12</td><td class="num">12</td><td class="num">4</td><td class="def">MADE 12 OF 12 PLANNED · 1 OF 1 ENTERED</td></tr><tr><td class="term">Machining</td><td class="num">38</td><td class="num">19</td><td class="num">0</td><td class="def">MADE 19 OF 38 PLANNED · 2 OF 2 ENTERED</td></tr><tr><td class="term">Fiber Processing</td><td class="num">11</td><td class="num">11</td><td class="num">0</td><td class="def">MADE 11 OF 11 PLANNED · 1 OF 1 ENTERED</td></tr><tr><td class="term">Cutting</td><td class="num">11</td><td class="num">11</td><td class="num">0</td><td class="def">MADE 11 OF 11 PLANNED · 1 OF 1 ENTERED</td></tr></tbody></table></div><div class="tablewrap"><table><thead><tr><th>Read after the run</th><th>What it said</th></tr></thead><tbody><tr><td class="term">Command centre</td><td class="def">13 breaches · 47 flagged days · constraint Stitching</td></tr><tr><td class="term">Attention</td><td class="def">22 critical · 46 warnings · behind 13, material-late 5, overloaded 47, machine-down 2, material-short 1, handover 7</td></tr><tr><td class="term">Dashboard</td><td class="def">Orders running 14 · OTIF — · Daily production 53 · WIP in progress 310 · Production efficiency 73.6% · Rejections 7.0% · Material shortages 0.0% · Delayed orders 13.3% · Containers ready 0</td></tr><tr><td class="term">WIP</td><td class="def">DEMO-06 25% (2 of 14 departments) · DEMO-02 0% (0 of 14 departments)</td></tr><tr><td class="term">Schedule</td><td class="def">DEMO-06 12 cannot · container day passed · taken against the plan · DEMO-01 · DEMO-02 1 cannot · DEMO-03 · DEMO-04 · DEMO-04 · DEMO-08 · DEMO-09 · DEMO-10 · DEMO-11 · DEMO-12 · DEMO-13 · DEMO-14 · DEMO-15 · DEMO-16</td></tr></tbody></table></div>
+    <figure class="shot"><img src="demo-week/d1-display.png" alt="The floor display" /><figcaption>The wall display for Stitching, in the morning</figcaption></figure>
+<figure class="shot"><img src="demo-week/d1-stitching-attendance.png" alt="Stitching attendance" /><figcaption>Stitching: who came in, and what the day runs at</figcaption></figure>
+<figure class="shot"><img src="demo-week/d1-why-rejected.png" alt="Why rejected" /><figcaption>Ply Cutting: the rejects, and why</figcaption></figure>
+<figure class="shot"><img src="demo-week/d1-machining.png" alt="Machining entries" /><figcaption>Machining: the entries</figcaption></figure>
+<figure class="shot"><img src="demo-week/d1-dashboard-grid.png" alt="The grid after Day 1" /><figcaption>Planned against made, after the run</figcaption></figure>
+  </section>
+
+  
+  <section class="pagebreak">
+    <h2>Day 2 &mdash; counting in, a breakdown, a new order, a pin <span class="aside">15 Oct 2026</span></h2>
+    <p class="lede">Each department counted in what the day before had handed it; Assembly counted two short. Maintenance booked a Stitching machine down on the Machines screen (STITCH-01, breakdown). Merchandising checked and entered DEMO-07. PPC dragged Assembly on DEMO-01 two days later with a reason. The day's actuals were entered and the schedule run.</p>
+    <div class="tablewrap"><table><thead><tr><th>Department</th><th class="num">Handovers counted in</th><th>Shortfall kept</th></tr></thead><tbody><tr><td class="term">Assembly</td><td class="num">3</td><td class="def">2 SHORT</td></tr><tr><td class="term">Metal Finishing</td><td class="num">2</td><td class="def">—</td></tr><tr><td class="term">Stitching</td><td class="num">2</td><td class="def">—</td></tr></tbody></table></div><div class="tablewrap"><table><thead><tr><th>Department</th><th class="num">Planned</th><th class="num">Good</th><th class="num">Rejected</th><th>The header said</th></tr></thead><tbody><tr><td class="term">Ply Cutting</td><td class="num">108</td><td class="num">108</td><td class="num">0</td><td class="def">MADE 108 OF 109 PLANNED · 2 OF 2 ENTERED</td></tr><tr><td class="term">Machining</td><td class="num">116</td><td class="num">99</td><td class="num">0</td><td class="def">MADE 99 OF 116 PLANNED · 2 OF 2 ENTERED</td></tr><tr><td class="term">Cutting</td><td class="num">0</td><td class="num">0</td><td class="num">0</td><td class="def">0 OF 1 ENTERED</td></tr></tbody></table></div><div class="tablewrap"><table><thead><tr><th>Read after the run</th><th>What it said</th></tr></thead><tbody><tr><td class="term">Command centre</td><td class="def">13 breaches · 45 flagged days · constraint Stitching</td></tr><tr><td class="term">Attention</td><td class="def">21 critical · 45 warnings · behind 12, material-late 5, overloaded 45, machine-down 2, material-short 1, breach 1, handover 6</td></tr><tr><td class="term">Dashboard</td><td class="def">Orders running 15 · OTIF — · Daily production 53 · WIP in progress 550 · Production efficiency 361.2% · Rejections 1.5% · Material shortages 0.0% · Delayed orders 12.5% · Containers ready 0</td></tr><tr><td class="term">WIP</td><td class="def">DEMO-06 28% (2 of 14 departments) · DEMO-01 1% (0 of 12 departments) · DEMO-02 4% (0 of 14 departments)</td></tr><tr><td class="term">Schedule</td><td class="def">DEMO-06 12 cannot · container day passed · taken against the plan · DEMO-01 1 cannot · DEMO-02 · DEMO-03 · DEMO-04 · DEMO-07 · DEMO-04 · DEMO-08 · DEMO-09 · DEMO-10 · DEMO-11 · DEMO-12 · DEMO-13 · DEMO-14 · DEMO-15 · DEMO-16</td></tr></tbody></table></div>
+    <figure class="shot"><img src="demo-week/d2-machines.png" alt="Machines" /><figcaption>Machines: the breakdown booked</figcaption></figure>
+<figure class="shot"><img src="demo-week/d2-pin.png" alt="The pin dialog" /><figcaption>The Schedule: a bar dragged, and the reason asked for</figcaption></figure>
+<figure class="shot"><img src="demo-week/d2-schedule-pin.png" alt="The pinned bar" /><figcaption>DEMO-01 with its pinned department</figcaption></figure>
+<figure class="shot"><img src="demo-week/d2-attention.png" alt="Attention on Day 2" /><figcaption>Attention</figcaption></figure>
+<figure class="shot"><img src="demo-week/d2-board-assembly.png" alt="My department, Assembly" /><figcaption>My department: what is holding Assembly up</figcaption></figure>
+<figure class="shot"><img src="demo-week/d2-display.png" alt="The floor display" /><figcaption>The wall display for Stitching, one machine down</figcaption></figure>
+  </section>
+
+  
+  <section class="pagebreak">
+    <h2>Day 3 &mdash; overtime, one on leave, a stock count <span class="aside">16 Oct 2026</span></h2>
+    <p class="lede">Stitching entered twelve overtime hours for the day: 12 of 12 in — the day is running at 100% of the rate · 12.0 overtime hours add 11% · 108 man-hours. 1 of 7 rates have no crew size and are unaffected.. Sanding had one on leave. Stores counted FAB-LIN and it moved from "short" to "covered". The day was entered and the schedule run.</p>
+    <div class="tablewrap"><table><thead><tr><th>Department</th><th class="num">On the books</th><th class="num">In</th><th class="num">Overtime hours</th><th>The screen said</th></tr></thead><tbody><tr><td class="term">Stitching</td><td class="num">12</td><td class="num">12</td><td class="num">12</td><td class="def">12 of 12 in — the day is running at 100% of the rate · 12.0 overtime hours add 11% · 108 man-hours. 1 of 7 rates have no crew size and are unaffected.</td></tr><tr><td class="term">Sanding</td><td class="num">6</td><td class="num">5</td><td class="num">0</td><td class="def">5 of 6 in — the day is running at 83% of the rate · 40 man-hours.</td></tr></tbody></table></div><div class="tablewrap"><table><thead><tr><th>Department</th><th class="num">Planned</th><th class="num">Good</th><th class="num">Rejected</th><th>The header said</th></tr></thead><tbody><tr><td class="term">Ply Cutting</td><td class="num">340</td><td class="num">340</td><td class="num">0</td><td class="def">MADE 340 OF 340 PLANNED · 3 OF 3 ENTERED</td></tr><tr><td class="term">Machining</td><td class="num">214</td><td class="num">214</td><td class="num">0</td><td class="def">MADE 214 OF 214 PLANNED · 2 OF 2 ENTERED</td></tr><tr><td class="term">Assembly</td><td class="num">11</td><td class="num">11</td><td class="num">0</td><td class="def">MADE 11 OF 11 PLANNED · 1 OF 1 ENTERED</td></tr><tr><td class="term">Metal Finishing</td><td class="num">10</td><td class="num">10</td><td class="num">0</td><td class="def">MADE 10 OF 10 PLANNED · 1 OF 1 ENTERED</td></tr><tr><td class="term">Stitching</td><td class="num">11</td><td class="num">12</td><td class="num">0</td><td class="def">MADE 12 OF 11 PLANNED · 1 OF 1 ENTERED</td></tr></tbody></table></div><div class="tablewrap"><table><thead><tr><th>Read after the run</th><th>What it said</th></tr></thead><tbody><tr><td class="term">Command centre</td><td class="def">12 breaches · 43 flagged days · constraint Stitching</td></tr><tr><td class="term">Attention</td><td class="def">16 critical · 45 warnings · behind 11, material-late 3, overloaded 43, machine-down 2, material-short 1, breach 1, handover 10</td></tr><tr><td class="term">Dashboard</td><td class="def">Orders running 15 · OTIF — · Daily production 53 · WIP in progress 730 · Production efficiency 1,176.6% · Rejections 0.5% · Material shortages 0.0% · Delayed orders 12.5% · Containers ready 0</td></tr><tr><td class="term">WIP</td><td class="def">DEMO-06 49% (3 of 14 departments) · DEMO-01 4% (0 of 12 departments) · DEMO-02 9% (0 of 14 departments) · DEMO-03 6% (0 of 14 departments)</td></tr><tr><td class="term">Schedule</td><td class="def">DEMO-06 11 cannot · container day passed · taken against the plan · DEMO-01 1 cannot · DEMO-02 · DEMO-03 · DEMO-04 · DEMO-07 · DEMO-04 · DEMO-08 · DEMO-09 · DEMO-10 · DEMO-11 · DEMO-12 · DEMO-13 · DEMO-14 · DEMO-15 · DEMO-16</td></tr></tbody></table></div>
+    <figure class="shot"><img src="demo-week/d3-overtime.png" alt="Overtime entered" /><figcaption>Stitching: twelve overtime hours, and what they add</figcaption></figure>
+<figure class="shot"><img src="demo-week/d3-manpower.png" alt="Manpower" /><figcaption>Manpower's Who is in: the same hours, and the man-hours</figcaption></figure>
+<figure class="shot"><img src="demo-week/d3-material.png" alt="Material" /><figcaption>Material: the count landed</figcaption></figure>
+  </section>
+
+  
+  <section class="pagebreak">
+    <h2>Day 4 &mdash; an order taken against the plan, a what-if <span class="aside">17 Oct 2026</span></h2>
+    <p class="lede">DEMO-05 arrived: 400 pieces twenty days too soon. The check refused it; it was taken anyway, with the reason, and Attention says so. PPC tried a second shift in Stitching on What if. Sanding put three rejects down to a cause. Then the schedule was run.</p>
+    <div class="tablewrap"><table><thead><tr><th>Department</th><th class="num">On the books</th><th class="num">In</th><th class="num">Overtime hours</th><th>The screen said</th></tr></thead><tbody><tr><td class="term">Stitching</td><td class="num">12</td><td class="num">12</td><td class="num">12</td><td class="def">12 of 12 in — the day is running at 100% of the rate · 12.0 overtime hours add 11% · 108 man-hours. 1 of 7 rates have no crew size and are unaffected.</td></tr></tbody></table></div><div class="tablewrap"><table><thead><tr><th>Department</th><th class="num">Planned</th><th class="num">Good</th><th class="num">Rejected</th><th>The header said</th></tr></thead><tbody><tr><td class="term">Ply Cutting</td><td class="num">520</td><td class="num">520</td><td class="num">0</td><td class="def">MADE 520 OF 520 PLANNED · 4 OF 4 ENTERED</td></tr><tr><td class="term">Machining</td><td class="num">220</td><td class="num">276</td><td class="num">0</td><td class="def">MADE 276 OF 220 PLANNED · 2 OF 2 ENTERED</td></tr><tr><td class="term">Sanding <span class="aside">(Knot or shake in the face)</span></td><td class="num">11</td><td class="num">11</td><td class="num">3</td><td class="def">MADE 11 OF 11 PLANNED · 1 OF 1 ENTERED</td></tr></tbody></table></div><div class="tablewrap"><table><thead><tr><th>Read after the run</th><th>What it said</th></tr></thead><tbody><tr><td class="term">Command centre</td><td class="def">14 breaches · 41 flagged days · constraint Stitching</td></tr><tr><td class="term">Attention</td><td class="def">16 critical · 47 warnings · behind 13, material-late 5, machine-down 2, material-short 1, overloaded 41, breach 1, handover 9</td></tr><tr><td class="term">Dashboard</td><td class="def">Orders running 16 · OTIF — · Daily production 53 · WIP in progress 1,130 · Production efficiency 2,297.6% · Rejections 0.4% · Material shortages 0.0% · Delayed orders 17.6% · Containers ready 0</td></tr><tr><td class="term">WIP</td><td class="def">DEMO-06 56% (3 of 14 departments) · DEMO-05 3% (0 of 10 departments) · DEMO-01 8% (0 of 12 departments) · DEMO-02 14% (0 of 14 departments) · DEMO-03 14% (2 of 14 departments)</td></tr><tr><td class="term">Schedule</td><td class="def">DEMO-06 11 cannot · container day passed · taken against the plan · DEMO-05 2 cannot · taken against the plan · DEMO-01 1 cannot · DEMO-02 · DEMO-03 · DEMO-04 · DEMO-07 · DEMO-04 · DEMO-08 · DEMO-09 · DEMO-10 · DEMO-11 · DEMO-12 · DEMO-13 · DEMO-14 · DEMO-15 · DEMO-16</td></tr></tbody></table></div>
+    <figure class="shot"><img src="demo-week/d4-accept-refused.png" alt="DEMO-05 refused" /><figcaption>DEMO-05: refused, and taken anyway</figcaption></figure>
+<figure class="shot"><img src="demo-week/d4-whatif.png" alt="What if" /><figcaption>What if: a second shift in Stitching</figcaption></figure>
+<figure class="shot"><img src="demo-week/d4-quality.png" alt="Quality" /><figcaption>Quality: where the losses come from</figcaption></figure>
+  </section>
+
+  
+  <section class="pagebreak">
+    <h2>Day 5 &mdash; the week, read <span class="aside">19 Oct 2026</span></h2>
+    <p class="lede">The last day's entries, the run, and the week read as the MD would read it: the dashboard, WIP, the Schedule with DEMO-06's container day in the past, the forecast, the money.</p>
+    <div class="tablewrap"><table><thead><tr><th>Department</th><th class="num">Planned</th><th class="num">Good</th><th class="num">Rejected</th><th>The header said</th></tr></thead><tbody><tr><td class="term">Assembly</td><td class="num">75</td><td class="num">75</td><td class="num">0</td><td class="def">MADE 75 OF 75 PLANNED · 1 OF 1 ENTERED</td></tr><tr><td class="term">Wood Finishing</td><td class="num">11</td><td class="num">11</td><td class="num">0</td><td class="def">MADE 11 OF 11 PLANNED · 1 OF 1 ENTERED</td></tr></tbody></table></div><div class="tablewrap"><table><thead><tr><th>Read after the run</th><th>What it said</th></tr></thead><tbody><tr><td class="term">Command centre</td><td class="def">13 breaches · 42 flagged days · constraint Stitching</td></tr><tr><td class="term">Attention</td><td class="def">16 critical · 47 warnings · behind 12, material-late 5, overloaded 42, machine-down 2, material-short 1, breach 1, handover 2</td></tr><tr><td class="term">Dashboard</td><td class="def">Orders running 16 · OTIF — · Daily production 53 · WIP in progress 1,130 · Production efficiency 2,417.0% · Rejections 0.4% · Material shortages 0.0% · Delayed orders 17.6% · Containers ready 0</td></tr><tr><td class="term">WIP</td><td class="def">DEMO-06 63% (4 of 14 departments) · DEMO-05 5% (0 of 10 departments) · DEMO-01 8% (0 of 12 departments) · DEMO-02 14% (0 of 14 departments) · DEMO-03 14% (2 of 14 departments)</td></tr><tr><td class="term">Schedule</td><td class="def">DEMO-06 10 cannot · container day passed · taken against the plan · DEMO-05 2 cannot · taken against the plan · DEMO-01 1 cannot · DEMO-02 · DEMO-03 · DEMO-04 · DEMO-07 · DEMO-04 · DEMO-08 · DEMO-09 · DEMO-10 · DEMO-11 · DEMO-12 · DEMO-13 · DEMO-14 · DEMO-15 · DEMO-16</td></tr></tbody></table></div>
+    <figure class="shot"><img src="demo-week/d5-dashboard.png" alt="The dashboard" /><figcaption>The dashboard after five days</figcaption></figure>
+<figure class="shot"><img src="demo-week/d5-wip.png" alt="WIP" /><figcaption>WIP</figcaption></figure>
+<figure class="shot"><img src="demo-week/d5-schedule.png" alt="The Schedule" /><figcaption>The Schedule: a container day passed</figcaption></figure>
+<figure class="shot"><img src="demo-week/d5-attention.png" alt="Attention" /><figcaption>Attention at the end of the week</figcaption></figure>
+<figure class="shot"><img src="demo-week/d5-forecast.png" alt="Forecast" /><figcaption>Forecast: how much history it has</figcaption></figure>
+<figure class="shot"><img src="demo-week/d5-money.png" alt="Money" /><figcaption>Money out, week by week</figcaption></figure>
+  </section>
+
+  <section class="pagebreak">
+    <h2>What is recorded, and what is not</h2>
+    <div class="tablewrap"><table><thead><tr><th>What</th><th>Recorded</th><th>Where</th><th>Feeds</th></tr></thead><tbody><tr><td class="term">Who came in, per department and day</td><td class="def">yes</td><td class="def">Production (a number) or Manpower (per person)</td><td class="def">the day's capacity, the plan, the man-hours</td></tr><tr><td class="term">Who came in, per person</td><td class="def">yes</td><td class="def">Manpower → Deployment</td><td class="def">the department count</td></tr><tr><td class="term">Overtime hours</td><td class="def">yes, since this week</td><td class="def">Production (a total) or Manpower (per person)</td><td class="def">the day's capacity at the shift's overtime efficiency, up to the shift's maximum</td></tr><tr><td class="term">Man-hours</td><td class="def">derived, not typed</td><td class="def">Manpower, Production</td><td class="def">who came in × the shift hours + overtime</td></tr><tr><td class="term">Clock-in and clock-out times</td><td class="def">no</td><td class="def">—</td><td class="def">—</td></tr><tr><td class="term">Good and rejected, per job and day</td><td class="def">yes</td><td class="def">Production</td><td class="def">WIP, the dashboard, yields, the forecast</td></tr><tr><td class="term">Why rejected</td><td class="def">yes, since this week</td><td class="def">Production, under the row</td><td class="def">Quality: the Pareto, who can fix it</td></tr><tr><td class="term">Handovers counted in</td><td class="def">yes</td><td class="def">Production</td><td class="def">My department: what is holding you up</td></tr><tr><td class="term">Machines, and downtime</td><td class="def">yes</td><td class="def">Machines (and Masters)</td><td class="def">the day's capacity, Attention, the floor display</td></tr><tr><td class="term">Material on hand</td><td class="def">yes</td><td class="def">Material</td><td class="def">shortages against the plan</td></tr><tr><td class="term">Bills of materials, article costs</td><td class="def">the screens exist</td><td class="def">Masters, Capacity sheet</td><td class="def">Material and Money, empty until U&M's figures arrive</td></tr><tr><td class="term">Pins, what-ifs, orders taken against the plan</td><td class="def">yes</td><td class="def">Schedule, What if, Accept an order</td><td class="def">the plan, with the reason kept</td></tr><tr><td class="term">Purchase orders</td><td class="def">no</td><td class="def">—</td><td class="def">—</td></tr></tbody></table></div>
+  </section>
+
+  <section class="pagebreak">
+    <h2>The checks</h2>
+    <p class="lede">34 things we expected, what the screen said, and whether that is a pass. A row marked <em>read</em> is a reading with no single right answer; it is there so the next run can be compared with this one.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>What</th><th>Expected</th><th>The screen said</th><th>Verdict</th></tr></thead>
+      <tbody><tr><td class="num">1</td><td class="term">DEMO-01 checked on Accept an order</td><td class="def">fits as it stands</td><td class="def">Every department can make this within its window.</td><td class="pass">pass</td></tr><tr><td class="num">2</td><td class="term">A big order pulls its feeders earlier instead of being refused</td><td class="def">where the day-counts leave fewer days than the quantity needs, Clear verdicts carry "finishes N days earlier"</td><td class="def">none needed on this venue</td><td class="read">read</td></tr><tr><td class="num">3</td><td class="term">DEMO-06 (10 pieces, four days) checked</td><td class="def">refused, with the steps named</td><td class="def">14 of 14 steps cannot be made to this date.</td><td class="pass">pass</td></tr><tr><td class="num">4</td><td class="term">DEMO-06 taken anyway, with a reason</td><td class="def">the book marks it "taken against the plan"</td><td class="def">DEMO-06Taken against the plan</td><td class="pass">pass</td></tr><tr><td class="num">5</td><td class="term">DEMO-04 ships in two containers</td><td class="def">2 lines in the book, scheduled from their own dates</td><td class="def">2! lines, first stuffing 13 Jan 2027</td><td class="pass">pass</td></tr><tr><td class="num">6</td><td class="term">A probable order is planned and marked as such</td><td class="def">confidence reads probable</td><td class="def">probable</td><td class="pass">pass</td></tr><tr><td class="num">7</td><td class="term">The overlap shows on the heatmap</td><td class="def">Stitching over capacity on some days</td><td class="def">15 days over in Stitching, 46 flagged in all</td><td class="pass">pass</td></tr><tr><td class="num">8</td><td class="term">The Command centre names the constraint</td><td class="def">the department most asked of</td><td class="def">Stitching</td><td class="pass">pass</td></tr><tr><td class="num">9</td><td class="term">Day 1: attendance in Stitching</td><td class="def">two short of the books, and the day runs at that fraction of the rate</td><td class="def">10 of 12 in — the day is running at 83% of the rate · 80 man-hours. 1 of 7 rates have no crew size and are unaffected.</td><td class="pass">pass</td></tr><tr><td class="num">10</td><td class="term">Day 1: rejects at Ply Cutting, with a cause</td><td class="def">4 rejected, put down to a cause under the row</td><td class="def">4 rejected: Knot or shake in the face — "WHY REJECTED KNOT OR SHAKE IN THE FACE × 4 × Cause… Knot or shake in the face Pa"</td><td class="pass">pass</td></tr><tr><td class="num">11</td><td class="term">Day 1 on the grid: Machining short</td><td class="def">red — half the target entered</td><td class="def">short — Machining, 14 Oct 2026: made 19 of 38 planned (50%)</td><td class="pass">pass</td></tr><tr><td class="num">12</td><td class="term">Day 1 on the grid: the evening run did not move the morning's target</td><td class="def">Machining reads about 50% of the target it was given in the morning</td><td class="def">ratio 0.50</td><td class="pass">pass</td></tr><tr><td class="num">13</td><td class="term">Day 1 on the grid: departments that met the plan</td><td class="def">green where the entries matched</td><td class="def">Ply Cutting, Fiber Processing</td><td class="pass">pass</td></tr><tr><td class="num">14</td><td class="term">The plan learns from Day 1</td><td class="def">Machining's remainder starts the next working day, nothing made twice</td><td class="def">Machining reads Made (0 departments made)</td><td class="pass">pass</td></tr><tr><td class="num">15</td><td class="term">Day 2: Assembly counts in two short</td><td class="def">the difference is kept, not smoothed</td><td class="def">2 SHORT · 3 handovers counted in</td><td class="pass">pass</td></tr><tr><td class="num">16</td><td class="term">My department shows what is holding Assembly up</td><td class="def">the shortfall on the feeder's card</td><td class="def">Machining for DEMO-06 · UT263 SPWL COU PART MADE They owe 12 Made 11 Reached you 18 84 days late — due 22 Jul 2026 · container 13 Oct 2026 Ply Cutting for DEMO-</td><td class="pass">pass</td></tr><tr><td class="num">17</td><td class="term">Day 2: a breakdown booked on the Machines screen</td><td class="def">one fewer Stitching machine available</td><td class="def">STITCH-01 (breakdown): 7 → 6 of 8</td><td class="pass">pass</td></tr><tr><td class="num">18</td><td class="term">Attention lists the machine</td><td class="def">a machine-down card</td><td class="def">2 machine cards</td><td class="pass">pass</td></tr><tr><td class="num">19</td><td class="term">Day 2: an order arrives mid-week</td><td class="def">DEMO-07 checked and entered on day 2, the plan re-run around it</td><td class="def">Every department can make this within its window. (entered on day 2)</td><td class="pass">pass</td></tr><tr><td class="num">20</td><td class="term">Day 2: a bar dragged two days later, with a reason</td><td class="def">the pin holds; the next run keeps it</td><td class="def">Assembly: 29 Oct 2026 → 31 Oct 2026 · "Line free after the Nordic run"</td><td class="pass">pass</td></tr><tr><td class="num">21</td><td class="term">Day 3: overtime in Stitching raises the day</td><td class="def">12 person-hours add to the rate; the man-hours are shown</td><td class="def">12 of 12 in — the day is running at 100% of the rate · 12.0 overtime hours add 11% · 108 man-hours. 1 of 7 rates have no crew size and are unaffected.</td><td class="pass">pass</td></tr><tr><td class="num">22</td><td class="term">The same hours on Manpower's card</td><td class="def">Who is in says 12 overtime hours for Stitching</td><td class="def">Stitching 12 on the books · shift GEN 12 in 12.0 overtime hours 108 man-hours</td><td class="pass">pass</td></tr><tr><td class="num">23</td><td class="term">Day 3: one on leave in Sanding</td><td class="def">one short of the books</td><td class="def">5 of 6 in — the day is running at 83% of the rate · 40 man-hours.</td><td class="pass">pass</td></tr><tr><td class="num">24</td><td class="term">Day 3: stores count a material</td><td class="def">the count lands and the status moves</td><td class="def">FAB-LIN: short → covered</td><td class="pass">pass</td></tr><tr><td class="num">25</td><td class="term">Day 4: DEMO-05 (400 pieces, twenty days too soon) refused</td><td class="def">refused, with the steps named</td><td class="def">2 of 10 steps cannot be made to this date.</td><td class="pass">pass</td></tr><tr><td class="num">26</td><td class="term">Attention carries the reason DEMO-05 was taken</td><td class="def">a card for DEMO-05 ends "taken against the plan: …"</td><td class="def">Assembly is behind on DEMO-05 — 0 of 434 made · the date has passed · 434 still to make · due 13 Oct 2026 · taken against the plan: Customer insists; overtime in Stitching agreed</td><td class="pass">pass</td></tr><tr><td class="num">27</td><td class="term">Day 4: what if, a second shift in Stitching</td><td class="def">fewer breaches in the scenario, live plan untouched</td><td class="def">14 → 14 breaches, 16 tasks changed</td><td class="pass">pass</td></tr><tr><td class="num">28</td><td class="term">Day 4: rejects at Sanding, with a cause</td><td class="def">3 rejected, put down to a cause</td><td class="def">3 rejected: Knot or shake in the face</td><td class="pass">pass</td></tr><tr><td class="num">29</td><td class="term">Quality shows the causes</td><td class="def">the Pareto and the by-department table carry the week</td><td class="def">DEPARTMENT GOOD REJECTED RATE YIELD, COUNTED AGAINST PLAN EXPLAINED BIGGEST CAUSE Ply Cutting 980 4 0.41% 99.6% +1.6 100% Knot or shake in the face Machining 60</td><td class="pass">pass</td></tr><tr><td class="num">30</td><td class="term">DEMO-06's container day has passed</td><td class="def">tagged "Container day passed" on the Schedule from the day it was entered, its mark in the shaded past</td><td class="def">stuffing 13 Oct 2026, tagged: yes</td><td class="pass">pass</td></tr><tr><td class="num">31</td><td class="term">WIP after five days</td><td class="def">every line with work this week has started, progress in units</td><td class="def">DEMO-06 63% · DEMO-05 5% · DEMO-01 8% · DEMO-02 14% · DEMO-03 14%</td><td class="pass">pass</td></tr><tr><td class="num">32</td><td class="term">The forecast says how much history it has</td><td class="def">declines until ten declarations, then speaks</td><td class="def">26 declarations: DECLARATIONS 26 DAYS RECORDED 5 14 Oct 2026 onwards RATES MEASURED 0 of 16 10 days needed each ARTICLES TIMED 0 of 6 10 </td><td class="pass">pass</td></tr><tr><td class="num">33</td><td class="term">Money reads</td><td class="def">cash out, week by week, from what the costs say</td><td class="def">9 Nov 2026 ₹2,031 · 2 suppliers · 1 unpriced 16 Nov 2026 ₹96,505 · 2 suppliers 30 Nov 2026 ₹747,361 · 2 suppliers 14 Dec 2026 ₹31,813 · 1 supplier 21 Dec 2026 ₹</td><td class="read">read</td></tr><tr><td class="num">34</td><td class="term">The floor display for Stitching</td><td class="def">the day in its own words, with the hours</td><td class="def">Stitching · 10 of 12 in · 6 of 8 machines</td><td class="read">read</td></tr></tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <h2>What your own data changes</h2>
+    <div class="tablewrap"><table><thead><tr><th>From U&M</th><th>What it replaces</th><th>What changes on the screens</th></tr></thead><tbody><tr><td class="term">The rates: pieces a day per item per department, with the crew size</td><td class="def">the stand-in 40 a day</td><td class="def">every date, every red square, every verdict on Accept an order</td></tr><tr><td class="term">Handover days per department</td><td class="def">the per-article D-minus sheet</td><td class="def">the D-minus becomes a figure the system prints per order, not one PPC types</td></tr><tr><td class="term">Does Machining feed Ply Cutting?</td><td class="def">an edge we kept because it was there</td><td class="def">the route, and one breach on the sample plan</td></tr><tr><td class="term">A Panipuri export</td><td class="def">orders typed by hand</td><td class="def">the order book filled from the ERP</td></tr><tr><td class="term">Bills of materials and article costs</td><td class="def">empty screens</td><td class="def">Material shortages and Money</td></tr></tbody></table></div>
+  </section>
+
+  <section>
+    <h2>Who did what in this week</h2>
+    <div class="tablewrap"><table><thead><tr><th>Who</th><th>Screen</th><th>What they did</th></tr></thead><tbody><tr><td class="term">Merchandising</td><td class="def">Accept an order · Order book</td><td class="def">Checked sixteen orders, entered them from the verdict; took DEMO-06 and DEMO-05 anyway with reasons; added DEMO-04’s second container; entered DEMO-07 on day 2 and DEMO-05 on day 4.</td></tr><tr><td class="term">Each HOD</td><td class="def">Production</td><td class="def">Marked who came in and the overtime, entered good and rejected per job at the end of each day with the cause, counted in what arrived from upstream.</td></tr><tr><td class="term">HR</td><td class="def">Manpower</td><td class="def">Read who is in, the overtime and the man-hours.</td></tr><tr><td class="term">Maintenance</td><td class="def">Machines</td><td class="def">Booked a Stitching breakdown for two days.</td></tr><tr><td class="term">Stores</td><td class="def">Material</td><td class="def">Counted a material that was short.</td></tr><tr><td class="term">PPC</td><td class="def">Command centre · Schedule · What if</td><td class="def">Ran the schedule each evening; pinned a department two days later with a reason; tried a second shift in Stitching.</td></tr><tr><td class="term">The MD</td><td class="def">Dashboard · WIP · Attention · Forecast · Money</td><td class="def">Read.</td></tr></tbody></table></div>
+  </section>
+
+  <footer>
+    <span>DBBS/UM/KRAM/14 &middot; Rev A</span>
+    <span>Run on the demonstration build, 15 Oct 2026, 00:01 IST</span>
+  </footer>
+</div>
