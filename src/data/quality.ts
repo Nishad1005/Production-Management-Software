@@ -17,6 +17,42 @@ export type ParetoRow = {
   running_pct: number
 }
 
+export type DefectType = { code: string; name: string; category: string; is_active: boolean }
+
+/** The causes a reject can be put down to, for the "why" beside a rejected figure. */
+export function useDefectTypes() {
+  return useQuery({
+    queryKey: ['defect-types'],
+    queryFn: () => select<DefectType>('defect_type_list', { order: ['code'] }),
+  })
+}
+
+export type DefectRow = {
+  erp_order_no: string
+  line_no: number
+  department_code: string
+  component_code: string
+  production_date: string
+  defect_code: string
+  defect_name: string
+  category: string
+  qty: number
+  note: string | null
+}
+
+/** What has been attributed in one department on one day, for the rows on Production. */
+export function useDefectsFor(departmentCode: string | null, date: string) {
+  return useQuery({
+    queryKey: ['defects-for', departmentCode, date],
+    enabled: Boolean(departmentCode),
+    queryFn: () =>
+      select<DefectRow>('defect_list', {
+        eq: { department_code: departmentCode!, production_date: date },
+        order: ['defect_code'],
+      }),
+  })
+}
+
 export function useDefectPareto() {
   return useQuery({
     queryKey: ['defect-pareto'],

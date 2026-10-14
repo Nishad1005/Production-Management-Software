@@ -180,6 +180,34 @@ function useLedgerWrite<TInput>(fn: (input: TInput) => Promise<void>) {
   })
 }
 
+/**
+ * Put some of a day's rejects down to a cause. A null quantity removes the
+ * cause; the function refuses to account for more than was rejected.
+ */
+export function useAttributeDefect() {
+  return useLedgerWrite<{
+    shipmentLineId: string
+    departmentCode: string
+    componentCode: string
+    date: string
+    shiftCode: string
+    defectCode: string
+    qty: number | null
+    note?: string | null
+  }>(async (input) => {
+    await rpc('attribute_defect', {
+      p_shipment_line_id: input.shipmentLineId,
+      p_department_code: input.departmentCode,
+      p_component_code: input.componentCode,
+      p_date: input.date,
+      p_shift_code: input.shiftCode,
+      p_defect_code: input.defectCode,
+      p_qty: input.qty,
+      p_note: input.note ?? null,
+    })
+  })
+}
+
 export function useDeclareProduction() {
   return useLedgerWrite<{
     shipmentLineId: string

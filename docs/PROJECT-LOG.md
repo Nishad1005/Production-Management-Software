@@ -78,7 +78,7 @@ unmodified in the browser, so the demo runs the real engine with no backend.
 `npm run build` produces a static folder.
 
 **Online.** Supabase project `fiqfbbnmksppbpxmhnbv` — *kram*, Mumbai
-(ap-south-1), Postgres 17.6. All seventy-three migrations applied locally; seventy-one are on the live project, and the two of 15 Oct (`20261015090000`, a day entered is over; `20261015100000`, overtime feeds capacity) are committed and wait for the go (§9, 15 Oct).
+(ap-south-1), Postgres 17.6. All seventy-three migrations applied, the latest two on 15 Oct (`20261015090000`, a day entered is over; `20261015100000`, overtime feeds capacity — §9, 15 Oct).
 
 **The plan of record is §8.0** — the concept deck's promises, each marked
 built, partly or not built, and what it waits on. Written 9 Oct.
@@ -677,7 +677,7 @@ Note the task count is lower than the spec's ~40,000 estimate; three components
 across seven departments gives 21 pairs. The row count matches. Worth checking
 against the real route.
 
-**Browser** — `npm run screenshot` drives eighteen screens plus thirty-five
+**Browser** — `npm run screenshot` drives eighteen screens plus thirty-six
 interactions in headless Chromium and fails on any console error. It checks the
 D-minus edit survives a reload, which is what proves it reached the database
 rather than only React state. Fifty steps, three of them at other viewports — two phones and a 1920×1080 wall.
@@ -863,8 +863,9 @@ the real workload at 324 orders and ~40,000 tasks.
 
 ### 8.2 Ours, and small
 
-0. **A day a department has entered is over for that department.** Found by
-   the mock run (12 Oct): the evening run re-plans today's remainder onto
+0. ~~**A day a department has entered is over for that department.**~~
+   **Done 15 Oct**, `20261015090000`, with the behind card's reason and the
+   route-conflict wording (15 Oct entry). Was: found by the mock run (12 Oct): the evening run re-plans today's remainder onto
    today, so the day's planned figure on the grid moves to meet what was
    made (33 of 65 entered read as "33 of 32, 103%"). The frozen copy and
    the forward anchor should treat (department, today) as past once a
@@ -892,11 +893,9 @@ the real workload at 324 orders and ~40,000 tasks.
 4. **Confirm what Supabase's own backups cover** on the project's plan. *Save
    everything to a file* is a copy U&M control, not a replacement for the
    platform's.
-5. **Schedule markers readable on hover** (14 Oct, asked; three lines given,
-   no go yet). The deadline, container-day and today marks are explained in
-   the legend but say nothing when hovered — the deadline mark is
-   `pointer-events-none` so a drag is not swallowed. A wider transparent
-   hit area under the bar, with a title naming the mark and its date.
+5. ~~**Schedule markers readable on hover**~~ **Done 15 Oct** (pages; the
+   15 Oct "why rejected" entry), with why-rejected on Production and the
+   Machines screen for maintenance.
 
 ### 8.3 Ours, before U&M's own people have accounts
 
@@ -2746,12 +2745,15 @@ evening's Schedule entry (an edit anchored on it); and the entries since
 11 Oct had been prepended newest first against the section's own rule.
 All three put right.
 
-### 2026-10-15 — A day entered is over; overtime feeds capacity (two migrations, built, not yet pushed)
+### 2026-10-15 — A day entered is over; overtime feeds capacity (two migrations, live)
 
 The first two of the pending items, as planned on 14 Oct (the plan is in
 the 14 Oct D-minus entry's sibling, "Finish the pending things, then a week
-at U&M"). Both migrations regenerated from the engine's text, not retyped;
-both committed; both wait for the go and Nishad's `db:push`.
+at U&M"). Both migrations regenerated from the engine's text, not retyped.
+**Pushed on Nishad's go the same evening**; `verify:live` green as anon and
+as the test account (the six-parameter `set_attendance` resolves on the
+live schema cache, the engine runs); the pages pushed after it, and
+`verify:hosted-ui` green on every screen.
 
 **`20261015090000_a_day_entered_is_over.sql`** (§8.2 item 0). Per department
 and day: once a declaration dated today exists for a department, today is a
@@ -2809,7 +2811,40 @@ crew panel calls the six-parameter `set_attendance` and reads the new
 view columns, so pushing them first would break Production on the live
 site.
 
-### 2026-08-17 — Three asks, and a sheet PPC can actually fill in
+### 2026-10-15 — Why rejected, a Machines screen, and marks that read on hover (pages only)
+
+The second batch of the 14 Oct plan, three page changes and no migration.
+
+**Why rejected, on Production.** Rejections have been counted since
+production entry existed; the cause had a function (`attribute_defect`,
+17 Aug) and no screen, so the Quality Pareto could only be fed from a test.
+Now a line opens under any entered row with rejects: a cause, how many, Add,
+as many causes as the day needs; the causes already put down show as tags
+with a remove; "2 of 2 put down to a cause" beside them. The function's
+refusal reads through — "that would account for 3 of only 2 rejected" — and
+the browser step provokes it before entering the right figure.
+`useDefectTypes` / `useDefectsFor` (`defect_type_list`, `defect_list`) and
+`useAttributeDefect` in the data layer.
+
+**Machines, a screen of its own.** The panel from Masters → Machines, moved
+to `src/routes/Machines.tsx` with its two dialogs and imported back by
+Masters, at `#/machines` in the Floor group for maintenance (which had a
+role and no screen), HOD, planner, MD, admin. The machine-downtime browser
+step books there now; the hosted check renders it.
+
+**Marks that read on hover, on the Schedule.** The container day, each
+department's deadline from the D-minus, and today each sit in an
+eight-pixel hit area with a title — "Deadline from the D-minus · 7 Sept
+2026" — drawn *before* the bar in the row so the bar, a later sibling,
+stays on top and wins the drag; the deadline mark used to be
+pointer-events-none for that reason and said nothing. The *schedule scrolls*
+step now requires every mark titled and at least one deadline mark under
+the pointer where no bar covers it.
+
+GUIDE: Production (why rejected), Quality (where the cause is entered), a
+Machines section, Masters' machines paragraph, Schedule (hover). Typecheck
+clean; 443 of 443; 55 of 55 browser steps (one new).
+
 
 Nothing left on the list is code. The three things still open are a document
 someone holds, figures someone knows, and a file that does not exist yet — and

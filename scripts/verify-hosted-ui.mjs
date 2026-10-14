@@ -245,6 +245,7 @@ const SCREENS = [
   ['#/board', 'department-board', 'What you owe'],
   ['#/production', 'production', 'What you were asked for'],
   ['#/manpower', 'manpower', 'Who is in'],
+  ['#/machines', 'machines', 'fraction of its machines running'],
   ['#/capacity', 'capacity-sheet', 'Capacity sheet'],
   ['#/masters', 'masters', 'Production route'],
   ['#/users', 'users', 'Roles'],

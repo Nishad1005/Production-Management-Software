@@ -166,8 +166,9 @@ export function Gantt() {
           marked and anything that cannot be made in time in red. Open a line to
           see each department's bar, from the day it starts to the day it must
           be finished. <strong>Drag a bar</strong> to reschedule it — you will be
-          asked why, and every later run will honour it. With hundreds of live
-          orders this is always filtered; rendering the whole book helps nobody.
+          asked why, and every later run will honour it. Hover any mark for
+          what it is and its date. With hundreds of live orders this is always
+          filtered; rendering the whole book helps nobody.
         </p>
 
         <div className="mb-3 flex flex-wrap items-end gap-3">
@@ -381,13 +382,44 @@ function Ruler({ marks, trackW }: { marks: Marks; trackW: number }) {
           </div>
         ))}
         {marks.today !== null ? (
-          <div
-            className="bg-blue absolute inset-y-0 w-0.5"
-            style={{ left: `${marks.today}%` }}
-            title="Today"
+          <Mark
+            left={marks.today}
+            title={`Today · ${formatDateLong(todayIso())}`}
+            testId="gantt-today"
+            line="bg-blue w-0.5"
           />
         ) : null}
       </div>
+    </div>
+  )
+}
+
+/**
+ * A mark on a track that says what it is when hovered: the one-pixel line
+ * inside an eight-pixel hit area, so the pointer can actually land on it.
+ * Drawn before the bar in its row, so the bar — a later sibling — stays on
+ * top and wins the drag where the two overlap; the deadline mark used to be
+ * pointer-events-none for that reason, and said nothing.
+ */
+function Mark({
+  left,
+  title,
+  testId,
+  line,
+}: {
+  left: number
+  title: string
+  testId: string
+  line: string
+}) {
+  return (
+    <div
+      data-testid={testId}
+      className="absolute inset-y-0 w-2 -translate-x-1/2 cursor-help"
+      style={{ left: `${left}%` }}
+      title={title}
+    >
+      <div className={`absolute inset-y-0 left-1/2 -translate-x-1/2 ${line}`} />
     </div>
   )
 }
@@ -559,11 +591,11 @@ function OrderGroup({
                 }`}
               />
             ))}
-          <div
-            data-testid="gantt-stuffing"
-            className="bg-ink absolute inset-y-1 w-0.5"
-            style={{ left: `${marks.pos(day(h.stuffing_date))}%` }}
-            title={`Container stuffing ${formatDateLong(h.stuffing_date)}`}
+          <Mark
+            left={marks.pos(day(h.stuffing_date))}
+            title={`Container day · ${formatDateLong(h.stuffing_date)}`}
+            testId="gantt-stuffing"
+            line="bg-ink w-0.5"
           />
         </div>
       </div>
@@ -703,6 +735,14 @@ function Bar({
       <div ref={track} className="relative h-[18px] overflow-hidden">
         <Gridlines marks={marks} />
         <div className="bg-rule-soft pointer-events-none absolute inset-x-0 top-1/2 h-px" />
+        {duePos !== null ? (
+          <Mark
+            left={duePos}
+            title={`Deadline from the D-minus · ${formatDateLong(task.due_date)}`}
+            testId="gantt-due"
+            line="bg-ink w-px"
+          />
+        ) : null}
         {hasDates ? (
           <div
             onPointerDown={startDrag}
@@ -718,17 +758,6 @@ function Bar({
                   ? ` · ${PULLED_EXPLAINER(task.pulled_days)}`
                   : ''
             } — drag to reschedule`}
-          />
-        ) : null}
-        {duePos !== null ? (
-          // pointer-events-none matters: this marker is one pixel wide and
-          // frequently lands inside the bar it belongs to. Without it, the
-          // deadline line swallows the drag and the bar simply refuses to move
-          // — for exactly the tasks whose dates most need adjusting.
-          <div
-            className="bg-ink pointer-events-none absolute inset-y-0 w-px"
-            style={{ left: `${duePos}%` }}
-            title={`Due ${formatDateLong(task.due_date)}`}
           />
         ) : null}
         {dragDays !== null && dragDays !== 0 ? (

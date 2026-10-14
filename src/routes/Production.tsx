@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useState } from 'react'
 import {
   useAcceptProduction,
+  useAttributeDefect,
   useDeclareProduction,
   useDepartmentDay,
   usePendingAcceptance,
@@ -15,6 +16,7 @@ import { useDepartments } from '@/data/planning'
 import { Button, Empty, Panel, Table, Tag, Td, Th, Waiting } from '@/components/ui'
 import { stateOf, waiting } from '@/lib/query-state'
 import { componentLabel, useDepartmentNames } from '@/components/names'
+import { useDefectTypes, useDefectsFor } from '@/data/quality'
 import { formatDateLong, formatNumber, inputClass, todayIso } from '@/components/format'
 
 /**
@@ -312,6 +314,11 @@ function WorklistEntry({ row, date }: { row: WorklistRow; date: string }) {
                     ? 'Entered'
                     : 'Enter a figure'}
             </button>
+            {row.declaration_id && row.qty_rejected > 0 ? (
+              <div className="mt-3">
+                <WhyRejected row={row} date={date} />
+              </div>
+            ) : null}
           </div>
         </td>
       </tr>
@@ -360,7 +367,128 @@ function WorklistEntry({ row, date }: { row: WorklistRow; date: string }) {
         </Td>
         <Td align="right">{status}</Td>
       </tr>
+      {row.declaration_id && row.qty_rejected > 0 ? (
+        <tr className="hidden sm:table-row">
+          <td colSpan={6} className="border-rule-soft border-b px-3 pt-1 pb-3">
+            <WhyRejected row={row} date={date} />
+          </td>
+        </tr>
+      ) : null}
     </>
+  )
+}
+
+/**
+ * Why rejected.
+ *
+ * Rejections have been counted since production entry existed; the cause had
+ * a function (attribute_defect, 17 Aug) and no screen, so the Quality Pareto
+ * could only be fed from a test. It lives here, under the rejected figure,
+ * because the HOD who counted the rejects is the one who knows why. Several
+ * causes may share a day's rejects; the function refuses to account for more
+ * than were rejected, which is arithmetic rather than a judgement, and
+ * nobody is required to explain every one — the unexplained balance shows
+ * on Quality at its real size.
+ */
+function WhyRejected({ row, date }: { row: WorklistRow; date: string }) {
+  const types = useDefectTypes()
+  const defects = useDefectsFor(row.department_code, date)
+  const attribute = useAttributeDefect()
+  const [code, setCode] = useState('')
+  const [qty, setQty] = useState('')
+
+  const mine = (defects.data ?? []).filter(
+    (d) => d.erp_order_no === row.erp_order_no && d.component_code === row.component_code,
+  )
+  const accounted = mine.reduce((sum, d) => sum + d.qty, 0)
+  const options = (types.data ?? []).filter((t) => t.is_active)
+  const base = {
+    shipmentLineId: row.shipment_line_id,
+    departmentCode: row.department_code,
+    componentCode: row.component_code,
+    date,
+    shiftCode: row.shift_code,
+  }
+  const key = `${row.erp_order_no} ${row.component_code}`
+  const canAdd = Boolean(code) && Number(qty) > 0 && !attribute.isPending
+
+  const add = () =>
+    attribute.mutate(
+      { ...base, defectCode: code, qty: Number(qty) },
+      {
+        onSuccess: () => {
+          setCode('')
+          setQty('')
+        },
+      },
+    )
+
+  return (
+    <div
+      data-testid={`why-rejected-${row.erp_order_no}-${row.component_code}`}
+      data-accounted={accounted}
+      className="text-caption"
+    >
+      <span className="text-faint tracking-wider uppercase">Why rejected</span>
+      <div className="mt-1 flex flex-wrap items-center gap-2">
+        {mine.map((d) => (
+          <span key={d.defect_code} className="inline-flex items-center gap-1">
+            <Tag tone="mid">
+              {d.defect_name} × {formatNumber(d.qty)}
+            </Tag>
+            <button
+              type="button"
+              className="text-faint hover:text-flag min-h-11 px-1 sm:min-h-0"
+              title="Remove this cause"
+              onClick={() => attribute.mutate({ ...base, defectCode: d.defect_code, qty: null })}
+            >
+              ×
+            </button>
+          </span>
+        ))}
+        <select
+          className={`${inputClass} h-12 w-48 sm:h-auto`}
+          value={code}
+          onChange={(e) => setCode(e.target.value)}
+          aria-label={`Cause, ${key}`}
+        >
+          <option value="">Cause…</option>
+          {options.map((t) => (
+            <option key={t.code} value={t.code}>
+              {t.name}
+            </option>
+          ))}
+        </select>
+        <input
+          type="number"
+          inputMode="numeric"
+          min={0}
+          step="any"
+          className={`${inputClass} h-12 w-20 text-right sm:h-auto`}
+          value={qty}
+          onChange={(e) => setQty(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && canAdd && add()}
+          placeholder={String(Math.max(0, row.qty_rejected - accounted))}
+          aria-label={`How many, ${key}`}
+        />
+        <Button
+          variant="quiet"
+          onClick={add}
+          disabled={!canAdd}
+          testId={`defect-add-${row.erp_order_no}-${row.component_code}`}
+        >
+          Add
+        </Button>
+        <span className="text-faint">
+          {formatNumber(accounted)} of {formatNumber(row.qty_rejected)} put down to a cause
+        </span>
+      </div>
+      {attribute.isError ? (
+        <p className="text-flag mt-1" data-testid="why-rejected-error">
+          {String(attribute.error).replace(/^(\w*error:\s*)+/i, '')}
+        </p>
+      ) : null}
+    </div>
   )
 }
 

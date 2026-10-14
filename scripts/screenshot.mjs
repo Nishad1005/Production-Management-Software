@@ -374,8 +374,11 @@ await step('schedule scrolls', async () => {
       (m) => m.offsetLeft < 0 || m.offsetLeft > m.parentElement.clientWidth,
     ).length
     const passed = document.querySelectorAll('[data-testid="gantt-passed"]').length
-    const today = el.querySelector('[title="Today"]')?.getBoundingClientRect()
+    const today = el.querySelector('[data-testid="gantt-today"]')?.getBoundingClientRect()
     const view = el.getBoundingClientRect()
+    // Every mark says what it is when hovered (15 Oct).
+    const untitled = markers.filter((m) => !/^Container day · /.test(m.title)).length
+    const todayTitle = el.querySelector('[data-testid="gantt-today"]')?.title ?? ''
     const stuffing = [...document.querySelectorAll('[data-testid="gantt-order"]')]
       .map((o) => o.dataset.stuffing)
       .sort()
@@ -391,8 +394,30 @@ await step('schedule scrolls', async () => {
       earliest: stuffing[0],
       latest: stuffing[stuffing.length - 1],
       passed,
+      untitled,
+      todayTitle,
     }
   })
+  if (r.untitled) throw new Error(`${r.untitled} container-day marks say nothing on hover`)
+  if (!/^Today · /.test(r.todayTitle)) throw new Error(`today's mark reads "${r.todayTitle}"`)
+  // The deadline marks inside the rows: titled, and reachable by the pointer
+  // where no bar covers them — they used to be pointer-events-none so a bar
+  // could be dragged, and said nothing.
+  await page.click('[data-testid="gantt-expand-all"]')
+  await page.waitForSelector('[data-testid="gantt-due"]', { timeout: 60_000 })
+  const due = await page.evaluate(() => {
+    const marks = [...document.querySelectorAll('[data-testid="gantt-due"]')]
+    const untitled = marks.filter((m) => !/^Deadline from the D-minus · /.test(m.title)).length
+    const reachable = marks.filter((m) => {
+      const b = m.getBoundingClientRect()
+      if (b.width === 0 || b.top < 0 || b.bottom > window.innerHeight) return false
+      const hit = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2)
+      return hit?.closest('[data-testid="gantt-due"]') === m
+    }).length
+    return { marks: marks.length, untitled, reachable }
+  })
+  if (due.untitled) throw new Error(`${due.untitled} deadline marks say nothing on hover`)
+  if (!due.reachable) throw new Error(`none of ${due.marks} deadline marks can be reached by the pointer`)
   if (!r.passed) throw new Error(`no order is tagged "Container day passed", with one stuffed ${pastDay}`)
   if (r.scrollWidth <= r.clientWidth) {
     throw new Error(`the schedule does not scroll: ${r.scrollWidth}px of content in ${r.clientWidth}px`)
@@ -403,7 +428,7 @@ await step('schedule scrolls', async () => {
   if (r.earliest < r.from || r.latest > r.to) {
     throw new Error(`the track ${r.from}..${r.to} does not cover the container days ${r.earliest}..${r.latest}`)
   }
-  return `${r.markers} container days on a track from ${r.from} to ${r.to} at ${r.px}px a day, ${r.scrollWidth}px in a ${r.clientWidth}px panel, today in view, ${r.passed} tagged as passed and on the track`
+  return `${r.markers} container days on a track from ${r.from} to ${r.to} at ${r.px}px a day, ${r.scrollWidth}px in a ${r.clientWidth}px panel, today in view, ${r.passed} tagged as passed and on the track; every mark titled, ${due.reachable} of ${due.marks} deadline marks under the pointer`
 })
 
 // --- the capacity sheet writes where the engine reads ----------------------
@@ -739,6 +764,48 @@ await step('declare production', async () => {
   return '26 declared by stitching, persisted across reload'
 })
 
+// --- a reject gets a cause, beside the figure, and the arithmetic holds -----
+
+await step('why rejected', async () => {
+  await go('#/production', 'text=What you were asked for')
+  await page.selectOption('[data-testid="production-department"]', 'STITCH')
+  await page.waitForSelector(
+    '[data-testid="production-empty"], [data-testid="production-worklist"]',
+    { timeout: 60_000 },
+  )
+  const empty = page.locator('[data-testid="production-empty"]')
+  if (await empty.count()) {
+    await empty.locator('button').first().click()
+    await page.waitForSelector('[data-testid="production-worklist"]', { timeout: 60_000 })
+  }
+  const list = page.locator('[data-testid="production-worklist"]')
+  // Two rejected on the first job, entered; the "why" line opens under it.
+  const rejected = list.locator('input[aria-label^="Rejected, "]:visible').first()
+  await rejected.fill('2')
+  await rejected.press('Enter')
+  const why = page.locator('[data-testid^="why-rejected-"]:visible').first()
+  await why.waitFor({ timeout: 60_000 })
+  const cause = why.locator('select')
+  await cause.selectOption({ index: 1 })
+  const causeName = await cause.locator('option:checked').innerText()
+  // Three is more than were rejected: refused, with both figures named.
+  await why.locator('input[type=number]').fill('3')
+  await why.locator('button:has-text("Add")').click()
+  await page.waitForSelector('[data-testid="why-rejected-error"]', { timeout: 60_000 })
+  const refusal = await page.locator('[data-testid="why-rejected-error"]').innerText()
+  if (!/would account for/.test(refusal)) throw new Error(`unexpected refusal: ${refusal}`)
+  // Two is right.
+  await why.locator('input[type=number]').fill('2')
+  await why.locator('button:has-text("Add")').click()
+  await page.waitForFunction(
+    () => document.querySelector('[data-testid^="why-rejected-"]')?.getAttribute('data-accounted') === '2',
+    null,
+    { timeout: 60_000 },
+  )
+  await page.screenshot({ path: `${outDir}/why-rejected.png`, fullPage: true })
+  return `2 rejects put down to "${causeName}"; 3 refused with "${refusal.slice(0, 60)}"`
+})
+
 await step('count in a handover', async () => {
   // Stapling is fed by stitching, so what stitching just declared is now
   // sitting in stapling's queue. Assembly would have been wrong: it is fed by
@@ -1070,7 +1137,9 @@ await step('department board', async () => {
 // --- machines: booking downtime takes the department's day down -------------
 
 await step('machine downtime', async () => {
-  await go('#/masters?tab=machines', '[data-testid="machines-master"]')
+  // On the Machines screen since 15 Oct — the maintenance role's own — and
+  // still on Masters under its Machines tab.
+  await go('#/machines', '[data-testid="machines-master"]')
   await page.waitForTimeout(600)
 
   const rows = await page.locator('[data-testid="machines-master"] tbody tr').count()

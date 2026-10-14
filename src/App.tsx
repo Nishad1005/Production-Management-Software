@@ -18,6 +18,7 @@ import { OrderBook } from '@/routes/OrderBook'
 import { Acceptance } from '@/routes/Acceptance'
 import { Gantt } from '@/routes/Gantt'
 import { Masters } from '@/routes/Masters'
+import { Machines } from '@/routes/Machines'
 import { CapacitySheet } from '@/routes/CapacitySheet'
 import { Production } from '@/routes/Production'
 import { DepartmentBoard } from '@/routes/DepartmentBoard'
@@ -60,6 +61,7 @@ const NAV: { to: string; label: string; group: Group; end?: boolean; roles: Role
   { to: '/board', label: 'My department', group: 'Floor', roles: ['hod', 'planner', 'md', 'admin'] },
   { to: '/wip', label: 'WIP', group: 'Floor', roles: ['md', 'planner', 'merchandiser', 'admin'] },
   { to: '/manpower', label: 'Manpower', group: 'Floor', roles: ['hod', 'hr', 'planner', 'md', 'admin'] },
+  { to: '/machines', label: 'Machines', group: 'Floor', roles: ['maintenance', 'hod', 'planner', 'md', 'admin'] },
   { to: '/material', label: 'Material', group: 'Watch', roles: ['purchase', 'store', 'planner', 'md', 'admin'] },
   { to: '/quality', label: 'Quality', group: 'Watch', roles: ['quality', 'hod', 'planner', 'md', 'admin'] },
   { to: '/money', label: 'Money', group: 'Watch', roles: ['accounts', 'purchase', 'md', 'admin'] },
@@ -440,6 +442,7 @@ export function App() {
                     <Route path="/board" element={<DepartmentBoard />} />
                     <Route path="/production" element={<Production />} />
                     <Route path="/manpower" element={<Manpower />} />
+                    <Route path="/machines" element={<Machines />} />
                     <Route path="/material" element={<Material />} />
                     <Route path="/quality" element={<Quality />} />
                     <Route path="/forecast" element={<Forecast />} />

@@ -204,7 +204,8 @@ long, scroll sideways.
 bar, the container day as a black marker, and a red mark wherever a department
 cannot make its part in time, with a count beside the order number. The dates
 run along a ruler at the top — months above, every Monday below, today as a
-blue line.
+blue line. **Hover any mark** — the container day, a department's deadline,
+today — and it says what it is and its date.
 
 **The timeline scrolls sideways.** It runs at twenty pixels a day from the
 earliest date in the book to the last container day, so a long book is not
@@ -463,6 +464,14 @@ or **Run the schedule**.
 Entering a figure again corrects it rather than adding to it, so there is no way
 to double a day by entering it twice.
 
+**Why rejected.** Once a row with rejects is entered, a line opens under it:
+pick a cause, say how many, press Add — as many causes as the day needs.
+Kram refuses to put down more than were rejected ("that would account for 12
+of only 10 rejected"), and nobody is required to explain every one: the
+unexplained balance shows on Quality at its real size. The cause goes to
+whoever can fix it — workmanship to the department, material to purchase,
+machine to maintenance.
+
 **The crew.** Beside the day's jobs: **who came in** and the **overtime hours**
 for the day, all people together, one Save for both. Who came in scales the
 day's capacity by the share of the crew the rate was measured with; overtime
@@ -516,6 +525,20 @@ the heatmap. The same total can be typed as one figure on Production beside
 *who came in*; it is the same fact either way. **Who is in** also gives the
 day in **man-hours**: who came in × the shift's production hours + the
 overtime.
+
+---
+
+### Machines
+
+The machine list and what is running today, for maintenance and for a HOD who
+wants to know: the same panel as Masters → Machines, in the Floor group so the
+person who books a breakdown does not need the planner's screen. **Book
+downtime** takes a machine out for a range of days, with a reason, and the
+plan re-runs; **remove** on a booking puts it back. A department's day is
+scaled by the fraction of its machines running — four with one under
+maintenance is three quarters of a day — and a department with no machines
+recorded is left exactly as it is. Today's shortfalls are listed at the top,
+and the floor display says "6 of 8 machines" for the department it shows.
 
 ---
 
@@ -590,9 +613,10 @@ opposite findings.
 having a bad month and one article being genuinely hard to make produce the same
 number above, and only one of them is fixed by talking to the department.
 
-**Entering a cause:** rejections are entered on Production; the cause is
-attributed against that same day's entry. Kram refuses to account for more
-rejects than were recorded — that is arithmetic, not a judgement.
+**Entering a cause:** rejections are entered on Production, and the cause is
+put down there too, under the rejected figure (*Why rejected*). Kram refuses
+to account for more rejects than were recorded — that is arithmetic, not a
+judgement.
 
 ---
 
@@ -813,7 +837,9 @@ like fitting genuinely have none.
 **Book downtime** takes a machine out for a range of days and re-runs the plan. A
 reason is required, as it is on a capacity override. **Retire** is different from
 down: a retired machine stops counting towards the department altogether, while a
-machine that is down still counts and is simply unavailable.
+machine that is down still counts and is simply unavailable. The same panel is
+the **Machines** screen in the Floor group, where maintenance books a machine
+down without needing Masters.
 
 The machine list travels in the masters file. Downtime does not — it is an event
 that happened in one database, and it belongs in the *Save everything* backup
