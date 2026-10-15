@@ -403,14 +403,25 @@ async function clearOrders(prefixes) {
   // demo orders together, and a cap of sixty left two sample orders behind.
   let removed = 0
   for (let guard = 0; guard < 200; guard++) {
-    const row = page.locator('tbody tr').filter({ hasText: new RegExp(`^(${prefixes.map((p) => p.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')).join('|')})`) }).first()
-    if (!(await row.count())) break
-    const erp = (await row.locator('td').first().innerText()).split('\n')[0].trim()
+    // The number is the first cell's own text node — the "taken against the
+    // plan" tag sits beside it in the same cell, and the screen shows the tag
+    // in capitals, so reading the cell's text and comparing it with the
+    // document's never matched and the loop ran on without waiting.
+    const erps = await page.$$eval('tbody tr > td:first-child', (tds) => tds.map((td) => td.firstChild?.textContent?.trim() ?? ''))
+    const erp = erps.find((e) => prefixes.some((p) => e.startsWith(p)))
+    if (!erp) break
+    const row = page.locator('tbody tr').filter({ has: page.locator('td:first-child', { hasText: erp }) }).first()
     await row.click()
-    const del = page.locator('button:has-text("Delete this order")').first()
+    // Clicking opens that order's own detail in the row beneath it; the
+    // delete button there is the one for this order and no other.
+    const del = row.locator('xpath=following-sibling::tr[1]').locator('button:has-text("Delete this order")')
     await del.waitFor({ timeout: 30_000 })
     await del.click()
-    await page.waitForFunction((e) => ![...document.querySelectorAll('tbody tr td')].some((td) => td.textContent.trim().startsWith(e)), erp, { timeout: 120_000 })
+    await page.waitForFunction(
+      (e) => ![...document.querySelectorAll('tbody tr > td:first-child')].some((td) => (td.firstChild?.textContent?.trim() ?? '') === e),
+      erp,
+      { timeout: 120_000 },
+    )
     await settle(600)
     removed++
     console.log(`  removed ${erp}`)
@@ -430,11 +441,20 @@ async function check(order) {
   await page.selectOption('select', value)
   await page.fill('input[type=number]', String(order.qty))
   await page.fill('input[type=date]', order.stuffing)
-  await page.click('button:has-text("Check")')
-  await page.waitForSelector(`text=/${order.qty} units stuffing/i`, { timeout: 200_000 })
-  await page.locator('section > header > b').filter({ hasText: /^(Yes|Not as it stands)$/ }).first().waitFor({ timeout: 200_000 })
-  await settle(500)
-  const verdict = (await page.locator('text=/steps cannot be made to this date|Every department can make this/').first().innerText()).trim()
+  const sentence = page.locator('text=/steps cannot be made to this date|Every department can make this/').first()
+  for (let attempt = 1; ; attempt++) {
+    await page.click('button:has-text("Check")')
+    await page.waitForSelector(`text=/${order.qty} units stuffing/i`, { timeout: 200_000 })
+    await page.locator('section > header > b').filter({ hasText: /^(Yes|Not as it stands)$/ }).first().waitFor({ timeout: 200_000 })
+    await settle(500)
+    // The sentence arrives with the heading; on the live site, with runs
+    // from the clear still finishing behind it, the screen can re-render
+    // for a while. Wait as long as for the heading, and ask once more.
+    if (await sentence.waitFor({ timeout: 200_000 }).then(() => true, () => false)) break
+    if (attempt >= 2) throw new Error(`${order.erp}: the verdict never settled`)
+    console.log(`  (${order.erp}: no verdict sentence after the heading; checking again)`)
+  }
+  const verdict = (await sentence.innerText()).trim()
   const failing = await page.evaluate(() =>
     [...document.querySelectorAll('tbody tr')]
       .filter((r) => !/Clear/i.test(r.lastElementChild?.textContent ?? ''))
@@ -827,7 +847,14 @@ const afterRun = async (date, extra = {}) => ({
 // Day 0 — the book, and what the plan said
 // =============================================================================
 console.log('day 0: clearing the book')
-if (CLEAR.length) await clearOrders(CLEAR)
+if (CLEAR.length) {
+  await clearOrders(CLEAR)
+  // Every deletion re-plans; on the live site those runs queue behind one
+  // another. Let them finish before the first check joins the queue.
+  await go('', 'text=Bottleneck utilisation')
+  await page.waitForSelector('[data-testid="bottlenecks"][data-state="ready"]', { state: 'attached', timeout: 240_000 })
+  await settle(4000)
+}
 
 console.log('day 0: the orders through Accept an order')
 facts.verdicts = []
