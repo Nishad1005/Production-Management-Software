@@ -75,8 +75,8 @@ export function demoWeekPage({ facts: f }) {
     check('The Command centre names the constraint', 'the department most asked of', d0.commandCentre?.constraint ?? '—', d0.commandCentre ? Boolean(d0.commandCentre.constraint) : null)
     const at1 = d1.attendance?.STITCH
     check('Day 1: attendance in Stitching', 'two short of the books, and the day runs at that fraction of the rate', at1?.text ?? '—', at1?.onBooks ? at1.present === at1.onBooks - 2 && /\d+%/.test(at1.text) : null)
-    const ply = (d1.floor?.entered ?? []).find((e) => e.code === 'PLYCUT')
-    check('Day 1: rejects at Ply Cutting, with a cause', '4 rejected, put down to a cause under the row', ply?.cause ? `${n(ply.cause.qty)} rejected: ${ply.cause.cause} — "${ply.cause.text.slice(0, 80)}"` : ply ? 'no cause recorded' : '—', ply ? Boolean(ply.cause && ply.cause.qty === 4) : null)
+    const ply = (d1.floor?.entered ?? []).find((e) => e.cause) ?? (d1.floor?.entered ?? [])[0]
+    check(`Day 1: rejects at ${ply ? nameOf(ply.code) : 'the first department'}, with a cause`, '4 rejected, put down to a cause under the row', ply?.cause ? `${n(ply.cause.qty)} rejected: ${ply.cause.cause} — "${ply.cause.text.slice(0, 80)}"` : ply ? 'no cause recorded' : '—', ply ? Boolean(ply.cause && ply.cause.qty === 4) : null)
     const g1 = d1.after?.dashboard?.grid?.rows ?? {}
     check('Day 1 on the grid: Machining short', 'red — half the target entered', g1.MACHINE ? `${g1.MACHINE.state} — ${g1.MACHINE.title}` : '—', g1.MACHINE ? g1.MACHINE.state === 'short' || g1.MACHINE.state === 'behind' : null)
     check("Day 1 on the grid: the evening run did not move the morning's target", 'Machining reads about 50% of the target it was given in the morning', g1.MACHINE ? `ratio ${g1.MACHINE.ratio}` : '—', g1.MACHINE?.ratio ? Math.abs(Number(g1.MACHINE.ratio) - 0.5) < 0.12 : null)
@@ -89,7 +89,7 @@ export function demoWeekPage({ facts: f }) {
     check('Day 2: Assembly counts in two short', 'the difference is kept, not smoothed', ho ? `${ho.shortfall || 'no shortfall shown'} · ${n(ho.counted)} handovers counted in` : '—', ho ? /2\s*short/i.test(ho.shortfall) : null)
     check('My department shows what is holding Assembly up', "the shortfall on the feeder's card", d2.after?.board ? d2.after.board.slice(0, 160) : '—', d2.after?.board ? /short|reached you/i.test(d2.after.board) : null)
     const mc = d2.machine
-    check('Day 2: a breakdown booked on the Machines screen', 'one fewer Stitching machine available', mc ? `${mc.machine || 'no machine'} (${mc.kind ?? ''}): ${mc.before ?? '?'} → ${mc.after ?? '?'} of ${mc.machines ?? '?'}` : '—', mc?.before && mc?.after ? Number(mc.after) === Number(mc.before) - 1 : null)
+    check('Day 2: a breakdown booked on the Machines screen', 'one fewer Stitching machine available', mc ? `${mc.machine || 'no machine'} (${mc.kind ?? ''}): ${mc.before ?? '?'} → ${mc.after ?? '?'} of ${mc.machines ?? '?'}${mc.added?.length ? ` · ${mc.added.length} machines added for the week, none being recorded` : ''}` : '—', mc?.before && mc?.after ? Number(mc.after) === Number(mc.before) - 1 : null)
     check('Attention lists the machine', 'a machine-down card', d2.after?.attention ? `${n(d2.after.attention.kinds['machine-down'])} machine cards` : '—', d2.after?.attention ? (d2.after.attention.kinds['machine-down'] ?? 0) > 0 : null)
     const v7 = verdictOf('DEMO-07')
     check('Day 2: an order arrives mid-week', 'DEMO-07 checked and entered on day 2, the plan re-run around it', v7 ? `${v7.verdict} (entered on day ${v7.enteredOn})` : '—', v7 ? v7.enteredOn === 2 : null)
@@ -110,8 +110,8 @@ export function demoWeekPage({ facts: f }) {
     check('Attention carries the reason DEMO-05 was taken', 'a card for DEMO-05 ends "taken against the plan: …"', card5 ?? (d4.after?.attention?.demo ?? []).find((t) => /DEMO-05/.test(t)) ?? '—', d4.after?.attention ? Boolean(card5) : null)
     const w = d4.whatIf
     check('Day 4: what if, a second shift in Stitching', 'fewer breaches in the scenario, live plan untouched', w ? `${n(w.breachesNow)} → ${n(w.breachesThen)} breaches, ${n(w.changed)} tasks changed` : '—', w ? w.breachesThen <= w.breachesNow && w.changed > 0 : null)
-    const sand4 = (d4.floor?.entered ?? []).find((e) => e.code === 'SAND')
-    check('Day 4: rejects at Sanding, with a cause', '3 rejected, put down to a cause', sand4?.cause ? `${n(sand4.cause.qty)} rejected: ${sand4.cause.cause}` : sand4 ? 'no cause recorded' : '—', sand4 ? Boolean(sand4.cause) : null)
+    const sand4 = (d4.floor?.entered ?? []).find((e) => e.cause) ?? (d4.floor?.entered ?? [])[0]
+    check(`Day 4: rejects at ${sand4 ? nameOf(sand4.code) : 'the first department'}, with a cause`, '3 rejected, put down to a cause', sand4?.cause ? `${n(sand4.cause.qty)} rejected: ${sand4.cause.cause}` : sand4 ? 'no cause recorded' : '—', sand4 ? Boolean(sand4.cause) : null)
     check('Quality shows the causes', 'the Pareto and the by-department table carry the week', d4.quality ? d4.quality.slice(0, 160) : '—', d4.quality ? true : null)
     const s5 = (d5.after?.schedule ?? []).find((o) => o.erp === 'DEMO-06')
     check("DEMO-06's container day has passed", 'tagged "Container day passed" on the Schedule from the day it was entered, its mark in the shaded past', s5 ? `stuffing ${day(s5.stuffing)}, tagged: ${s5.passed ? 'yes' : 'no'}` : '—', s5 ? s5.passed : null)
@@ -315,11 +315,11 @@ ${docStyle}
     1,
     'the first day on the floor',
     dates.D1,
-    `Stitching marked who came in first thing: ${esc(d1.attendance?.STITCH?.text ?? '')}. The wall display for Stitching read "${esc(d1.display ?? '')}". Then every department with work planned entered its end of day: good against the target, rejected apart; Ply Cutting put its four rejects down to a cause. Machining made half its target. Then PPC ran the schedule.`,
+    `Stitching marked who came in first thing: ${esc(d1.attendance?.STITCH?.text ?? '')}. The wall display for Stitching read "${esc(d1.display ?? '')}". Then every department with work planned entered its end of day: good against the target, rejected apart; the first department put its four rejects down to a cause. Machining made half its target. Then PPC ran the schedule.`,
     [
       ['d1-display', 'The floor display', 'The wall display for Stitching, in the morning'],
       ['d1-stitching-attendance', 'Stitching attendance', 'Stitching: who came in, and what the day runs at'],
-      ['d1-why-rejected', 'Why rejected', 'Ply Cutting: the rejects, and why'],
+      ['d1-why-rejected', 'Why rejected', 'The rejects, and why'],
       ['d1-machining', 'Machining entries', 'Machining: the entries'],
       ['d1-dashboard-grid', 'The grid after Day 1', 'Planned against made, after the run'],
     ],
@@ -362,7 +362,7 @@ ${docStyle}
     4,
     'an order taken against the plan, a what-if',
     dates.D4,
-    `DEMO-05 arrived: 400 pieces twenty days too soon. The check refused it; it was taken anyway, with the reason, and Attention says so. PPC tried a second shift in Stitching on What if. Sanding put three rejects down to a cause. Then the schedule was run.`,
+    `DEMO-05 arrived: 400 pieces twenty days too soon. The check refused it; it was taken anyway, with the reason, and Attention says so. PPC tried a second shift in Stitching on What if. Three rejects were put down to a cause. Then the schedule was run.`,
     [
       ['d4-accept-refused', 'DEMO-05 refused', 'DEMO-05: refused, and taken anyway'],
       ['d4-whatif', 'What if', 'What if: a second shift in Stitching'],

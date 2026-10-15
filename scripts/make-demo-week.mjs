@@ -399,7 +399,10 @@ async function run() {
 async function clearOrders(prefixes) {
   await go('#/orders', 'text=Order book')
   await page.waitForSelector('[data-testid="order-book-state"][data-state="ready"]', { state: 'attached', timeout: 60_000 })
-  for (let guard = 0; guard < 60; guard++) {
+  // Up to two hundred: the live book held the sample, the interim and the
+  // demo orders together, and a cap of sixty left two sample orders behind.
+  let removed = 0
+  for (let guard = 0; guard < 200; guard++) {
     const row = page.locator('tbody tr').filter({ hasText: new RegExp(`^(${prefixes.map((p) => p.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')).join('|')})`) }).first()
     if (!(await row.count())) break
     const erp = (await row.locator('td').first().innerText()).split('\n')[0].trim()
@@ -409,8 +412,10 @@ async function clearOrders(prefixes) {
     await del.click()
     await page.waitForFunction((e) => ![...document.querySelectorAll('tbody tr td')].some((td) => td.textContent.trim().startsWith(e)), erp, { timeout: 120_000 })
     await settle(600)
+    removed++
     console.log(`  removed ${erp}`)
   }
+  console.log(`  ${removed} removed; ${await page.locator('tbody tr').count()} orders left in the book`)
 }
 
 async function articleOption(selector, code) {
@@ -629,7 +634,7 @@ async function enterDay(code, date, { factor = 1, rejected = 0, why = false } = 
     const entered = row.locator('td').last().locator('text=/^Entered$/')
     await entered.waitFor({ timeout: 90_000 }).catch(async () => {
       const status = await text(row.locator('td').last())
-      const errors = await page.$eval('.text-flag', (els) => els.map((e) => e.textContent.trim()).filter(Boolean).slice(0, 3))
+      const errors = await page.$$eval('.text-flag', (els) => els.map((e) => e.textContent.trim()).filter(Boolean).slice(0, 3))
       console.log(`  (${label}: not entered after 90 s — status "${status}"${errors.length ? `, errors: ${errors.join(' | ')}` : ''}; pressing Enter again)`)
       await good$.press('Enter')
       await entered.waitFor({ timeout: 90_000 })
@@ -743,12 +748,32 @@ async function pinBar(erp, code, days, reason) {
 async function bookMachine(code, from, to, kind, reason) {
   await go('#/machines', '[data-testid="machines-master"]')
   await settle(600)
+  // A venue with no machines recorded for this department — the live project
+  // has none at all — gets two added for the week, through the screen, so
+  // the breakdown has something to happen to. Said in the document.
+  const listed = () => page.$$eval('[data-testid^="machine-"][data-down]', (rows, c) => rows.filter((r) => r.getAttribute('data-testid').startsWith(`machine-${c}`)).length, code)
+  let added = []
+  if ((await listed()) === 0) {
+    for (const n of [1, 2]) {
+      await page.click('[data-testid="add-machine"]')
+      const form = page.locator('[data-testid="modal"]').last()
+      await form.waitFor({ timeout: 30_000 })
+      await form.getByPlaceholder('STITCH-09').fill(`${code}-W${n}`)
+      await form.getByPlaceholder('Lockstitch 9').fill(`${nameOf.get(code) ?? code} machine ${n}`)
+      await form.locator('select').first().selectOption({ label: nameOf.get(code) ?? code })
+      await form.getByPlaceholder('Juki DDL-8700').fill('Added for the demo week')
+      await form.locator('button:has-text("Add machine")').click()
+      await page.waitForSelector(`[data-testid="machine-${code}-W${n}"]`, { timeout: 60_000 })
+      await settle(600)
+      added.push(`${code}-W${n}`)
+    }
+  }
   const before = await page.locator(`[data-testid="machines-short-${code}"]`).getAttribute('data-available').catch(() => null)
   await page.click('[data-testid="book-downtime"]')
   const modal = page.locator('[data-testid="modal"]')
   await modal.waitFor()
   const machine = await modal.locator('select').first().evaluate((sel, c) => [...sel.options].find((o) => o.value.startsWith(c))?.value ?? '', code)
-  if (!machine) return { machine: '', before, after: null, machines: null }
+  if (!machine) return { machine: '', before, after: null, machines: null, added }
   await modal.locator('select').first().selectOption(machine)
   const kinds = modal.locator(`select:has(option[value="${kind}"])`).first()
   if (await kinds.count()) await kinds.selectOption(kind)
@@ -765,15 +790,17 @@ async function bookMachine(code, from, to, kind, reason) {
   const machines = await page.locator(`[data-testid="machines-short-${code}"]`).getAttribute('data-machines').catch(() => null)
   await mark([{ n: 1, at: page.locator(`[data-testid="machine-${machine}"]`).first(), where: 'left', dx: 2 }]).catch(() => {})
   await shot('d2-machines', await topOf(page.locator('[data-testid="machines-master"]'), 60), await bottomOf(page.locator('[data-testid="machines-master"]'), 10))
-  return { machine, kind, reason, before, after, machines }
+  return { machine, kind, reason, before: before ?? String(added.length || ''), after, machines, added }
 }
 
 async function hodDay(label, date, rules) {
   console.log(`${label}: the floor`)
   const planned = await plannedOn(date)
   const entered = []
-  for (const dept of planned) {
-    const rule = rules[dept.code] ?? {}
+  for (const [i, dept] of planned.entries()) {
+    // `first` is the first department with work that day, whichever it is:
+    // Ply Cutting on the demonstration route, Machining on U&M's.
+    const rule = { ...(i === 0 ? rules.first ?? {} : {}), ...(rules[dept.code] ?? {}) }
     const r = await enterDay(dept.code, date, rule)
     // A department whose only job that day is planned for less than half a
     // unit has nothing to enter; it is not a row in the day's table.
@@ -877,8 +904,8 @@ if (DAYS >= 1) {
   facts.days.d1.display = await readDisplay('STITCH')
   await tryShot('d1-display', async () => shot('d1-display', 0, await bottomOf(page.locator('[data-testid="display-waiting"]'), 24)))
   facts.days.d1.floor = await hodDay('day 1', D1, {
+    first: { rejected: 4, why: true },
     MACHINE: { factor: 0.5 },
-    PLYCUT: { rejected: 4, why: true },
   })
   await tryShot('d1-stitching-attendance', async () => {
     await openProduction('STITCH', D1)
@@ -889,7 +916,9 @@ if (DAYS >= 1) {
     await shot('d1-stitching-attendance', await topOf(title('What you can do today'), 30), await bottomOf(page.locator('[data-testid="todays-capacity"]'), 10))
   })
   await tryShot('d1-why-rejected', async () => {
-    await openProduction('PLYCUT', D1)
+    const withCause = facts.days.d1.floor.entered.find((e) => e.cause)
+    if (!withCause) throw new Error('no department put a cause down')
+    await openProduction(withCause.code, D1)
     const why = page.locator('[data-testid^="why-rejected-"]:visible').first()
     await mark([{ n: 1, at: why, where: 'left', dx: 2 }])
     await shot('d1-why-rejected', await topOf(title('What you were asked for'), 30), await bottomOf(why, 10))
@@ -1039,7 +1068,7 @@ if (DAYS >= 4) {
     ])
     await shot('d4-whatif', await topOf(title('Try a change'), 30), await bottomOf(page.locator('.label:text-is("Flagged days in this scenario")'), 60))
   })
-  facts.days.d4.floor = await hodDay('day 4', D4, { MACHINE: { factor: 1.25 }, SAND: { rejected: 3, why: true } })
+  facts.days.d4.floor = await hodDay('day 4', D4, { first: { rejected: 3, why: true }, MACHINE: { factor: 1.25 } })
   await run()
   facts.days.d4.after = await afterRun(D4)
   await tryShot('d4-quality', async () => {

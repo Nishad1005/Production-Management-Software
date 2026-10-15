@@ -2950,6 +2950,21 @@ Quality with their causes; the morning's Machining target is what the
 evening run left (ratio 0.5). KRAM/14 is 31 pages, looked at.
 `npm run screenshot` after the Production and Material changes: 55 of 55.
 
+**The first live run (15 Oct, morning, Nishad's hand) stopped on day 2**,
+and taught three things the demonstration build could not. The live project
+has **no machines recorded**, so *Book downtime* is disabled and the script
+crashed on it; it now adds two machines for the department through the
+screen when the venue has none, says so in the document, and books one.
+**Ply Cutting has no work on day 1 on U&M's route** (the Edison stool starts
+at Machining), so the rejects-with-a-cause went nowhere; the day's rules
+now name `first` — the first department with work that day, whichever it
+is. And the clear left **two sample orders** in the book: the loop was
+capped at sixty deletions and the live book held more than that with the
+sample, interim and demo orders together; the cap is two hundred and the
+loop says what it removed. The view migration was on the live project by
+then (`verify:live` green). Day 1 on U&M's items read "Stitching: 20 of
+22 in — 91% of the rate · 160 man-hours".
+
 **Owed to the live site, on a go, by Nishad's hand:**
 `npm run demo-week -- https://kraam.netlify.app <email> <password>` (the
 sample book cleared on the way in; `--items` to name the articles); then
