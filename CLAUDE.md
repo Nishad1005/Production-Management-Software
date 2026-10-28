@@ -133,7 +133,12 @@ the expectation to make it pass.
 
 ## Environment
 
-Node lives at `~/.nvm/versions/node/v24.19.0/bin`. Tool shells started before
+Node lives at `~/.nvm/versions/node/v24.22.1/bin`. The machine was set up
+again on 28 Oct 2026 — nvm 0.40.3, Node 24 — after it lost its state and the
+repository was re-cloned (log §9, 28 Oct). Tool shells started before
 `~/.zshenv` existed do not pick it up, so prefix commands with
-`export PATH="$HOME/.nvm/versions/node/v24.19.0/bin:$PATH"`. No Homebrew, no
-Docker — both absences are worked around deliberately (see log §3).
+`export PATH="$HOME/.nvm/versions/node/v24.22.1/bin:$PATH"`. No Homebrew, no
+Docker — both absences are worked around deliberately (see log §3). The clone
+carries no `.env.local`: the live checks need the project URL and anon key put
+back from the Supabase dashboard first, and `npm run screenshot` needs
+`npx playwright install chromium`.

@@ -78,7 +78,7 @@ unmodified in the browser, so the demo runs the real engine with no backend.
 `npm run build` produces a static folder.
 
 **Online.** Supabase project `fiqfbbnmksppbpxmhnbv` — *kram*, Mumbai
-(ap-south-1), Postgres 17.6. All seventy-four migrations applied locally; seventy-three on the live project, with `20261015110000` (Who is in counts the department; the behind card keyed by line) committed and waiting for the go (§9, 15 Oct).
+(ap-south-1), Postgres 17.6. All seventy-four migrations applied locally and on the live project, `20261015110000` (Who is in counts the department; the behind card keyed by line) included — it went on before the demo week's first live run (§9, 15 Oct). This line said "waiting for the go" until 28 Oct; it was stale.
 
 **The plan of record is §8.0** — the concept deck's promises, each marked
 built, partly or not built, and what it waits on. Written 9 Oct.
@@ -120,7 +120,7 @@ React 19 · TypeScript 6 · Vite 8 · Tailwind 4 · TanStack Query · react-rout
 verification) · Supabase CLI 2.113.
 
 **The machine had none of the usual toolchain.** No Node, no Homebrew, no
-Docker. Node v24.19.0 was installed via nvm (user-local, no sudo). `~/.zshrc`
+Docker. Node v24.19.0 was installed via nvm (user-local, no sudo); the machine was set up again on 28 Oct 2026 with nvm 0.40.3 and Node v24.22.1 (§9, 28 Oct). `~/.zshrc`
 loads nvm for interactive shells; `~/.zshenv` puts node on `PATH` for
 non-interactive ones.
 
@@ -2882,8 +2882,8 @@ screens and the form it is easiest to give it in. Pages looked at.
 ### 2026-10-15 — The demo week: sixteen orders, five days, every role (KRAM/14, rehearsed)
 
 Item 6 of the 14 Oct plan, built and rehearsed on the demonstration build;
-the live run waits for a go and is Nishad's hand (it writes through every
-screen and presses Run). `scripts/make-demo-week.mjs`, `npm run demo-week`,
+the live run was Nishad's hand, on a go (it writes through every screen and
+presses Run) — **and it ran at U&M** (recorded 28 Oct). `scripts/make-demo-week.mjs`, `npm run demo-week`,
 `scripts/lib/demo-week-page.mjs`, `docs/demo-week.html` → KRAM/14.
 
 **The run.** Sixteen DEMO- orders on the items the Accept screen lists (the
@@ -2965,12 +2965,62 @@ loop says what it removed. The view migration was on the live project by
 then (`verify:live` green). Day 1 on U&M's items read "Stitching: 20 of
 22 in — 91% of the rate · 160 man-hours".
 
-**Owed to the live site, on a go, by Nishad's hand:**
+**Owed to the live site, on a go, by Nishad's hand — done; 28 Oct records that it ran:**
 `npm run demo-week -- https://kraam.netlify.app <email> <password>` (the
 sample book cleared on the way in; `--items` to name the articles); then
 `npm run demo-week -- --page-only` is not needed — the script writes the
 page — and `npm run pdf docs/demo-week.html`. The view migration
 `20261015110000` goes first.
+
+### 2026-10-28 — The machine lost its state; three corrections; the specification was here all along
+
+**The machine was set up again.** Nothing of the toolchain survived — no nvm,
+no Node, neither `~/.zshrc` nor `~/.zshenv` — and the repository was a fresh
+clone, every file stamped 05:49 on 28 Oct, the working tree at `4df12cb`,
+level with `origin/main`. On Nishad's instruction: nvm 0.40.3, Node
+**v24.22.1** (the log and CLAUDE.md said v24.19.0; both now carry the new
+path), `~/.zshrc` loading nvm for interactive shells and `~/.zshenv` putting
+the bin directory on `PATH` for the non-interactive ones tool shells are, as
+before (§3). `npm install` left `package-lock.json` untouched. `npm run
+typecheck`: clean. `npm test`: 53 files, **447 of 447**, 65 seconds. `npm
+audit` lists five advisories (vite, undici, source-map-js, `@vitest/mocker`),
+all in the build and test toolchain, none in the bundle the client receives;
+not acted on.
+
+**What the clone does not carry, and has to be put back by hand before the
+live checks run again:** `.env.local` / `.env.hosted.local` (the project URL
+and anon key, from the Supabase dashboard — `verify:live`, `dev:hosted`, the
+walkthrough and the screens script all stop without them); Playwright's
+Chromium (`npx playwright install chromium` before `npm run screenshot`); the
+rendered PDFs and picture folders under `docs/`, which rebuild from their
+scripts; `.claude/settings.local.json`. Nothing uncommitted is known to have
+been lost: the last commit had been pushed.
+
+**Three corrections, from Nishad.** (1) Migration `20261015110000` **is on the
+live project** — seventy-four of seventy-four. §2 had said seventy-three and
+"waiting for the go" since 15 Oct, while the same day's entry recorded the
+view migration green on `verify:live` before the first live run; the summary
+and the entry disagreed, and the summary was the one being believed. (2) **The
+demo week ran at U&M.** KRAM/14's live run is no longer owed; the 15 Oct entry
+is marked. (3) The demonstration account's password is being rotated by
+Nishad today; §8.3 item 7 closes when the new password is confirmed to sign
+in, not before.
+
+**`docs/<!DOCTYPE html>.html` is the Rev B specification.** The log has said
+since 17 Aug that `DBBS/UM/KRAM/01` "never existed as a file" (line 20 of this
+document, §6 item 1, the 17 Aug entry and the note it points to). The file
+with the impossible name — named by accident after its own first line — is a
+52 KB, 816-line, twenty-section complete specification dated 10 Aug, Rev B,
+"for review": product summary, the Rev B changes table, seventeen confirmed
+parameters, the entity tables, engine, WIP mechanics, planning outputs, roles,
+phasing 0–10 and the open-items table. Its section numbers are the ones the
+code cites — `spec §11` is the scheduling engine and names
+`roll_back_to_working_day`, `§6` is orders and schedule — so the citations the
+17 Aug entry wrote off as unrecoverable resolve against it. It was committed
+on 28 Aug in `73f5cc7` (the interim-figures commit), eleven days after the
+"never existed" finding, and nobody opened it. Whether it is kept under a
+real name or deleted is Nishad's decision, pending; if kept, line 20, §6 item
+1 and the note change.
 
 ### 2026-08-17 — Three asks, and a sheet PPC can actually fill in
 
