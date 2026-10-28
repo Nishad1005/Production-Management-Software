@@ -53,6 +53,24 @@ function report(name, passed, detail) {
   console.log(`  ${mark} ${name}${detail ? ` — ${detail}` : ''}`)
 }
 
+/**
+ * The key has to be accepted before a refusal means anything. With a key the
+ * gateway rejects, every read and every call below "fails" — and read as
+ * blocked, which is the pass this script exists to earn. Found 28 Oct with a
+ * key that carried one stray character: sixty-two green lines, none of them
+ * saying what they appeared to say.
+ */
+async function checkKeyAccepted(db) {
+  const { error } = await db.from('department_master').select('*').limit(1)
+  const rejected = Boolean(error?.message?.includes('Invalid API key'))
+  report(
+    'the project accepts the key in .env.hosted.local',
+    !rejected,
+    rejected ? 'rejected — nothing below can be trusted, stopping' : undefined,
+  )
+  if (rejected) process.exit(1)
+}
+
 /** Everything a signed-out visitor could try. */
 async function checkAnonymous(db) {
   console.log('\nAnonymous (holding only the public key)')
@@ -356,6 +374,7 @@ const [email, password] = process.argv.slice(2)
 
 console.log(`Kram — access control against ${env.VITE_SUPABASE_URL}`)
 
+await checkKeyAccepted(createClient(env.VITE_SUPABASE_URL, env.VITE_SUPABASE_ANON_KEY))
 await checkAnonymous(createClient(env.VITE_SUPABASE_URL, env.VITE_SUPABASE_ANON_KEY))
 
 if (email && password) {

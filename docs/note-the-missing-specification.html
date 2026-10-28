@@ -287,8 +287,8 @@
     <div>
       <p class="eyebrow">Data Brilliance Business Solutions LLP</p>
       <h1>
-        The specification that is not there
-        <em>Why the section numbers in the code point at nothing</em>
+        The specification that was there all along
+        <em>Where the section numbers in the code point, and why it took ten weeks</em>
       </h1>
     </div>
     <aside class="refblock">
@@ -306,31 +306,38 @@
     <p class="lead">
       Around a hundred and twenty comments in this codebase cite a specification
       by section — <em class="term">spec §4</em>, <em class="term">spec §11</em>,
-      <em class="term">spec §16</em> — and several quote it directly. There is no
-      such file, in this repository or anywhere else. This note exists so that
-      whoever goes looking for it stops looking.
+      <em class="term">spec §16</em> — and several quote it directly. For ten
+      weeks this note said there was no such file anywhere. There was: it is
+      <em class="term">docs/specification-rev-b.html</em>. This note now exists
+      so that the next reader knows where it is, and why it was missed.
     </p>
 
     <section class="panel">
       <header>
         <b>What happened</b>
-        <span>Established 17 August 2026</span>
+        <span>17 August, 28 August, 28 October 2026</span>
       </header>
       <div class="body">
         <p>
           A specification numbered <em class="term">DBBS/UM/KRAM/01</em> Rev B,
           dated 10 August 2026, was written up early in the project from U&amp;M's
-          concept deck and the conversations around it. It was drafted inside a
-          working session and never saved to a file. When the session ended, so
-          did the document.
+          concept deck and the conversations around it. On 17 August it was
+          believed to have been drafted inside a working session and never saved
+          — the project log had recorded it as “truncated at ~50k characters”
+          and as something the client still owed, and both were wrong: the
+          <em class="term">DBBS/</em> prefix is our own numbering, so it was
+          always ours to hold.
         </p>
         <p>
-          The project log recorded it as “truncated at ~50k characters, cutting
-          off the tail of §19 and all of §20 Open items”, and treated it for a
-          week as something the client still owed us. Neither is right. U&amp;M
-          never had it — the <em class="term">DBBS/</em> prefix is our own
-          numbering, so it was ours to hold — and there is no fuller copy
-          anywhere to ask for.
+          It had been saved. On 28 August it was committed to the repository as
+          <em class="term">docs/&lt;!DOCTYPE html&gt;.html</em> — named by
+          accident after its own first line, in a commit about interim figures —
+          and nobody opened it. On 28 October it was read: twenty sections,
+          Rev B, “for review”, product summary through phasing and the open-items
+          table, with the section numbers the code cites. <em class="term">spec
+          §11</em> is the scheduling engine and names
+          <em class="term">roll_back_to_working_day</em>; <em class="term">§6</em>
+          is orders and schedule. It was renamed the same day.
         </p>
       </div>
     </section>
@@ -348,7 +355,8 @@
           MD's KPIs, and the screens they want. <strong>It is not the
           specification.</strong> It carries no speaker notes, embeds no
           documents, and contains no numbered sections at all — so no citation
-          in this codebase can be resolved against it.
+          in this codebase resolves against it. They resolve against the
+          specification.
         </p>
         <p class="note">
           Verified by reading the file rather than by opening it: nineteen
@@ -361,68 +369,39 @@
     <div class="callout">
       <h3>If you need to know what a section said</h3>
       <p>
-        The citations mostly carry the sentence with them. Searching the
-        codebase for the section number returns the claim it was making, in
-        context, next to the code that implements it:
+        Open <em class="term">docs/specification-rev-b.html</em> and read the
+        section. The citations mostly carry the sentence with them as well, so
+        searching the codebase for the section number still returns the claim
+        next to the code that implements it:
       </p>
       <p><em class="term">grep -rn "§11" --include=*.sql --include=*.ts .</em></p>
       <p>
-        That is weaker than the document would have been, but it is not nothing
-        — and unlike the document, it cannot drift away from the build without
-        somebody noticing.
+        Where the two disagree, that is a finding: the document predates the
+        build, so it can audit the build — which a specification reconstructed
+        from the code never could, and the reason one was deliberately not
+        written in August.
       </p>
     </div>
 
     <div class="callout warn">
-      <h3>What was lost, honestly</h3>
+      <h3>Why it was missed</h3>
       <p>
-        Less than the log implied. The concept deck has been audited slide by
-        slide (log §9, 15 August); that audit found three things claimed and not
-        built, all of which were then built. The deck's own §18,
-        <strong>Immediate Followups</strong>, is the closest thing to the
-        “open items” section that was supposedly missing — and it lists D-minus
-        article-wise, article-wise capacity per day with average manpower, and
-        manpower and overtime tracking. All three are now either built or
-        formally requested.
-      </p>
-      <p>
-        What is genuinely gone is a numbered document to check the build
-        against. The log carries the decisions and the reasoning, and is kept
-        current in a way a specification would not have been.
-      </p>
-    </div>
-
-    <div class="callout">
-      <h3>Why it is not being reconstructed</h3>
-      <p>
-        It could be — roughly a hundred and twenty quoted citations is enough to
-        rebuild it section by section. It is deliberately not being done, for
-        two reasons.
-      </p>
-      <p>
-        A specification derived from the build cannot then be used to audit the
-        build. It would read as an independent check and be nothing of the kind,
-        which is the exact failure this project keeps naming: something that
-        looks like verification and cannot fail.
-      </p>
-      <p>
-        And the work it would displace is real — driving the hosted client in a
-        browser, and the two screens missing from the user guide. Both are on
-        the go-live list. A reconstructed specification is not.
-      </p>
-      <p class="note">
-        If U&amp;M ever need a document to sign off, the right answer is a short
-        scope note written for that purpose — not a reconstruction dressed up as
-        the original.
+        A file whose name begins with an angle bracket does not look like a
+        document in a listing; it looks like an accident, and for two months it
+        was read as one. The 17 August finding, repeated in three documents and
+        the log's front table, was then believed over the directory it sat in.
+        The lesson is the project's recurring one: a confident record is not
+        evidence, and a stray file is worth opening before it is written off.
       </p>
     </div>
 
   </main>
+
 </div>
 
 <footer>
   <div class="foot-inner">
     <span>Kram — production planning &amp; control</span>
-    <span>Internal · 17 August 2026</span>
+    <span>Internal · 17 August 2026, rewritten 28 October 2026</span>
   </div>
 </footer>

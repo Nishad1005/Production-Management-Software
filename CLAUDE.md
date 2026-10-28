@@ -30,7 +30,8 @@ to U&M); where it and the rest of the log disagree, §8.0 wins.
 ## The short version
 
 Production planning for U&M Designs, against specification `DBBS/UM/KRAM/01`
-Rev B. Schedules every order backwards from its container stuffing date through a
+Rev B — `docs/specification-rev-b.html`, the document the `spec §n` comments
+in the code cite. Schedules every order backwards from its container stuffing date through a
 configurable department **graph**, at component granularity, and flags the days a
 department is asked for more than it can make. Departments run in parallel where
 nothing connects them; `route_position` only orders the display.
@@ -139,6 +140,8 @@ repository was re-cloned (log §9, 28 Oct). Tool shells started before
 `~/.zshenv` existed do not pick it up, so prefix commands with
 `export PATH="$HOME/.nvm/versions/node/v24.22.1/bin:$PATH"`. No Homebrew, no
 Docker — both absences are worked around deliberately (see log §3). The clone
-carries no `.env.local`: the live checks need the project URL and anon key put
-back from the Supabase dashboard first, and `npm run screenshot` needs
-`npx playwright install chromium`.
+carries no `.env.hosted.local`: the live scripts need the project URL and anon
+key put back from the Supabase dashboard, **in that file and no other** — a
+`.env.local` is loaded in every Vite mode and points the offline build at
+Supabase (log §5, 28 Oct). `npm run screenshot` needs
+`npx playwright install chromium` once.

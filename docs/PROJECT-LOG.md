@@ -17,7 +17,7 @@ built by **Data Brilliance Business Solutions LLP**.
 
 | | |
 |---|---|
-| Specification | `DBBS/UM/KRAM/01` Rev B — **no file exists**, see `docs/note-the-missing-specification.html` |
+| Specification | `DBBS/UM/KRAM/01` Rev B — `docs/specification-rev-b.html`, dated 10 Aug; in the repository since 28 Aug under a stray name and only recognised on 28 Oct (§9, 28 Oct; `docs/note-the-missing-specification.html` tells the story) |
 | Repository | `github.com/Nishad1005/Production-Management-Software` |
 | Client domain | Export upholstered furniture — lounge chairs, sofas |
 | Shipping | Containerised, 20ft / 40ft HQ, CNF terms |
@@ -484,6 +484,22 @@ by default — times out on a correct screen, 122 polls resolving to a hidden
 element. Wait with `{ state: 'attached' }` on any marker that may be empty.
 The mock-run script learned it twice in two runs. (12 Oct)
 
+**`verify:live` passed with a key the project rejected (28 Oct).** The script
+reads any error on a read or a call as "blocked". With an anon key that was
+one character wrong, every request failed at the gateway with *Invalid API
+key*, sixty-two lines came up green, and "All checks passed" printed. The
+only tell was the function lines' suffix, *blocked, but inside the function:
+Invalid API key* — a refusal is only evidence when the key is accepted. The
+script now checks that first and stops on a rejected key. The general rule:
+a check that cannot distinguish "refused" from "unreachable" is not a check.
+
+**`.env.local` is not `.env.hosted.local` (28 Oct).** The live scripts read
+`.env.hosted.local` and nothing else. A `.env.local` does something worse
+than nothing: Vite loads it in every mode, so plain `npm run dev`, `npm run
+build` and the demonstration scripts built to never touch the live project
+(clicks, journey, mock run) would all point at Supabase. Keep the project
+URL and anon key in `.env.hosted.local` only.
+
 | Symptom | Cause and fix |
 |---|---|
 | `extension "btree_gist" is not available` in PGlite | It ships as a contrib import: `import { btree_gist } from '@electric-sql/pglite/contrib/btree_gist'` and pass via `extensions`. |
@@ -576,13 +592,15 @@ The mock-run script learned it twice in two runs. (12 Oct)
 **Blocked on the client or on U&M:**
 
 1. ~~**The Rev B specification is not in the repo.**~~ **Closed 17 Aug — it was
-   never the client's to send.** The `DBBS/` prefix is our own numbering: the
-   specification was written up here from the concept deck, inside a working
-   session, and never saved to a file. There is no fuller copy to ask for. The
-   concept deck *is* the requirements document and has been audited slide by
-   slide (§9, 15 Aug). Recorded in `docs/note-the-missing-specification.html`
-   so the ~120 section citations in the code do not send the next reader
-   hunting for a document that does not exist.
+   never the client's to send; and corrected 28 Oct — it is in the repo.** The
+   `DBBS/` prefix is our own numbering, so there was never a fuller copy to ask
+   U&M for. On 17 Aug the write-up was believed lost with the working session
+   it was drafted in; it had in fact been saved, and was committed on 28 Aug as
+   `docs/<!DOCTYPE html>.html`, where nobody opened it for two months. It is
+   now `docs/specification-rev-b.html` (§9, 28 Oct), and the ~120 section
+   citations in the code resolve against it. The concept deck remains the
+   client's brief, audited slide by slide (§9, 15 Aug);
+   `docs/note-the-missing-specification.html` records the episode.
 2. **No real Panipuri export sample.** The import module is otherwise ready to
    build but would be built against an assumed column layout. **Longest-lead item
    on the critical path** — worth requesting now.
@@ -925,12 +943,14 @@ the real workload at 324 orders and ~40,000 tasks.
    else.
 6. **Accounts.** Created in the Supabase dashboard, because creating one needs
    the service role key; roles are then assigned in-app on the Users screen.
-7. **Rotate the demonstration account's password — now urgent.** The account
-   holds admin. Its password had been typed into a transcript; on 4 Oct it was
-   also, briefly, **pushed to this public repository** (4 Oct entry, and §5).
-   The commit was replaced within minutes, but a public push must be assumed
-   read. Until the password is changed in the Supabase dashboard
-   (Authentication → Users), treat the live project as open to anyone.
+7. ~~**Rotate the demonstration account's password — now urgent.**~~ **Closed
+   28 Oct, by Nishad's decision: the password was not rotated and the risk is
+   accepted.** The account holds admin. Its password had been typed into a
+   transcript; on 4 Oct it was also, briefly, **pushed to this public
+   repository** (4 Oct entry, and §5). The commit was replaced within minutes,
+   but a public push must be assumed read, so the live project — sample data,
+   not production — stays open to anyone who read it until the password is
+   changed in the Supabase dashboard (Authentication → Users).
 
 ### 8.4 Blocked on U&M
 
@@ -1694,7 +1714,7 @@ It waits for the data, as the walkthrough does, and starts its own server on
 its own port for each build so it can never photograph the wrong one.
 
 The demonstration account still signed in with the old password on 5 Oct:
-**it has not been rotated** (§8.3 item 7).
+**it has not been rotated** (§8.3 item 7; closed 28 Oct without rotating, accepted).
 
 ### 2026-10-06 — KRAM/10: what their numbers did, and how everything works
 
@@ -3018,9 +3038,28 @@ code cites — `spec §11` is the scheduling engine and names
 `roll_back_to_working_day`, `§6` is orders and schedule — so the citations the
 17 Aug entry wrote off as unrecoverable resolve against it. It was committed
 on 28 Aug in `73f5cc7` (the interim-figures commit), eleven days after the
-"never existed" finding, and nobody opened it. Whether it is kept under a
-real name or deleted is Nishad's decision, pending; if kept, line 20, §6 item
-1 and the note change.
+"never existed" finding, and nobody opened it. **Kept, on Nishad's decision,
+later the same day:** renamed `docs/specification-rev-b.html`; line 20, §6
+item 1, README and CLAUDE.md point at it, and
+`docs/note-the-missing-specification.html` is rewritten to say where it is
+and why it was missed. Item 7 of §8.3 is closed the same way: the password
+was not rotated, and Nishad accepts that.
+
+**The live check, and the pass it would have given a wrong key.** Playwright's
+Chromium installed (headless shell 151). Nishad recreated the project's
+variables as `.env.local` — but every live script reads `.env.hosted.local`,
+and a `.env.local` is loaded by Vite in *every* mode, so the offline build
+and the demonstration scripts that must never touch the live project would
+have pointed at Supabase. Moved to the expected name. Then `verify:live`
+passed — sixty-two green lines — with an anon key that carried one stray
+leading character and was being rejected by the gateway: every read failed,
+every call failed, and the script reads a failure as "blocked". The function
+lines did say "blocked, but inside the function: Invalid API key", which is
+the only reason it was noticed. The key corrected, the run is clean: every
+read and call blocked at the door, no credentials given so the signed-in
+checks skipped. `scripts/verify-live.mjs` now checks first that the project
+accepts the key and stops with a FAIL when it does not — proved both ways
+before committing. §5 carries both.
 
 ### 2026-08-17 — Three asks, and a sheet PPC can actually fill in
 

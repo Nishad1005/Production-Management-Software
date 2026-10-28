@@ -146,8 +146,9 @@ the project log has the current list. Two items have a request note against them
 in `docs/`, written to be forwarded as it stands —
 `request-route-and-figures.html` and `request-panipuri-export.html`.
 
-1. ~~**The Rev B specification is not in the repo.**~~ Closed 17 Aug: no such
-   file was ever written. See `docs/note-the-missing-specification.html`.
+1. ~~**The Rev B specification is not in the repo.**~~ Closed: it is
+   `docs/specification-rev-b.html`, found in the repo on 28 Oct under a stray
+   name. `docs/note-the-missing-specification.html` tells the story.
 2. **No real Panipuri export sample**, so the ERP import module is building
    against an assumed column layout. Longest-lead dependency on the critical
    path.
